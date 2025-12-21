@@ -66,7 +66,7 @@ function Todo() {
                     TaskDescription(),
                     TaskCompleted(),
                     TaskURL(),
-                    TaskFile()[0].file,
+                    TaskFile().map(f => f.file),
                     TaskPriority(),
                     TaskDeadline()
                 );
