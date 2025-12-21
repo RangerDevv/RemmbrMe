@@ -1,3 +1,4 @@
+import { UploadFile, fileUploader } from '@solid-primitives/upload';
 import PocketBase from 'pocketbase';
 import { Index, createSignal, onMount } from 'solid-js';
 
@@ -20,6 +21,14 @@ function Todo() {
         fetchTodos();
     }
 
+    const [TaskName, setTaskName] = createSignal('');
+    const [TaskDescription, setTaskDescription] = createSignal('');
+    const [TaskCompleted, setTaskCompleted] = createSignal(false);
+    const [TaskURL, setTaskURL] = createSignal('');
+    const [TaskFile, setTaskFile] = createSignal<UploadFile[]>([]);
+    const [TaskPriority, setTaskPriority] = createSignal('P1');
+    const [TaskDeadline, setTaskDeadline] = createSignal('');
+
     const [todoItems, setTodoItems] = createSignal([] as any[]);
     
     async function fetchTodos() {
@@ -33,26 +42,80 @@ function Todo() {
     });
 
     return (
-        <div>
-        <h2>Todo List</h2>
-
-        {/* create task */}
-        <button class="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-            onClick={() => createTask('Sample Task', 'This is a sample task description.', false, 'http://example.com', null, 'P1', '2024-12-31')}>
-            Create Sample Task
-        </button>
-
+        <div class="flex flex-row">
         {/* list todo items */}
-
-        <Index each={todoItems()}>
-            {(item) => (
-                <div class="border-b border-gray-300 py-2">
-                    <h3 class="font-bold">{item().Title}</h3>
-                    <p>{item().Description}</p>
+        <div>
+            <h2>Todo List</h2>
+            <Index each={todoItems()}>
+                {(item) => (
+                    <div class="border-b border-gray-300 py-2">
+                        <h3 class="font-bold">{item().Title}</h3>
+                        <p>{item().Description}</p>
+                    </div>
+                )}
+            </Index>
+        </div>
+        {/* create todo item form */}
+        <div class="ml-8">
+            <h2>Create Todo Item</h2>
+            <form onSubmit={async (e) => {
+                console.log(TaskFile());
+                e.preventDefault();
+                await createTask(
+                    TaskName(),
+                    TaskDescription(),
+                    TaskCompleted(),
+                    TaskURL(),
+                    TaskFile()[0].file,
+                    TaskPriority(),
+                    TaskDeadline()
+                );
+                setTaskName('');
+                setTaskDescription('');
+                setTaskCompleted(false);
+                setTaskURL('');
+                setTaskFile([]);
+                setTaskPriority('P1');
+                setTaskDeadline('');
+            }}>
+                <div>
+                    <label>Title:</label>
+                    <input type="text" value={TaskName()} onInput={(e) => setTaskName(e.currentTarget.value)} required />
                 </div>
-            )}
-        </Index>
+                <div>
+                    <label>Description:</label>
+                    <textarea value={TaskDescription()} onInput={(e) => setTaskDescription(e.currentTarget.value)} required></textarea>
+                </div>
+                <div>
+                    <label>Completed:</label>
+                    <input type="checkbox" checked={TaskCompleted()} onChange={(e) => setTaskCompleted(e.currentTarget.checked)} />
+                </div>
+                <div>
+                    <label>URL:</label>
+                    <input type="url" value={TaskURL()} onInput={(e) => setTaskURL(e.currentTarget.value)} />
+                </div>
+                <div>
+                    <label>File:</label>
+                    <input type="file" multiple use:fileUploader={{
+                        userCallback: fs => fs.forEach(f => console.log(f)), setFiles: setTaskFile
+                    }} />
+                </div>
+                <div>
+                    <label>Priority:</label>
+                    <select value={TaskPriority()} onChange={(e) => setTaskPriority(e.currentTarget.value)}>
+                        <option value="P1">P1</option>
+                        <option value="P2">P2</option>
+                        <option value="P3">P3</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Deadline:</label>
+                    <input type="date" value={TaskDeadline()} onInput={(e) => setTaskDeadline(e.currentTarget.value)} />
+                </div>
+                <button type="submit">Create Task</button>
+            </form>
+        </div>
         </div>
     );
-    }
+}
 export default Todo;
