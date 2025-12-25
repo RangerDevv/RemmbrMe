@@ -1,7 +1,5 @@
-import PocketBase from 'pocketbase';
 import { createSignal, onMount, For, Show } from 'solid-js';
-
-const pb = new PocketBase('http://127.0.0.1:8090');
+import { pb } from '../lib/pocketbase';
 
 function TimeMachine() {
     const [events, setEvents] = createSignal([] as any[]);

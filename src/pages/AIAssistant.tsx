@@ -1,8 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import PocketBase from 'pocketbase';
 import { createSignal, Show, For } from 'solid-js';
-
-const pb = new PocketBase('http://127.0.0.1:8090');
+import { pb } from '../lib/pocketbase';
 
 function AIAssistant() {
     const [apiKey, setApiKey] = createSignal(localStorage.getItem('gemini_api_key') || '');

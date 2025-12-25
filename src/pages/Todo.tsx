@@ -1,9 +1,7 @@
 import { UploadFile, fileUploader } from '@solid-primitives/upload';
-import PocketBase from 'pocketbase';
 import { Index, Show, createSignal, onMount } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
-
-const pb = new PocketBase('http://127.0.0.1:8090');
+import { pb } from '../lib/pocketbase';
 
 function Todo() {
 
@@ -63,9 +61,30 @@ function Todo() {
 
     async function toggleComplete(id: string, currentStatus: boolean) {
         await pb.collection('Todo').update(id, {
-            Completed: !currentStatus
+            Completed: !currentStatus,
+            CompletedAt: !currentStatus ? new Date().toISOString() : null
         });
         fetchTodos();
+        
+        // Sync with calendar: mark all events that have this task
+        try {
+            const events = await pb.collection('Calendar').getFullList({
+                expand: 'Tasks',
+                filter: `Tasks ~ "${id}"`
+            });
+            
+            for (const event of events) {
+                // Check if all tasks in this event are now completed
+                const allTasksCompleted = event.expand?.Tasks?.every((t: any) => 
+                    t.id === id ? !currentStatus : t.Completed
+                );
+                
+                // Could add a field to track if event is considered done
+                console.log(`Event ${event.EventName}: all tasks completed = ${allTasksCompleted}`);
+            }
+        } catch (error) {
+            console.error('Error syncing with calendar:', error);
+        }
     }
 
     const [TaskName, setTaskName] = createSignal('');
@@ -84,11 +103,13 @@ function Todo() {
     const [editingTask, setEditingTask] = createSignal<any>(null);
     const [searchQuery, setSearchQuery] = createSignal('');
     const [filterPriority, setFilterPriority] = createSignal('all');
-    const [filterStatus, setFilterStatus] = createSignal('all');
+    const [filterStatus, setFilterStatus] = createSignal('active');
     const [sortBy, setSortBy] = createSignal('priority'); // priority, deadline, created
+    const [showCompletedSection, setShowCompletedSection] = createSignal(true);
     const [touchStart, setTouchStart] = createSignal(0);
     const [touchEnd, setTouchEnd] = createSignal(0);
     const [swipingTask, setSwipingTask] = createSignal<string | null>(null);
+    const [showModal, setShowModal] = createSignal(false);
     
     async function fetchTodos() {
         const items = await pb.collection('Todo').getFullList({
@@ -127,6 +148,7 @@ function Todo() {
         setSelectedTags(task.expand?.Tags?.map((t: any) => t.id) || []);
         setRecurrence(task.Recurrence || 'none');
         setRecurrenceEndDate(task.RecurrenceEndDate || '');
+        setShowModal(true);
     }
 
     onMount(() => {
@@ -181,6 +203,16 @@ function Todo() {
         const completed = todoItems().filter(t => t.Completed).length;
         const p1 = todoItems().filter(t => t.Priority === 'P1' && !t.Completed).length;
         return { total, completed, p1, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
+    }
+    
+    function getCompletedTodos() {
+        return todoItems()
+            .filter(t => t.Completed)
+            .sort((a, b) => {
+                const aDate = a.CompletedAt || a.updated;
+                const bDate = b.CompletedAt || b.updated;
+                return new Date(bDate).getTime() - new Date(aDate).getTime();
+            });
     }
     
     function handleTouchStart(e: TouchEvent) {
@@ -294,11 +326,20 @@ function Todo() {
                 </div>
             </div>
 
-            <div class="flex flex-row gap-8 w-full">
-        {/* list todo items */}
-        <div class="flex-1">
+            {/* list todo items */}
+            <div class="w-full">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-semibold text-white">{getFilteredTodos().length} Tasks</h3>
+                <h3 class="text-xl font-semibold text-white">
+                    {filterStatus() === 'active' ? 'Active Tasks' : filterStatus() === 'completed' ? 'Completed Tasks' : 'All Tasks'} 
+                    <span class="text-gray-400 ml-2">({getFilteredTodos().length})</span>
+                </h3>
+                <button
+                    onClick={() => setShowModal(true)}
+                    class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                >
+                    <span class="text-lg">+</span>
+                    <span>New Task</span>
+                </button>
             </div>
             <div class="space-y-3">
             <Index each={getFilteredTodos()}>
@@ -384,26 +425,112 @@ function Todo() {
                 )}
             </Index>
             </div>
-        </div>
-        {/* create todo item form */}
-        <div class="flex-1 max-w-xl">
-            <h2 class="text-3xl font-bold mb-6 text-white">{editingTask() ? 'Edit Todo Item' : 'Create Todo Item'}</h2>
-            <Show when={editingTask()}>
-                <div class="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-between">
-                    <span class="text-blue-400">Editing: {editingTask()?.Title}</span>
+            
+            {/* Completed Tasks Section */}
+            <Show when={filterStatus() === 'active' && getCompletedTodos().length > 0}>
+                <div class="mt-8">
                     <button
-                        onClick={() => {
-                            setEditingTask(null);
-                            resetForm();
-                        }}
-                        class="text-blue-400 hover:text-blue-300 transition-colors duration-200"
+                        onClick={() => setShowCompletedSection(!showCompletedSection())}
+                        class="flex items-center justify-between w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-900/80 transition-all duration-200 mb-4"
                     >
-                        Cancel
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl">✅</span>
+                            <h3 class="text-lg font-semibold text-white">Completed Tasks</h3>
+                            <span class="text-gray-400 text-sm">({getCompletedTodos().length})</span>
+                        </div>
+                        <span class="text-gray-400 text-xl transform transition-transform duration-200" style={{ transform: showCompletedSection() ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
                     </button>
+                    
+                    <Show when={showCompletedSection()}>
+                        <div class="space-y-3">
+                            <Index each={getCompletedTodos()}>
+                                {(item) => (
+                                    <div class="group relative bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 transition-all duration-200 hover:border-zinc-700">
+                                        <div class="flex items-start gap-3 mb-2 opacity-60">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={true}
+                                                onChange={() => toggleComplete(item().id, item().Completed)}
+                                                class="w-5 h-5 mt-1 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0 bg-black cursor-pointer transition-all duration-200"
+                                            />
+                                            <div class="flex-1">
+                                                <div class="flex items-start justify-between">
+                                                    <h3 class="text-xl font-semibold text-gray-500 line-through">{item().Title}</h3>
+                                                    <div class="flex items-center gap-2">
+                                                        <Show when={item().CompletedAt}>
+                                                            <span class="text-xs text-gray-600">
+                                                                ✓ {new Date(item().CompletedAt).toLocaleDateString()}
+                                                            </span>
+                                                        </Show>
+                                                        <button
+                                                            onClick={() => deleteTask(item().id)}
+                                                            class="px-2 py-1 text-red-400 hover:text-red-300 transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                                                            title="Delete"
+                                                        >
+                                                            🗑️
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <p class="text-gray-500 line-through leading-relaxed transition-all duration-200">{item().Description}</p>
+                                                <Show when={item().expand?.Tags && item().expand.Tags.length > 0}>
+                                                    <div class="flex items-center gap-2 mt-3 flex-wrap">
+                                                        <Index each={item().expand.Tags}>
+                                                            {(tag) => (
+                                                                <span
+                                                                    class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium text-white opacity-50"
+                                                                    style={{ 'background-color': `${tag().color}40`, 'border': `1px solid ${tag().color}60` }}
+                                                                >
+                                                                    <div
+                                                                        class="w-1.5 h-1.5 rounded-full"
+                                                                        style={{ 'background-color': tag().color }}
+                                                                    />
+                                                                    {tag().name}
+                                                                </span>
+                                                            )}
+                                                        </Index>
+                                                    </div>
+                                                </Show>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </Index>
+                        </div>
+                    </Show>
                 </div>
             </Show>
+        </div>
+
+        {/* Create/Edit Modal */}
+        <Show when={showModal()}>
+            <div 
+                class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                onClick={() => {
+                    setShowModal(false);
+                    setEditingTask(null);
+                    resetForm();
+                }}
+            >
+                <div 
+                    class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div class="sticky top-0 bg-zinc-900 border-b border-zinc-800 p-6 flex items-center justify-between">
+                        <h2 class="text-3xl font-bold text-white">{editingTask() ? 'Edit Todo Item' : 'Create Todo Item'}</h2>
+                        <button
+                            onClick={() => {
+                                setShowModal(false);
+                                setEditingTask(null);
+                                resetForm();
+                            }}
+                            class="text-gray-400 hover:text-white transition-colors duration-200 text-2xl w-8 h-8 flex items-center justify-center"
+                        >
+                            ×
+                        </button>
+                    </div>
+                    <div class="p-6">
             <form 
-                class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 transition-all duration-200"
+                class="transition-all duration-200"
                 onSubmit={async (e) => {
                 console.log(TaskFile());
                 e.preventDefault();
@@ -436,6 +563,8 @@ function Todo() {
                     );
                 }
                 resetForm();
+                setShowModal(false);
+                setEditingTask(null);
             }}>
                 <div class="mb-5">
                     <label class="block text-sm font-medium text-gray-400 mb-2">Title:</label>
@@ -584,8 +713,10 @@ function Todo() {
                     {editingTask() ? 'Update Task' : 'Create Task'}
                 </button>
             </form>
-        </div>
-        </div>
+                    </div>
+                </div>
+            </div>
+        </Show>
         </div>
     );
 }

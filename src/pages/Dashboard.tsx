@@ -1,8 +1,6 @@
-import PocketBase from 'pocketbase';
 import { createSignal, onMount, For, Show, createEffect } from 'solid-js';
 import { A } from '@solidjs/router';
-
-const pb = new PocketBase('http://127.0.0.1:8090');
+import { pb } from '../lib/pocketbase';
 
 interface DashboardSettings {
     showCompletedToday: boolean;

@@ -1,8 +1,6 @@
-import PocketBase from 'pocketbase';
 import { createSignal, onMount, For, Show } from 'solid-js';
 import { generateRecurringEvents } from '../utils/recurrence';
-
-const pb = new PocketBase('http://127.0.0.1:8090');
+import { pb } from '../lib/pocketbase';
 
 function Calendar() {
     const [events, setEvents] = createSignal([] as any[]);
@@ -59,9 +57,12 @@ function Calendar() {
                 sort: 'Start'
             });
             console.log('Events fetched:', records.length, records);
+            
+            // Force a clean update by clearing first
+            setEvents([]);
+            await new Promise(resolve => setTimeout(resolve, 5));
             setEvents(records);
-            // Force a small delay to ensure state updates
-            await new Promise(resolve => setTimeout(resolve, 10));
+            
             console.log('Events signal after fetch:', events().length);
         } catch (error) {
             console.error('Error fetching events:', error);
@@ -263,17 +264,46 @@ Title:
 
     async function toggleTaskCompletion(taskId: string, currentStatus: boolean) {
         await pb.collection('Todo').update(taskId, {
-            Completed: !currentStatus
+            Completed: !currentStatus,
+            CompletedAt: !currentStatus ? new Date().toISOString() : null
         });
-        await fetchEvents();
+        
+        // Refresh all data
         await fetchTodos();
+        await fetchEvents(); // This will update the events signal with fresh expand data
         
         // Refresh quickViewEvent if it's open
         if (quickViewEvent()) {
-            const refreshed = await pb.collection('Calendar').getOne(quickViewEvent()!.id, {
+            try {
+                const refreshed = await pb.collection('Calendar').getOne(quickViewEvent()!.id, {
+                    expand: 'Tasks,Tags'
+                });
+                setQuickViewEvent(refreshed);
+            } catch (error) {
+                console.error('Error refreshing quick view event:', error);
+            }
+        }
+    }
+
+    async function openEventModal(eventId: string) {
+        try {
+            const event = await pb.collection('Calendar').getOne(eventId, {
                 expand: 'Tasks,Tags'
             });
-            setQuickViewEvent(refreshed);
+            setQuickViewEvent(event);
+        } catch (error) {
+            console.error('Error fetching event:', error);
+        }
+    }
+
+    async function openEventModal(eventId: string) {
+        try {
+            const event = await pb.collection('Calendar').getOne(eventId, {
+                expand: 'Tasks,Tags'
+            });
+            setQuickViewEvent(event);
+        } catch (error) {
+            console.error('Error fetching event:', error);
         }
     }
 
@@ -497,22 +527,25 @@ Title:
                                                         {(event) => {
                                                             const totalTasks = event.expand?.Tasks?.length || 0;
                                                             const completedTasks = event.expand?.Tasks?.filter((t: any) => t.Completed).length || 0;
+                                                            const allTasksCompleted = totalTasks > 0 && completedTasks === totalTasks;
                                                             
                                                             return (
                                                                 <div
                                                                     class="text-xs px-2 py-1 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
                                                                     style={{ 
                                                                         'background-color': event.Color || '#3b82f6',
-                                                                        opacity: 0.9
+                                                                        opacity: allTasksCompleted ? 0.6 : 0.9
                                                                     }}
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        setQuickViewEvent(event);
+                                                                        openEventModal(event.id);
                                                                     }}
                                                                     onMouseEnter={() => setHoveredEvent(event)}
                                                                     onMouseLeave={() => setHoveredEvent(null)}
                                                                 >
-                                                                    <div class="truncate font-medium">{event.EventName}</div>
+                                                                    <div class={`truncate font-medium ${allTasksCompleted ? 'line-through' : ''}`}>
+                                                                        {allTasksCompleted ? '✓ ' : ''}{event.EventName}
+                                                                    </div>
                                                                     <Show when={totalTasks > 0}>
                                                                         <div class="text-[10px] opacity-75 mt-0.5">
                                                                             ✓ {completedTasks}/{totalTasks} tasks
@@ -556,11 +589,16 @@ Title:
                             </div>
                             <div class="space-y-2 max-h-[600px] overflow-y-auto">
                                 <For each={getEventsForDate(selectedDate()!)}>
-                                    {(event) => (
+                                    {(event) => {
+                                        const totalTasks = event.expand?.Tasks?.length || 0;
+                                        const completedTasks = event.expand?.Tasks?.filter((t: any) => t.Completed).length || 0;
+                                        const allTasksCompleted = totalTasks > 0 && completedTasks === totalTasks;
+                                        
+                                        return (
                                         <div
                                             class="p-3 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-all duration-200 cursor-pointer"
-                                            style={{ 'background-color': `${event.Color}15` }}
-                                            onClick={() => setQuickViewEvent(event)}
+                                            style={{ 'background-color': `${event.Color}15`, opacity: allTasksCompleted ? 0.7 : 1 }}
+                                            onClick={() => openEventModal(event.id)}
                                         >
                                             <div class="flex items-start gap-2">
                                                 <div 
@@ -568,7 +606,9 @@ Title:
                                                     style={{ 'background-color': event.Color }}
                                                 ></div>
                                                 <div class="flex-1">
-                                                    <h4 class="font-semibold text-white">{event.EventName}</h4>
+                                                    <h4 class={`font-semibold text-white ${allTasksCompleted ? 'line-through' : ''}`}>
+                                                        {allTasksCompleted ? '✓ ' : ''}{event.EventName}
+                                                    </h4>
                                                     <Show when={!event.AllDay}>
                                                         <p class="text-xs text-gray-400 mt-1">
                                                             {new Date(event.Start).toLocaleTimeString('en-US', { 
@@ -619,7 +659,8 @@ Title:
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
+                                        );
+                                    }}
                                 </For>
                                 <Show when={getEventsForDate(selectedDate()!).length === 0}>
                                     <p class="text-gray-500 text-center py-8">No events for this day</p>
@@ -707,6 +748,7 @@ Title:
 
                                                             const totalTasks = event.expand?.Tasks?.length || 0;
                                                             const completedTasks = event.expand?.Tasks?.filter((t: any) => t.Completed).length || 0;
+                                                            const allTasksCompleted = totalTasks > 0 && completedTasks === totalTasks;
 
                                                             return (
                                                                 <div
@@ -715,11 +757,13 @@ Title:
                                                                         'background-color': event.Color || '#3b82f6',
                                                                         'top': `${topOffset}px`,
                                                                         'height': `${height}px`,
-                                                                        'opacity': 0.9
+                                                                        'opacity': allTasksCompleted ? 0.6 : 0.9
                                                                     }}
-                                                                    onClick={() => setQuickViewEvent(event)}
+                                                                    onClick={() => openEventModal(event.id)}
                                                                 >
-                                                                    <div class="font-medium truncate">{event.EventName}</div>
+                                                                    <div class={`font-medium truncate ${allTasksCompleted ? 'line-through' : ''}`}>
+                                                                        {allTasksCompleted ? '✓ ' : ''}{event.EventName}
+                                                                    </div>
                                                                     <Show when={!event.AllDay}>
                                                                         <div class="text-[10px] opacity-75">
                                                                             {new Date(event.Start).toLocaleTimeString('en-US', { 
