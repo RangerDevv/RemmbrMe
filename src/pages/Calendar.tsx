@@ -1,5 +1,4 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
-import { generateRecurringEvents } from '../utils/recurrence';
 import { pb, currentUser } from '../lib/pocketbase';
 
 function Calendar() {
@@ -59,12 +58,64 @@ function Calendar() {
             });
             console.log('Events fetched:', records.length, records);
             
+            // Expand recurring events into instances
+            const expandedEvents: any[] = [];
+            const viewEndDate = new Date();
+            viewEndDate.setMonth(viewEndDate.getMonth() + 3); // Show 3 months ahead
+            
+            for (const event of records) {
+                expandedEvents.push(event); // Add original event
+                
+                // If event has recurrence, generate instances
+                if (event.Recurrence && event.Recurrence !== 'none') {
+                    const startDate = new Date(event.Start);
+                    const endEventDate = event.RecurrenceEndDate ? new Date(event.RecurrenceEndDate) : viewEndDate;
+                    const eventDuration = new Date(event.End).getTime() - new Date(event.Start).getTime();
+                    
+                    let currentDate = new Date(startDate);
+                    let instanceCount = 0;
+                    const maxInstances = 100;
+                    
+                    while (currentDate <= endEventDate && instanceCount < maxInstances) {
+                        // Generate next occurrence
+                        switch (event.Recurrence) {
+                            case 'daily':
+                                currentDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
+                                break;
+                            case 'weekly':
+                                currentDate = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+                                break;
+                            case 'monthly':
+                                const nextMonth = new Date(currentDate);
+                                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                                currentDate = nextMonth;
+                                break;
+                        }
+                        
+                        if (currentDate > endEventDate || currentDate > viewEndDate) break;
+                        
+                        // Create instance
+                        const instance = {
+                            ...event,
+                            id: `${event.id}-recur-${instanceCount}`,
+                            Start: currentDate.toISOString(),
+                            End: new Date(currentDate.getTime() + eventDuration).toISOString(),
+                            isRecurringInstance: true,
+                            originalEventId: event.id
+                        };
+                        
+                        expandedEvents.push(instance);
+                        instanceCount++;
+                    }
+                }
+            }
+            
             // Force a clean update by clearing first
             setEvents([]);
             await new Promise(resolve => setTimeout(resolve, 5));
-            setEvents(records);
+            setEvents(expandedEvents);
             
-            console.log('Events signal after fetch:', events().length);
+            console.log('Events signal after fetch (with recurring):', expandedEvents.length);
         } catch (error) {
             console.error('Error fetching events:', error);
         }
@@ -123,24 +174,18 @@ function Calendar() {
             AllDay: allDay(),
             Start: start,
             End: end,
-            Location: { lat: locationLat(), lon: locationLon() },
+            Location: { lat: locationLat() || 0, lon: locationLon() || 0 },
             Tasks: allTaskIds,
-            Color: eventColor(),
-            Tags: selectedTags(),
-            Recurrence: recurrence(),
+            Color: eventColor() || '#3b82f6',
+            Tags: selectedTags() || [],
+            Recurrence: recurrence() === 'none' ? null : recurrence(),
             RecurrenceEndDate: recurrenceEndDate() || null,
             user: currentUser()?.id
         };
 
         const record = await pb.collection('Calendar').create(data);
         
-        // Generate recurring instances if recurrence is set
-        if (recurrence() !== 'none' && recurrence()) {
-            await generateRecurringEvents(record.id, record, {
-                frequency: recurrence() as 'daily' | 'weekly' | 'monthly',
-                endDate: recurrenceEndDate() ? new Date(recurrenceEndDate()) : undefined
-            });
-        }
+        // Recurring instances are generated virtually in fetchEvents()
         
         fetchEvents();
         fetchTodos();
@@ -181,11 +226,11 @@ function Calendar() {
             AllDay: allDay(),
             Start: start,
             End: end,
-            Location: { lat: locationLat(), lon: locationLon() },
+            Location: { lat: locationLat() || 0, lon: locationLon() || 0 },
             Tasks: allTaskIds,
-            Color: eventColor(),
-            Tags: selectedTags(),
-            Recurrence: recurrence(),
+            Color: eventColor() || '#3b82f6',
+            Tags: selectedTags() || [],
+            Recurrence: recurrence() === 'none' ? null : recurrence(),
             RecurrenceEndDate: recurrenceEndDate() || null,
             user: currentUser()?.id
         };
@@ -385,17 +430,24 @@ Title:
         let currentTime = dayStart.getTime();
 
         sortedEvents.forEach((event) => {
-            const eventStart = new Date(event.Start).getTime();
-            const eventEnd = new Date(event.End).getTime();
+            const eventStart = new Date(event.Start);
+            const eventEnd = new Date(event.End);
+            
+            // Cap event times to current day
+            const displayStart = eventStart < dayStart ? dayStart : eventStart;
+            const displayEnd = eventEnd > dayEnd ? dayEnd : eventEnd;
+            
+            const displayStartTime = displayStart.getTime();
+            const displayEndTime = displayEnd.getTime();
 
             // Add break block if there's a gap
-            if (currentTime < eventStart) {
+            if (currentTime < displayStartTime) {
                 result.push({
                     id: `break-${currentTime}`,
                     EventName: '🌴 Break',
                     Description: 'Free time',
                     Start: new Date(currentTime).toISOString(),
-                    End: new Date(eventStart).toISOString(),
+                    End: new Date(displayStartTime).toISOString(),
                     AllDay: false,
                     Color: '#1a1a1a',
                     isBreak: true,
@@ -405,7 +457,7 @@ Title:
 
             // Add the actual event
             result.push(event);
-            currentTime = Math.max(currentTime, eventEnd);
+            currentTime = Math.max(currentTime, displayEndTime);
         });
 
         // Add final break block if day isn't fully scheduled
@@ -789,10 +841,20 @@ Title:
                                                         {(event) => {
                                                             const eventStart = new Date(event.Start);
                                                             const eventEnd = new Date(event.End);
-                                                            const eventStartHour = eventStart.getHours();
-                                                            const eventEndHour = eventEnd.getHours();
-                                                            const eventStartMinute = eventStart.getMinutes();
-                                                            const eventEndMinute = eventEnd.getMinutes();
+                                                            
+                                                            // Cap event to current day only
+                                                            const startOfDay = new Date(day);
+                                                            startOfDay.setHours(0, 0, 0, 0);
+                                                            const endOfDay = new Date(day);
+                                                            endOfDay.setHours(23, 59, 59, 999);
+                                                            
+                                                            const displayStart = eventStart < startOfDay ? startOfDay : eventStart;
+                                                            const displayEnd = eventEnd > endOfDay ? endOfDay : eventEnd;
+                                                            
+                                                            const eventStartHour = displayStart.getHours();
+                                                            const eventEndHour = displayEnd.getHours();
+                                                            const eventStartMinute = displayStart.getMinutes();
+                                                            const eventEndMinute = displayEnd.getMinutes();
                                                             
                                                             // Calculate if event should appear in this hour slot
                                                             const eventStartsInThisHour = eventStartHour === hour;
@@ -811,7 +873,7 @@ Title:
                                                             let topOffset = 0;
 
                                                             if (!event.AllDay) {
-                                                                const durationMs = eventEnd.getTime() - eventStart.getTime();
+                                                                const durationMs = displayEnd.getTime() - displayStart.getTime();
                                                                 const durationHours = durationMs / (1000 * 60 * 60);
                                                                 height = Math.max(30, durationHours * 60); // 60px per hour
                                                                 
@@ -1248,6 +1310,32 @@ Title:
                                 </div>
                             </div>
 
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence:</label>
+                                <select
+                                    value={recurrence()}
+                                    onInput={(e) => setRecurrence(e.currentTarget.value)}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
+                                >
+                                    <option value="none">No Recurrence</option>
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                            </div>
+
+                            <Show when={recurrence() !== 'none'}>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence End Date (Optional):</label>
+                                    <input
+                                        type="date"
+                                        value={recurrenceEndDate()}
+                                        onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
+                                    />
+                                </div>
+                            </Show>
+
                             <button
                                 type="submit"
                                 class="w-full bg-white text-black font-semibold py-3 rounded-lg hover:bg-gray-200 active:scale-95 transition-all duration-200"
@@ -1474,6 +1562,32 @@ Title:
                                     </For>
                                 </div>
                             </div>
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence:</label>
+                                <select
+                                    value={recurrence()}
+                                    onInput={(e) => setRecurrence(e.currentTarget.value)}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
+                                >
+                                    <option value="none">No Recurrence</option>
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                            </div>
+
+                            <Show when={recurrence() !== 'none'}>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence End Date (Optional):</label>
+                                    <input
+                                        type="date"
+                                        value={recurrenceEndDate()}
+                                        onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
+                                    />
+                                </div>
+                            </Show>
 
                             <button
                                 type="submit"
