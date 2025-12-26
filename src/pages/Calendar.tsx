@@ -368,6 +368,64 @@ Title:
         return days;
     }
 
+    // Generate break blocks for unscheduled time
+    function getEventsWithBreaks(date: Date): any[] {
+        const dayEvents = getEventsForDate(date);
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(date);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        // Sort events by start time
+        const sortedEvents = [...dayEvents].sort((a, b) => 
+            new Date(a.Start).getTime() - new Date(b.Start).getTime()
+        );
+
+        const result: any[] = [];
+        let currentTime = dayStart.getTime();
+
+        sortedEvents.forEach((event) => {
+            const eventStart = new Date(event.Start).getTime();
+            const eventEnd = new Date(event.End).getTime();
+
+            // Add break block if there's a gap
+            if (currentTime < eventStart) {
+                result.push({
+                    id: `break-${currentTime}`,
+                    EventName: '🌴 Break',
+                    Description: 'Free time',
+                    Start: new Date(currentTime).toISOString(),
+                    End: new Date(eventStart).toISOString(),
+                    AllDay: false,
+                    Color: '#1a1a1a',
+                    isBreak: true,
+                    Tasks: []
+                });
+            }
+
+            // Add the actual event
+            result.push(event);
+            currentTime = Math.max(currentTime, eventEnd);
+        });
+
+        // Add final break block if day isn't fully scheduled
+        if (currentTime < dayEnd.getTime()) {
+            result.push({
+                id: `break-${currentTime}`,
+                EventName: '🌴 Break',
+                Description: 'Free time',
+                Start: new Date(currentTime).toISOString(),
+                End: dayEnd.toISOString(),
+                AllDay: false,
+                Color: '#1a1a1a',
+                isBreak: true,
+                Tasks: []
+            });
+        }
+
+        return result;
+    }
+
     function previousMonth() {
         setCurrentDate(new Date(currentDate().getFullYear(), currentDate().getMonth() - 1));
     }
@@ -595,26 +653,34 @@ Title:
                                 </button>
                             </div>
                             <div class="space-y-2 max-h-[600px] overflow-y-auto">
-                                <For each={getEventsForDate(selectedDate()!)}>
+                                <For each={getEventsWithBreaks(selectedDate()!)}>
                                     {(event) => {
                                         const totalTasks = event.expand?.Tasks?.length || 0;
                                         const completedTasks = event.expand?.Tasks?.filter((t: any) => t.Completed).length || 0;
                                         const allTasksCompleted = totalTasks > 0 && completedTasks === totalTasks;
+                                        const isBreak = event.isBreak || false;
                                         
                                         return (
                                         <div
-                                            class="p-3 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-all duration-200 cursor-pointer"
-                                            style={{ 'background-color': `${event.Color}15`, opacity: allTasksCompleted ? 0.7 : 1 }}
-                                            onClick={() => openEventModal(event.id)}
+                                            class={`p-3 rounded-lg border transition-all duration-200 ${
+                                                isBreak 
+                                                    ? 'border-dashed border-zinc-700 bg-zinc-900/30' 
+                                                    : 'border-zinc-800 hover:border-zinc-700 cursor-pointer'
+                                            }`}
+                                            style={{ 
+                                                'background-color': isBreak ? 'transparent' : `${event.Color}15`, 
+                                                opacity: isBreak ? 0.6 : (allTasksCompleted ? 0.7 : 1) 
+                                            }}
+                                            onClick={() => !isBreak && openEventModal(event.id)}
                                         >
                                             <div class="flex items-start gap-2">
                                                 <div 
-                                                    class="w-3 h-3 rounded-full mt-1 flex-shrink-0"
-                                                    style={{ 'background-color': event.Color }}
+                                                    class={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${isBreak ? 'bg-gray-700' : ''}`}
+                                                    style={{ 'background-color': isBreak ? '#404040' : event.Color }}
                                                 ></div>
                                                 <div class="flex-1">
-                                                    <h4 class={`font-semibold text-white ${allTasksCompleted ? 'line-through' : ''}`}>
-                                                        {allTasksCompleted ? '✓ ' : ''}{event.EventName}
+                                                    <h4 class={`font-semibold ${isBreak ? 'text-gray-500 italic' : 'text-white'} ${allTasksCompleted && !isBreak ? 'line-through' : ''}`}>
+                                                        {allTasksCompleted && !isBreak ? '✓ ' : ''}{event.EventName}
                                                     </h4>
                                                     <Show when={!event.AllDay}>
                                                         <p class="text-xs text-gray-400 mt-1">
@@ -627,7 +693,7 @@ Title:
                                                             })}
                                                         </p>
                                                     </Show>
-                                                    <Show when={event.expand?.Tasks?.length > 0}>
+                                                    <Show when={!isBreak && event.expand?.Tasks?.length > 0}>
                                                         <div class="mt-2 space-y-1">
                                                             <For each={event.expand.Tasks}>
                                                                 {(task: any) => (
@@ -669,7 +735,7 @@ Title:
                                         );
                                     }}
                                 </For>
-                                <Show when={getEventsForDate(selectedDate()!).length === 0}>
+                                <Show when={getEventsWithBreaks(selectedDate()!).length === 0}>
                                     <p class="text-gray-500 text-center py-8">No events for this day</p>
                                 </Show>
                             </div>
@@ -715,7 +781,7 @@ Title:
                                     </div>
                                     <For each={getWeekDays()}>
                                         {(day) => {
-                                            const dayEvents = getEventsForDate(day);
+                                            const dayEvents = getEventsWithBreaks(day);
                                             
                                             return (
                                                 <div class="relative border-r border-zinc-800 min-h-[60px] hover:bg-zinc-900/50 transition-colors duration-200">
@@ -756,22 +822,27 @@ Title:
                                                             const totalTasks = event.expand?.Tasks?.length || 0;
                                                             const completedTasks = event.expand?.Tasks?.filter((t: any) => t.Completed).length || 0;
                                                             const allTasksCompleted = totalTasks > 0 && completedTasks === totalTasks;
+                                                            const isBreak = event.isBreak || false;
 
                                                             return (
                                                                 <div
-                                                                    class="absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded cursor-pointer hover:scale-[1.02] transition-all duration-200 overflow-hidden z-10"
+                                                                    class={`absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 ${
+                                                                        isBreak 
+                                                                            ? 'border border-dashed border-zinc-700 bg-zinc-900/30'
+                                                                            : 'cursor-pointer hover:scale-[1.02] transition-all duration-200'
+                                                                    }`}
                                                                     style={{ 
-                                                                        'background-color': event.Color || '#3b82f6',
+                                                                        'background-color': isBreak ? 'transparent' : (event.Color || '#3b82f6'),
                                                                         'top': `${topOffset}px`,
                                                                         'height': `${height}px`,
-                                                                        'opacity': allTasksCompleted ? 0.6 : 0.9
+                                                                        'opacity': isBreak ? 0.5 : (allTasksCompleted ? 0.6 : 0.9)
                                                                     }}
-                                                                    onClick={() => openEventModal(event.id)}
+                                                                    onClick={() => !isBreak && openEventModal(event.id)}
                                                                 >
-                                                                    <div class={`font-medium truncate ${allTasksCompleted ? 'line-through' : ''}`}>
-                                                                        {allTasksCompleted ? '✓ ' : ''}{event.EventName}
+                                                                    <div class={`font-medium truncate ${allTasksCompleted && !isBreak ? 'line-through' : ''} ${isBreak ? 'text-gray-500 italic' : ''}`}>
+                                                                        {allTasksCompleted && !isBreak ? '✓ ' : ''}{event.EventName}
                                                                     </div>
-                                                                    <Show when={!event.AllDay}>
+                                                                    <Show when={!event.AllDay && !isBreak}>
                                                                         <div class="text-[10px] opacity-75">
                                                                             {new Date(event.Start).toLocaleTimeString('en-US', { 
                                                                                 hour: 'numeric', 
@@ -785,7 +856,7 @@ Title:
                                                                             )}
                                                                         </div>
                                                                     </Show>
-                                                                    <Show when={totalTasks > 0 && height > 50}>
+                                                                    <Show when={!isBreak && totalTasks > 0 && height > 50}>
                                                                         <div class="text-[10px] opacity-70 mt-1">
                                                                             ✓ {completedTasks}/{totalTasks} tasks
                                                                         </div>

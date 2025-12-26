@@ -1,6 +1,7 @@
 import { createSignal, Show, onMount } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { currentUser, updateProfile, logout, pb } from '../lib/pocketbase';
+import NotificationModal from '../components/NotificationModal';
 
 export default function Profile() {
     const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function Profile() {
     const [success, setSuccess] = createSignal('');
     const [error, setError] = createSignal('');
     const [loading, setLoading] = createSignal(false);
+    const [deleteConfirm, setDeleteConfirm] = createSignal(false);
     const [activeTab, setActiveTab] = createSignal<'profile' | 'security'>('profile');
 
     onMount(() => {
@@ -76,10 +78,12 @@ export default function Profile() {
     };
 
     const handleDeleteAccount = async () => {
-        if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-            return;
-        }
+        setDeleteConfirm(true);
+    };
 
+    const confirmDeleteAccount = async () => {
+        setDeleteConfirm(false);
+        
         try {
             await pb.collection('users').delete(currentUser()!.id);
             logout();
@@ -264,6 +268,44 @@ export default function Profile() {
                         >
                             Delete Account
                         </button>
+                    </div>
+                </div>
+            </Show>
+
+            {/* Delete Confirmation Modal */}
+            <Show when={deleteConfirm()}>
+                <div 
+                    class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4 animate-fadeIn"
+                    onClick={() => setDeleteConfirm(false)}
+                >
+                    <div 
+                        class="bg-zinc-900 border border-red-600/30 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scaleIn"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div class="flex items-start gap-4 mb-6">
+                            <div class="text-4xl">⚠️</div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold text-white mb-2">Delete Account?</h3>
+                                <p class="text-gray-300 leading-relaxed">
+                                    Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button
+                                onClick={() => setDeleteConfirm(false)}
+                                class="flex-1 px-6 py-2.5 bg-zinc-800 text-white font-semibold rounded-lg hover:bg-zinc-700 transition-all duration-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDeleteAccount}
+                                class="flex-1 px-6 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 transition-all duration-200"
+                            >
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             </Show>

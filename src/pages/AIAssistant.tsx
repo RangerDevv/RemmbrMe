@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createSignal, Show, For } from 'solid-js';
 import { pb, currentUser } from '../lib/pocketbase';
+import NotificationModal from '../components/NotificationModal';
 
 function AIAssistant() {
     const [apiKey, setApiKey] = createSignal(localStorage.getItem('gemini_api_key') || '');
@@ -14,6 +15,7 @@ function AIAssistant() {
     const [dailyBriefing, setDailyBriefing] = createSignal('');
     const [showBriefing, setShowBriefing] = createSignal(false);
     const [smartSuggestions, setSmartSuggestions] = createSignal<string[]>([]);
+    const [notification, setNotification] = createSignal({ show: false, message: '', type: 'info' as 'info' | 'warning' | 'error' | 'success' });
 
     function saveApiKey() {
         localStorage.setItem('gemini_api_key', apiKey());
@@ -22,13 +24,13 @@ function AIAssistant() {
 
     async function processRamble() {
         if (!apiKey()) {
-            alert('Please set your Gemini API key first!');
+            setNotification({ show: true, message: 'Please set your Gemini API key first!', type: 'warning' });
             setShowApiKeyInput(true);
             return;
         }
 
         if (!rambleText().trim()) {
-            alert('Please write something about your day!');
+            setNotification({ show: true, message: 'Please write something about your day!', type: 'warning' });
             return;
         }
 
@@ -172,7 +174,7 @@ Guidelines:
 
     async function getFeedback() {
         if (!apiKey()) {
-            alert('Please set your Gemini API key first!');
+            setNotification({ show: true, message: 'Please set your Gemini API key first!', type: 'warning' });
             setShowApiKeyInput(true);
             return;
         }
@@ -228,7 +230,7 @@ Keep it personal, warm, and specific to their actual data. Use emojis occasional
 
     async function getDailyBriefing() {
         if (!apiKey()) {
-            alert('Please set your Gemini API key first!');
+            setNotification({ show: true, message: 'Please set your Gemini API key first!', type: 'warning' });
             setShowApiKeyInput(true);
             return;
         }
@@ -293,7 +295,7 @@ Keep it concise (under 300 words), personal, and actionable. Use emojis to make 
 
     async function getSmartSuggestions() {
         if (!apiKey()) {
-            alert('Please set your Gemini API key first!');
+            setNotification({ show: true, message: 'Please set your Gemini API key first!', type: 'warning' });
             setShowApiKeyInput(true);
             return;
         }
@@ -647,6 +649,14 @@ Return ONLY the JSON array, no markdown.`;
                     </div>
                 </div>
             </div>
+
+            {/* Notification Modal */}
+            <NotificationModal
+                show={notification().show}
+                message={notification().message}
+                type={notification().type}
+                onClose={() => setNotification({ ...notification(), show: false })}
+            />
         </div>
     );
 }

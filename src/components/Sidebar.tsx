@@ -1,13 +1,8 @@
-import { createSignal, Show, onMount } from 'solid-js';
-import { currentUser, logout, pb } from '../lib/pocketbase';
+import { createSignal, Show } from 'solid-js';
+import { currentUser, logout } from '../lib/pocketbase';
 
 export default function Sidebar() {
     const [showProfileMenu, setShowProfileMenu] = createSignal(false);
-    const [stats, setStats] = createSignal({
-        todos: 0,
-        events: 0,
-        completed: 0
-    });
 
     const isActive = (path: string) => window.location.pathname === path;
 
@@ -15,28 +10,6 @@ export default function Sidebar() {
         logout();
         window.location.href = '/login';
     };
-
-    // Fetch user stats
-    onMount(async () => {
-        try {
-            const [todos, events] = await Promise.all([
-                pb.collection('Todo').getList(1, 1, { filter: `user = "${currentUser()?.id}"` }),
-                pb.collection('Calendar').getList(1, 1, { filter: `user = "${currentUser()?.id}"` })
-            ]);
-            
-            const completedTodos = await pb.collection('Todo').getList(1, 1, { 
-                filter: `user = "${currentUser()?.id}" && Completed = true` 
-            });
-
-            setStats({
-                todos: todos.totalItems,
-                events: events.totalItems,
-                completed: completedTodos.totalItems
-            });
-        } catch (error) {
-            console.error('Failed to fetch stats:', error);
-        }
-    });
 
     return (
         <div class="flex flex-col gap-2 w-64 h-fit sticky top-6">
@@ -109,24 +82,6 @@ export default function Sidebar() {
                             </button>
                         </div>
                     </Show>
-                </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div class="mb-4 px-4">
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-center">
-                        <p class="text-2xl font-bold text-blue-400">{stats().todos}</p>
-                        <p class="text-xs text-gray-500 mt-1">Todos</p>
-                    </div>
-                    <div class="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg text-center">
-                        <p class="text-2xl font-bold text-purple-400">{stats().events}</p>
-                        <p class="text-xs text-gray-500 mt-1">Events</p>
-                    </div>
-                    <div class="p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-center">
-                        <p class="text-2xl font-bold text-green-400">{stats().completed}</p>
-                        <p class="text-xs text-gray-500 mt-1">Done</p>
-                    </div>
                 </div>
             </div>
 

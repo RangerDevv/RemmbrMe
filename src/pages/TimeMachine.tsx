@@ -1,5 +1,6 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
 import { pb, currentUser } from '../lib/pocketbase';
+import NotificationModal from '../components/NotificationModal';
 
 function TimeMachine() {
     const [events, setEvents] = createSignal([] as any[]);
@@ -57,9 +58,19 @@ function TimeMachine() {
     }
 
     async function deleteFutureNote(id: string) {
-        if (confirm('Delete this future note?')) {
-            await pb.collection('FutureNotes').delete(id);
-            fetchFutureNotes();
+        setDeleteConfirm({ show: true, noteId: id });
+    }
+
+    async function confirmDeleteNote() {
+        const noteId = deleteConfirm().noteId;
+        setDeleteConfirm({ show: false, noteId: '' });
+        
+        try {
+            await pb.collection('FutureNotes').delete(noteId);
+            await fetchFutureNotes();
+            setNotification({ show: true, message: 'Note deleted successfully', type: 'success' });
+        } catch (error) {
+            setNotification({ show: true, message: 'Failed to delete note', type: 'error' });
         }
     }
 
@@ -419,6 +430,52 @@ function TimeMachine() {
                     </div>
                 </div>
             </Show>
+
+            {/* Delete Confirmation Modal */}
+            <Show when={deleteConfirm().show}>
+                <div 
+                    class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4 animate-fadeIn"
+                    onClick={() => setDeleteConfirm({ show: false, noteId: '' })}
+                >
+                    <div 
+                        class="bg-zinc-900 border border-red-600/30 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scaleIn"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div class="flex items-start gap-4 mb-6">
+                            <div class="text-4xl">⚠️</div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold text-white mb-2">Delete Note?</h3>
+                                <p class="text-gray-300 leading-relaxed">
+                                    Are you sure you want to delete this future note? This action cannot be undone.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button
+                                onClick={() => setDeleteConfirm({ show: false, noteId: '' })}
+                                class="flex-1 px-6 py-2.5 bg-zinc-800 text-white font-semibold rounded-lg hover:bg-zinc-700 transition-all duration-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDeleteNote}
+                                class="flex-1 px-6 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 transition-all duration-200"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Show>
+
+            {/* Notification Modal */}
+            <NotificationModal
+                show={notification().show}
+                message={notification().message}
+                type={notification().type}
+                onClose={() => setNotification({ ...notification(), show: false })}
+            />
         </div>
     );
 }
