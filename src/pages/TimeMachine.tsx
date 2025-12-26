@@ -10,6 +10,12 @@ function TimeMachine() {
     const [noteContent, setNoteContent] = createSignal('');
     const [noteDate, setNoteDate] = createSignal('');
     const [selectedMonth, setSelectedMonth] = createSignal(new Date());
+    const [deleteConfirm, setDeleteConfirm] = createSignal({ show: false, noteId: '' });
+    const [notification, setNotification] = createSignal<{ show: boolean; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
+        show: false,
+        message: '',
+        type: 'info'
+    });
 
     async function fetchData() {
         try {

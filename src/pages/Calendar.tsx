@@ -800,93 +800,95 @@ Title:
             <Show when={viewMode() === 'week'}>
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
                     {/* Week header */}
-                    <div class="grid grid-cols-8 border-b border-zinc-800 bg-black">
-                        <div class="p-3 border-r border-zinc-800"></div>
-                        <For each={getWeekDays()}>
-                            {(day) => {
-                                const isToday = day.toDateString() === new Date().toDateString();
-                                return (
-                                    <div class={`p-3 text-center border-r border-zinc-800 ${isToday ? 'bg-white/5' : ''}`}>
-                                        <div class="text-sm font-semibold text-gray-400">
-                                            {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                    <div class="overflow-x-auto">
+                        <div class="grid grid-cols-8 border-b border-zinc-800 bg-black min-w-[800px]">
+                            <div class="p-3 border-r border-zinc-800"></div>
+                            <For each={getWeekDays()}>
+                                {(day) => {
+                                    const isToday = day.toDateString() === new Date().toDateString();
+                                    return (
+                                        <div class={`p-3 text-center border-r border-zinc-800 ${isToday ? 'bg-white/5' : ''}`}>
+                                            <div class="text-sm font-semibold text-gray-400">
+                                                {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                                            </div>
+                                            <div class={`text-lg font-bold mt-1 ${
+                                                isToday 
+                                                    ? 'bg-white text-black w-8 h-8 rounded-full flex items-center justify-center mx-auto' 
+                                                    : 'text-white'
+                                            }`}>
+                                                {day.getDate()}
+                                            </div>
                                         </div>
-                                        <div class={`text-lg font-bold mt-1 ${
-                                            isToday 
-                                                ? 'bg-white text-black w-8 h-8 rounded-full flex items-center justify-center mx-auto' 
-                                                : 'text-white'
-                                        }`}>
-                                            {day.getDate()}
-                                        </div>
-                                    </div>
-                                );
-                            }}
-                        </For>
+                                    );
+                                }}
+                            </For>
+                        </div>
                     </div>
 
                     {/* Time slots with scaled events */}
-                    <div class="max-h-[600px] overflow-y-auto relative">
-                        <For each={Array.from({ length: 24 }, (_, i) => i)}>
-                            {(hour) => (
-                                <div class="grid grid-cols-8 border-b border-zinc-800">
-                                    <div class="p-3 border-r border-zinc-800 text-sm text-gray-400">
-                                        {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
-                                    </div>
-                                    <For each={getWeekDays()}>
-                                        {(day) => {
-                                            const dayEvents = getEventsWithBreaks(day);
-                                            
-                                            return (
-                                                <div class="relative border-r border-zinc-800 min-h-[60px] hover:bg-zinc-900/50 transition-colors duration-200">
-                                                    <For each={dayEvents}>
-                                                        {(event) => {
-                                                            const eventStart = new Date(event.Start);
-                                                            const eventEnd = new Date(event.End);
-                                                            
-                                                            // Cap event to current day only
-                                                            const startOfDay = new Date(day);
-                                                            startOfDay.setHours(0, 0, 0, 0);
-                                                            const endOfDay = new Date(day);
-                                                            endOfDay.setHours(23, 59, 59, 999);
-                                                            
-                                                            const displayStart = eventStart < startOfDay ? startOfDay : eventStart;
-                                                            const displayEnd = eventEnd > endOfDay ? endOfDay : eventEnd;
-                                                            
-                                                            const eventStartHour = displayStart.getHours();
-                                                            const eventEndHour = displayEnd.getHours();
-                                                            const eventStartMinute = displayStart.getMinutes();
-                                                            const eventEndMinute = displayEnd.getMinutes();
-                                                            
-                                                            // Calculate if event should appear in this hour slot
-                                                            const eventStartsInThisHour = eventStartHour === hour;
-                                                            
-                                                            if (!event.AllDay && !eventStartsInThisHour) {
-                                                                return null;
-                                                            }
-
-                                                            // For all-day events, only show in hour 0
-                                                            if (event.AllDay && hour !== 0) {
-                                                                return null;
-                                                            }
-
-                                                            // Calculate height and position
-                                                            let height = 60; // Default 1 hour
-                                                            let topOffset = 0;
-
-                                                            if (!event.AllDay) {
-                                                                const durationMs = displayEnd.getTime() - displayStart.getTime();
-                                                                const durationHours = durationMs / (1000 * 60 * 60);
-                                                                height = Math.max(30, durationHours * 60); // 60px per hour
+                    <div class="max-h-[600px] overflow-y-auto overflow-x-auto relative">
+                        <div class="min-w-[800px]">
+                            <For each={Array.from({ length: 24 }, (_, i) => i)}>
+                                {(hour) => (
+                                    <div class="grid grid-cols-8 border-b border-zinc-800">
+                                        <div class="p-3 border-r border-zinc-800 text-sm text-gray-400">
+                                            {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                                        </div>
+                                        <For each={getWeekDays()}>
+                                            {(day) => {
+                                                const dayEvents = getEventsWithBreaks(day);
+                                                
+                                                return (
+                                                    <div class="relative border-r border-zinc-800 min-h-[60px] hover:bg-zinc-900/50 transition-colors duration-200">
+                                                        <For each={dayEvents}>
+                                                            {(event) => {
+                                                                const eventStart = new Date(event.Start);
+                                                                const eventEnd = new Date(event.End);
                                                                 
-                                                                // Offset within the hour based on minutes
-                                                                topOffset = (eventStartMinute / 60) * 60;
-                                                            }
+                                                                // Cap event to current day only
+                                                                const startOfDay = new Date(day);
+                                                                startOfDay.setHours(0, 0, 0, 0);
+                                                                const endOfDay = new Date(day);
+                                                                endOfDay.setHours(23, 59, 59, 999);
+                                                                const displayStart = eventStart < startOfDay ? startOfDay : eventStart;
+                                                                const displayEnd = eventEnd > endOfDay ? endOfDay : eventEnd;
+                                                                
+                                                                const eventStartHour = displayStart.getHours();
+                                                                const eventEndHour = displayEnd.getHours();
+                                                                const eventStartMinute = displayStart.getMinutes();
+                                                                const eventEndMinute = displayEnd.getMinutes();
+                                                                
+                                                                // Calculate if event should appear in this hour slot
+                                                                const eventStartsInThisHour = eventStartHour === hour;
+                                                                
+                                                                if (!event.AllDay && !eventStartsInThisHour) {
+                                                                    return null;
+                                                                }
 
-                                                            const totalTasks = event.expand?.Tasks?.length || 0;
-                                                            const completedTasks = event.expand?.Tasks?.filter((t: any) => t.Completed).length || 0;
-                                                            const allTasksCompleted = totalTasks > 0 && completedTasks === totalTasks;
-                                                            const isBreak = event.isBreak || false;
+                                                                // For all-day events, only show in hour 0
+                                                                if (event.AllDay && hour !== 0) {
+                                                                    return null;
+                                                                }
 
-                                                            return (
+                                                                // Calculate height and position
+                                                                let height = 60; // Default 1 hour
+                                                                let topOffset = 0;
+
+                                                                if (!event.AllDay) {
+                                                                    const durationMs = displayEnd.getTime() - displayStart.getTime();
+                                                                    const durationHours = durationMs / (1000 * 60 * 60);
+                                                                    height = Math.max(30, durationHours * 60); // 60px per hour
+                                                                    
+                                                                    // Offset within the hour based on minutes
+                                                                    topOffset = (eventStartMinute / 60) * 60;
+                                                                }
+
+                                                                const totalTasks = event.expand?.Tasks?.length || 0;
+                                                                const completedTasks = event.expand?.Tasks?.filter((t: any) => t.Completed).length || 0;
+                                                                const allTasksCompleted = totalTasks > 0 && completedTasks === totalTasks;
+                                                                const isBreak = event.isBreak || false;
+
+                                                                return (
                                                                 <div
                                                                     class={`absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 ${
                                                                         isBreak 
@@ -955,6 +957,7 @@ Title:
                                 </div>
                             )}
                         </For>
+                        </div>
                     </div>
                 </div>
             </Show>

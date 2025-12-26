@@ -44,6 +44,8 @@ function AIAssistant() {
 
             const prompt = `You are a smart scheduling assistant analyzing someone's thoughts about their day. Extract actionable tasks and calendar events from the following text, and INTELLIGENTLY SCHEDULE events with appropriate times.
 
+IMPORTANT: The calendar uses a time-blocking system where EVERY minute of the day is scheduled. Gaps between events are AUTOMATICALLY filled with break blocks (🌴 Break). DO NOT create separate "break" or "rest" events - just leave gaps between events for natural breaks.
+
 Current context:
 - Current date/time: ${new Date().toLocaleString()}
 - Day of week: ${new Date().toLocaleDateString('en-US', { weekday: 'long' })}
@@ -77,28 +79,61 @@ Return a JSON object with this EXACT structure:
 
 SCHEDULING INTELLIGENCE RULES:
 1. **Parse mentioned times**: If user says "3pm", "5 o'clock", "morning", "afternoon", use those times
-2. **Smart defaults for time of day**:
+   
+2. **SMART AM/PM INFERENCE** (CRITICAL - prevents scheduling errors):
+   - If user just says a number (e.g., "3" or "5") without AM/PM, intelligently infer:
+   - Times 1-7: Could be morning OR evening - use context:
+     * "meeting at 3" = 3 PM (business hours)
+     * "gym at 6" = 6 AM or 6 PM (check if morning person or evening workout)
+     * "breakfast at 7" = 7 AM
+     * "dinner at 7" = 7 PM
+   - Times 8-11: Likely AM for morning, PM for evening activities
+     * "class at 9" = 9 AM
+     * "study at 9" = could be 9 PM if evening
+   - Times 12: Always clarify as noon (12 PM) or midnight (12 AM)
+   - DEFAULT SAFE INFERENCE:
+     * 1-7 without context = PM (afternoon/evening more common)
+     * 8-11 = AM (morning hours)
+     * Work/meetings/classes = business hours (9 AM - 5 PM)
+     * Social/dinner/evening activities = 6 PM - 10 PM
+     * Gym/exercise = 6-8 AM or 5-7 PM
+     * Breakfast = 7-9 AM, Lunch = 12-1 PM, Dinner = 6-8 PM
+   
+3. **Smart defaults for time of day**:
    - "morning" = 9:00 AM - 10:00 AM
    - "afternoon" = 2:00 PM - 3:00 PM
    - "evening" = 6:00 PM - 7:00 PM
    - "night" = 8:00 PM - 9:00 PM
-3. **Activity-based scheduling** (if no time mentioned):
+   
+4. **Activity-based scheduling** (if no time mentioned):
    - Meetings/calls: 10:00 AM - 11:00 AM (1 hour)
    - Coffee/social: 3:00 PM - 4:00 PM (1 hour)
    - Gym/exercise: 6:00 AM - 7:00 AM or 6:00 PM - 7:00 PM (1 hour)
    - Study/homework: 2:00 PM - 4:00 PM (2 hours)
    - Errands/groceries: 11:00 AM - 12:00 PM (1 hour)
    - Appointments: 10:00 AM - 11:00 AM (1 hour)
-4. **Duration logic**:
+   
+5. **Duration logic**:
    - Quick tasks (coffee, call): 30-60 minutes
    - Work blocks (study, project): 2-3 hours
    - Social events (dinner, hangout): 2-3 hours
-5. **Date parsing**:
+   
+6. **BREAK TIME BALANCE** (CRITICAL):
+   - DO NOT create events named "Break", "Rest", "Free Time" etc - gaps become breaks automatically!
+   - For every 2-3 hours of work, leave at least 15-30 minutes GAP (unscheduled time)
+   - Don't schedule back-to-back events for more than 4 hours
+   - Leave gaps between events for transition time (will become break blocks automatically)
+   - Example: If scheduling study 2pm-4pm, next event should be 4:30pm or later (the 30min gap = break)
+   - Healthy ratio: Aim for 15-minute gap per 2 hours of work
+   - Only create events for ACTUAL activities (work, meetings, gym, etc), NOT breaks
+   
+7. **Date parsing**:
    - "tomorrow" = next day
    - "next week" = 7 days from now (default to Monday 9am)
    - "this Friday" = upcoming Friday
    - Specific dates: parse accurately
-6. **Color coding**:
+   
+8. **Color coding**:
    - Work/study: #3b82f6 (blue)
    - Personal/social: #ec4899 (pink)
    - Health/exercise: #22c55e (green)
@@ -107,7 +142,7 @@ SCHEDULING INTELLIGENCE RULES:
 Guidelines:
 - Extract tasks mentioned or implied (e.g., "I need to", "should", "must", "have to")
 - ALWAYS assign realistic times to events, even if not explicitly mentioned
-- Be smart about scheduling - spread events throughout the day logically
+- Be smart about scheduling - spread events throughout the day with gaps (breaks happen automatically)
 - Prioritize tasks: P1 (urgent/important), P2 (medium), P3 (low)
 - Return ONLY valid JSON, no markdown formatting
 - If no todos or events found, return empty arrays`;
@@ -201,19 +236,34 @@ Guidelines:
 
             const prompt = `You are a thoughtful productivity coach. Analyze this person's recent calendar events and tasks, then provide personalized, actionable advice to improve their day.
 
+IMPORTANT CONTEXT: This calendar uses time-blocking where every minute is scheduled. Gaps between events show as "🌴 Break" blocks. Analyze the balance between work and break time.
+
 Recent Events (last 7 days):
-${events.map(e => `- ${e.EventName} (${new Date(e.Start).toLocaleDateString()}): ${e.Description || 'No description'}`).join('\n')}
+${events.map(e => `- ${e.EventName} (${new Date(e.Start).toLocaleDateString()} ${new Date(e.Start).toLocaleTimeString()} - ${new Date(e.End).toLocaleTimeString()}): ${e.Description || 'No description'}`).join('\n')}
 
 All Tasks:
 ${todos.map(t => `- ${t.Title} [${t.Priority}] ${t.Completed ? '✓ Done' : '○ Pending'}${t.Deadline ? ` - Due: ${new Date(t.Deadline).toLocaleDateString()}` : ''}`).join('\n')}
 
 Provide:
-1. **Productivity Insights**: What patterns do you notice? Are they balancing work and personal time?
-2. **Actionable Suggestions**: 3-5 specific recommendations to improve their workflow
-3. **Motivation**: Encouraging words about what they're doing well
-4. **Time Management**: How can they better structure their day?
+1. **Work-Break Balance Analysis**: 
+   - Calculate total work hours vs break time from their events
+   - Is the ratio healthy? (Ideal: 2-3 hours work per 15-30 min break)
+   - Are they over-scheduling with back-to-back events?
+   
+2. **Productivity Insights**: What patterns do you notice? Are they balancing work and personal time?
 
-Keep it personal, warm, and specific to their actual data. Use emojis occasionally. Be encouraging but honest.`;
+3. **Actionable Suggestions**: 3-5 specific recommendations including:
+   - How to improve their break time distribution
+   - Suggestions for better spacing between events
+   - When to schedule downtime/recovery periods
+   
+4. **Burnout Prevention**: Are there signs of overwork? Suggest intentional break activities
+
+5. **Motivation**: Encouraging words about what they're doing well
+
+6. **Time Management**: How can they better structure their day with proper breaks?
+
+Keep it personal, warm, and specific to their actual data. Use emojis occasionally. Be encouraging but honest about the need for breaks and rest.`;
 
             const result = await model.generateContent(prompt);
             const response = result.response;
@@ -264,8 +314,10 @@ Keep it personal, warm, and specific to their actual data. Use emojis occasional
 
 Today's date: ${today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
 
+IMPORTANT: This calendar uses time-blocking. Unscheduled time automatically becomes break time (🌴 Break). Encourage a healthy work-break balance.
+
 Today's Events:
-${events.length > 0 ? events.map(e => `- ${e.EventName} at ${new Date(e.Start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`).join('\n') : 'No events scheduled'}
+${events.length > 0 ? events.map(e => `- ${e.EventName} at ${new Date(e.Start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - ${new Date(e.End).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`).join('\n') : 'No events scheduled'}
 
 Active Tasks (by priority):
 ${todos.length > 0 ? todos.slice(0, 10).map(t => `- [${t.Priority}] ${t.Title}${t.Deadline ? ` (Due: ${new Date(t.Deadline).toLocaleDateString()})` : ''}`).join('\n') : 'No active tasks'}
@@ -273,12 +325,17 @@ ${todos.length > 0 ? todos.slice(0, 10).map(t => `- [${t.Priority}] ${t.Title}${
 Provide a friendly, motivating daily briefing that includes:
 1. **Good morning greeting** with energy and positivity
 2. **Today's Focus**: What should they prioritize? (based on events and deadlines)
-3. **Time Blocking Suggestion**: How to structure their day optimally
-4. **Quick Wins**: Identify 2-3 quick tasks they could knock out early
-5. **Energy Management**: When to schedule breaks, meals, etc.
-6. **Motivational Close**: End with an inspiring quote or thought
+3. **Time Blocking Suggestion**: How to structure their day optimally with BREAKS INCLUDED
+   - Identify natural break times between events
+   - Suggest when to take lunch, short breaks, etc.
+   - Warn if events are too back-to-back
+4. **Work-Break Balance**: Calculate today's scheduled work time and recommend break frequency
+   - Example: "You have 6 hours of events today. Make sure to take a 15-min break every 2 hours!"
+5. **Quick Wins**: Identify 2-3 quick tasks they could knock out early
+6. **Energy Management**: When to schedule breaks, meals, walks, etc. based on their event density
+7. **Motivational Close**: End with an inspiring quote or thought about balance and self-care
 
-Keep it concise (under 300 words), personal, and actionable. Use emojis to make it fun!`;
+Keep it concise (under 300 words), personal, and actionable. Use emojis to make it fun! Emphasize the importance of breaks and rest.`;
 
             const result = await model.generateContent(prompt);
             const response = result.response;

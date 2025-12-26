@@ -3,6 +3,7 @@ import { currentUser, logout } from '../lib/pocketbase';
 
 export default function Sidebar() {
     const [showProfileMenu, setShowProfileMenu] = createSignal(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = createSignal(false);
 
     const isActive = (path: string) => window.location.pathname === path;
 
@@ -12,7 +13,42 @@ export default function Sidebar() {
     };
 
     return (
-        <div class="flex flex-col gap-2 w-64 h-fit sticky top-6">
+        <>
+            {/* Mobile Menu Button */}
+            <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen())}
+                class="lg:hidden fixed top-4 left-4 z-[60] p-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white"
+            >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {mobileMenuOpen() ? (
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    ) : (
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    )}
+                </svg>
+            </button>
+
+            {/* Mobile Overlay */}
+            <Show when={mobileMenuOpen()}>
+                <div 
+                    class="lg:hidden fixed inset-0 bg-black/80 z-[50]"
+                    onClick={() => setMobileMenuOpen(false)}
+                />
+            </Show>
+
+            {/* Sidebar */}
+            <div class={`
+                flex flex-col gap-2 bg-black
+                fixed lg:sticky top-0 left-0 h-screen lg:h-fit
+                w-64 lg:w-64 
+                z-[55] lg:z-auto
+                transition-transform duration-300
+                ${mobileMenuOpen() ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                lg:top-6
+                p-4 lg:p-0
+                overflow-y-auto
+                border-r lg:border-r-0 border-zinc-800
+            `}>
             {/* App Logo/Title */}
             <div class="mb-4 px-4">
                 <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
@@ -89,6 +125,7 @@ export default function Sidebar() {
             <nav class="space-y-1">
                 <a 
                     href="/" 
+                    onClick={() => setMobileMenuOpen(false)}
                     class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
                         isActive('/') 
                             ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-600/30 text-white shadow-lg shadow-blue-600/10' 
@@ -102,6 +139,7 @@ export default function Sidebar() {
                 
                 <a 
                     href="/todo" 
+                    onClick={() => setMobileMenuOpen(false)}
                     class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
                         isActive('/todo') 
                             ? 'bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border border-emerald-600/30 text-white shadow-lg shadow-emerald-600/10' 
@@ -115,6 +153,7 @@ export default function Sidebar() {
                 
                 <a 
                     href="/calendar" 
+                    onClick={() => setMobileMenuOpen(false)}
                     class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
                         isActive('/calendar') 
                             ? 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-600/30 text-white shadow-lg shadow-purple-600/10' 
@@ -128,6 +167,7 @@ export default function Sidebar() {
                 
                 <a 
                     href="/timemachine" 
+                    onClick={() => setMobileMenuOpen(false)}
                     class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
                         isActive('/timemachine') 
                             ? 'bg-gradient-to-r from-amber-600/20 to-orange-600/20 border border-amber-600/30 text-white shadow-lg shadow-amber-600/10' 
@@ -141,6 +181,7 @@ export default function Sidebar() {
                 
                 <a 
                     href="/ai" 
+                    onClick={() => setMobileMenuOpen(false)}
                     class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
                         isActive('/ai') 
                             ? 'bg-gradient-to-r from-pink-600/20 to-rose-600/20 border border-pink-600/30 text-white shadow-lg shadow-pink-600/10' 
@@ -154,6 +195,7 @@ export default function Sidebar() {
                 
                 <a 
                     href="/tags" 
+                    onClick={() => setMobileMenuOpen(false)}
                     class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
                         isActive('/tags') 
                             ? 'bg-gradient-to-r from-indigo-600/20 to-cyan-600/20 border border-indigo-600/30 text-white shadow-lg shadow-indigo-600/10' 
@@ -193,5 +235,6 @@ export default function Sidebar() {
                 <p class="text-xs text-gray-600 mt-1">Made with ❤️ by RangerDevv</p>
             </div>
         </div>
+        </>
     );
 }

@@ -26,13 +26,13 @@ export default function App() {
   });
 
   return (
-    <main class="flex flex-row gap-8 p-6 min-h-screen bg-black">
+    <main class="flex flex-col lg:flex-row gap-4 lg:gap-8 p-3 md:p-6 min-h-screen bg-black">
       {/* Show Sidebar only when authenticated and not on auth pages */}
       <Show when={isAuthenticated() && !isAuthPage()}>
         <Sidebar />
       </Show>
       
-      <div class={isAuthPage() ? "w-full" : "flex-1"}>
+      <div class={isAuthPage() ? "w-full" : "flex-1 max-w-[1600px] mx-auto w-full"}>
         <Router>
           {/* Protected Routes */}
           <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
