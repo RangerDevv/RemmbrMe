@@ -1,5 +1,5 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
-import { pb } from '../lib/pocketbase';
+import { pb, currentUser } from '../lib/pocketbase';
 
 function Tags() {
     const [tags, setTags] = createSignal([] as any[]);
@@ -15,7 +15,8 @@ function Tags() {
 
     async function fetchTags() {
         const records = await pb.collection('Tags').getFullList({
-            sort: 'created'
+            sort: 'created',
+            filter: `user = "${currentUser()?.id}"`
         });
         setTags(records);
     }
@@ -25,7 +26,8 @@ function Tags() {
 
         await pb.collection('Tags').create({
             name: tagName(),
-            color: tagColor()
+            color: tagColor(),
+            user: currentUser()?.id
         });
 
         setTagName('');

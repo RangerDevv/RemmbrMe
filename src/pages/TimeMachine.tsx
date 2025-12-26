@@ -1,5 +1,5 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
-import { pb } from '../lib/pocketbase';
+import { pb, currentUser } from '../lib/pocketbase';
 
 function TimeMachine() {
     const [events, setEvents] = createSignal([] as any[]);
@@ -32,7 +32,8 @@ function TimeMachine() {
     async function fetchFutureNotes() {
         try {
             const notes = await pb.collection('FutureNotes').getFullList({
-                sort: 'DeliveryDate'
+                sort: 'DeliveryDate',
+                filter: `user = "${currentUser()?.id}"`
             });
             setFutureNotes(notes);
         } catch (error) {

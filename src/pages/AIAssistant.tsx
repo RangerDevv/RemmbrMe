@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createSignal, Show, For } from 'solid-js';
-import { pb } from '../lib/pocketbase';
+import { pb, currentUser } from '../lib/pocketbase';
 
 function AIAssistant() {
     const [apiKey, setApiKey] = createSignal(localStorage.getItem('gemini_api_key') || '');

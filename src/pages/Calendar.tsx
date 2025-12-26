@@ -1,8 +1,9 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
 import { generateRecurringEvents } from '../utils/recurrence';
-import { pb } from '../lib/pocketbase';
+import { pb, currentUser } from '../lib/pocketbase';
 
 function Calendar() {
+
     const [events, setEvents] = createSignal([] as any[]);
     const [currentDate, setCurrentDate] = createSignal(new Date());
     const [selectedDate, setSelectedDate] = createSignal<Date | null>(null);
@@ -71,7 +72,9 @@ function Calendar() {
 
     async function fetchTodos() {
         try {
-            const items = await pb.collection('Todo').getFullList();
+            const items = await pb.collection('Todo').getFullList({
+                filter: `user = "${currentUser()?.id}"`
+            });
             setTodoItems(items);
         } catch (error) {
             console.error('Error fetching todos:', error);
@@ -80,7 +83,9 @@ function Calendar() {
     
     async function fetchTags() {
         try {
-            const tags = await pb.collection('Tags').getFullList();
+            const tags = await pb.collection('Tags').getFullList({
+                filter: `user = "${currentUser()?.id}"`
+            });
             setAllTags(tags);
         } catch (error) {
             console.error('Error fetching tags:', error);
@@ -124,6 +129,7 @@ function Calendar() {
             Tags: selectedTags(),
             Recurrence: recurrence(),
             RecurrenceEndDate: recurrenceEndDate() || null,
+            user: currentUser()?.id
         };
 
         const record = await pb.collection('Calendar').create(data);

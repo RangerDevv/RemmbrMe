@@ -1,6 +1,6 @@
 import { createSignal, onMount, For, Show, createEffect } from 'solid-js';
 import { A } from '@solidjs/router';
-import { pb } from '../lib/pocketbase';
+import { pb, currentUser } from '../lib/pocketbase';
 
 interface DashboardSettings {
     showCompletedToday: boolean;

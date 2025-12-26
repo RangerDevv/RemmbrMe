@@ -1,7 +1,7 @@
 import { UploadFile, fileUploader } from '@solid-primitives/upload';
 import { Index, Show, createSignal, onMount } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
-import { pb } from '../lib/pocketbase';
+import { pb, currentUser } from '../lib/pocketbase';
 
 function Todo() {
 
@@ -17,6 +17,7 @@ function Todo() {
             Tags: tags,
             Recurrence: recur,
             RecurrenceEndDate: recurEnd || null,
+            user: currentUser()?.id
         };
         const record = await pb.collection('Todo').create(data);
         console.log('Task created:', record);
@@ -44,6 +45,7 @@ function Todo() {
             Tags: tags,
             Recurrence: recur,
             RecurrenceEndDate: recurEnd || null,
+            user: currentUser()?.id
         };
         await pb.collection('Todo').update(id, data);
         console.log('Task updated');
@@ -120,7 +122,9 @@ function Todo() {
     }
     
     async function fetchTags() {
-        const tags = await pb.collection('Tags').getFullList();
+        const tags = await pb.collection('Tags').getFullList({
+            filter: `user = "${currentUser()?.id}"`
+        });
         setAllTags(tags);
     }
 

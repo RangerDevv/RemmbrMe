@@ -1,5 +1,5 @@
 import { createSignal, Show } from 'solid-js';
-import { pb } from '../lib/pocketbase';
+import { pb, currentUser } from '../lib/pocketbase';
 
 function QuickAdd() {
     const [showModal, setShowModal] = createSignal(false);
