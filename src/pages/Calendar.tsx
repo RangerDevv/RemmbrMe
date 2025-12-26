@@ -187,6 +187,7 @@ function Calendar() {
             Tags: selectedTags(),
             Recurrence: recurrence(),
             RecurrenceEndDate: recurrenceEndDate() || null,
+            user: currentUser()?.id
         };
 
         await pb.collection('Calendar').update(editingEvent().id, data);
