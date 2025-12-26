@@ -1,4 +1,4 @@
-import { createSignal, onMount } from 'solid-js';
+import { createSignal, onMount, createEffect } from 'solid-js';
 import { A } from '@solidjs/router';
 
 interface DashboardSettings {
@@ -42,9 +42,21 @@ const DEFAULT_SETTINGS: DashboardSettings = {
 function Settings() {
     const [settings, setSettings] = createSignal<DashboardSettings>(DEFAULT_SETTINGS);
     const [saved, setSaved] = createSignal(false);
+    const [isInitialLoad, setIsInitialLoad] = createSignal(true);
 
     onMount(() => {
         loadSettings();
+        setIsInitialLoad(false);
+    });
+
+    // Autosave whenever settings change
+    createEffect(() => {
+        if (!isInitialLoad()) {
+            const currentSettings = settings();
+            localStorage.setItem('dashboardSettings', JSON.stringify(currentSettings));
+            setSaved(true);
+            setTimeout(() => setSaved(false), 1500);
+        }
     });
 
     function loadSettings() {
@@ -54,18 +66,9 @@ function Settings() {
         }
     }
 
-    function saveSettings() {
-        localStorage.setItem('dashboardSettings', JSON.stringify(settings()));
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-    }
-
     function resetToDefaults() {
         if (confirm('Reset all settings to defaults?')) {
             setSettings(DEFAULT_SETTINGS);
-            localStorage.setItem('dashboardSettings', JSON.stringify(DEFAULT_SETTINGS));
-            setSaved(true);
-            setTimeout(() => setSaved(false), 2000);
         }
     }
 
@@ -76,8 +79,22 @@ function Settings() {
     return (
         <div class="flex-1 w-full max-w-4xl">
             <div class="mb-8">
-                <h1 class="text-4xl font-bold text-white mb-2">⚙️ Settings</h1>
-                <p class="text-gray-400">Customize your dashboard experience</p>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-4xl font-bold text-white mb-2">⚙️ Settings</h1>
+                        <p class="text-gray-400">Customize your dashboard experience</p>
+                    </div>
+                    <div class="text-sm">
+                        {saved() ? (
+                            <span class="text-green-400 flex items-center gap-2">
+                                <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                                Saved
+                            </span>
+                        ) : (
+                            <span class="text-gray-500">Autosave enabled</span>
+                        )}
+                    </div>
+                </div>
             </div>
 
             <div class="space-y-6">
@@ -323,18 +340,12 @@ function Settings() {
                 </div>
 
                 {/* Action Buttons */}
-                <div class="flex gap-4">
-                    <button
-                        onClick={saveSettings}
-                        class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-4 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2"
-                    >
-                        {saved() ? '✓ Saved!' : '💾 Save Settings'}
-                    </button>
+                <div class="flex justify-center">
                     <button
                         onClick={resetToDefaults}
-                        class="px-6 py-4 bg-zinc-800 text-gray-300 font-semibold rounded-xl hover:bg-zinc-700 transition-all duration-200"
+                        class="px-8 py-4 bg-zinc-800 text-gray-300 font-semibold rounded-xl hover:bg-zinc-700 transition-all duration-200"
                     >
-                        Reset to Defaults
+                        🔄 Reset to Defaults
                     </button>
                 </div>
 

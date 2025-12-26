@@ -9,6 +9,7 @@ import Tags from './pages/Tags';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import QuickAdd from "./components/QuickAdd";
 import Sidebar from "./components/Sidebar";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/ai" component={() => <ProtectedRoute component={AIAssistant} />} />
           <Route path="/tags" component={() => <ProtectedRoute component={Tags} />} />
           <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
+          <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
           
           {/* Auth Routes */}
           <Route path="/login" component={Login} />
