@@ -32,7 +32,8 @@ function QuickAdd() {
                     End: end.toISOString(),
                     Location: { lat: 0, lon: 0 },
                     Color: '#3b82f6',
-                    Tasks: []
+                    Tasks: [],
+                    user: currentUser()?.id
                 });
                 
                 setShowModal(false);
@@ -45,7 +46,11 @@ function QuickAdd() {
                     Description: '',
                     Completed: false,
                     Priority: 'P2',
-                    Deadline: ''
+                    Deadline: '',
+                    Tags: [],
+                    Recurrence: '',
+                    RecurrenceEndDate: null,
+                    user: currentUser()?.id
                 });
                 
                 setShowModal(false);
