@@ -1,5 +1,5 @@
 import { Router, Route } from "@solidjs/router";
-import { Show, createEffect, onMount, onCleanup } from "solid-js";
+import { Show, createEffect, onMount, onCleanup, createSignal } from "solid-js";
 import Dashboard from "./pages/Dashboard";
 import Todo from "./pages/Todo";
 import Calendar from "./pages/Calendar";
@@ -17,10 +17,41 @@ import { isAuthenticated } from "./lib/pocketbase";
 import { initNotifications, updateNotificationSchedule, stopNotificationChecker } from "./lib/notifications";
 
 export default function App() {
+  const [currentPath, setCurrentPath] = createSignal(window.location.pathname);
+  
+  // Create a reactive check for auth pages
   const isAuthPage = () => {
-    const path = window.location.pathname;
+    const path = currentPath();
     return path === '/login' || path === '/signup';
   };
+
+  // Update path on popstate (back/forward navigation)
+  onMount(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    window.addEventListener('popstate', handlePopState);
+    
+    // Also listen for pushState and replaceState
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    
+    history.pushState = function(...args) {
+      originalPushState.apply(history, args);
+      setCurrentPath(window.location.pathname);
+    };
+    
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(history, args);
+      setCurrentPath(window.location.pathname);
+    };
+    
+    onCleanup(() => {
+      window.removeEventListener('popstate', handlePopState);
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+    });
+  });
 
   // Initialize notifications when user is authenticated
   onMount(async () => {
@@ -45,11 +76,6 @@ export default function App() {
     stopNotificationChecker();
   });
 
-  // Debug: Log auth state changes
-  createEffect(() => {
-    console.log('Auth state:', isAuthenticated(), 'Path:', window.location.pathname);
-  });
-
   return (
     <main class="flex flex-col lg:flex-row gap-4 lg:gap-8 p-3 md:p-6 min-h-screen bg-black">
       {/* Show Sidebar only when authenticated and not on auth pages */}
@@ -59,7 +85,6 @@ export default function App() {
       
       <div class={isAuthPage() ? "w-full" : "flex-1 max-w-[1600px] mx-auto w-full"}>
         <Router>
-          {/* Protected Routes */}
           <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
           <Route path="/todo" component={() => <ProtectedRoute component={Todo} />} />
           <Route path="/calendar" component={() => <ProtectedRoute component={Calendar} />} />
@@ -68,8 +93,6 @@ export default function App() {
           <Route path="/tags" component={() => <ProtectedRoute component={Tags} />} />
           <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
           <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
-          
-          {/* Auth Routes */}
           <Route path="/login" component={Login} />
           <Route path="/signup" component={Signup} />
         </Router>

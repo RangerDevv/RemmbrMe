@@ -17,7 +17,10 @@ export default function Login() {
         const result = await login(email(), password());
         
         if (result.success) {
-            navigate('/');
+            // Small delay to ensure auth state propagates before navigation
+            setTimeout(() => {
+                navigate('/');
+            }, 50);
         } else {
             setError(result.error || 'Login failed');
         }

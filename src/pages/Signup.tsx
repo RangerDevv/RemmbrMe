@@ -30,7 +30,10 @@ export default function Signup() {
         const result = await signup(email(), password(), passwordConfirm(), name());
         
         if (result.success) {
-            navigate('/');
+            // Small delay to ensure auth state propagates before navigation
+            setTimeout(() => {
+                navigate('/');
+            }, 50);
         } else {
             setError(result.error || 'Signup failed');
         }
