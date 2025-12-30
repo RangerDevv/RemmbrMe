@@ -1,5 +1,6 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
 import { pb, currentUser } from '../lib/pocketbase';
+import { refreshNotifications } from '../lib/notifications';
 
 function Calendar() {
 
@@ -189,6 +190,7 @@ function Calendar() {
         
         fetchEvents();
         fetchTodos();
+        refreshNotifications();
         resetForm();
         setShowEventModal(false);
     }
@@ -245,6 +247,7 @@ function Calendar() {
         });
         setQuickViewEvent(updatedEvent);
         
+        refreshNotifications();
         resetForm();
         setShowEditEventModal(false);
         setEditingEvent(null);
@@ -256,6 +259,7 @@ function Calendar() {
             setQuickViewEvent(null);
             setQuickViewEvent(null);
             fetchEvents();
+            refreshNotifications();
         }
     }
 

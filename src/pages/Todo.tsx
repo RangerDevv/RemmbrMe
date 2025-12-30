@@ -2,6 +2,7 @@ import { UploadFile, fileUploader } from '@solid-primitives/upload';
 import { Index, Show, createSignal, onMount } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
 import { pb, currentUser } from '../lib/pocketbase';
+import { refreshNotifications } from '../lib/notifications';
 
 function Todo() {
 
@@ -31,6 +32,7 @@ function Todo() {
         }
         
         fetchTodos();
+        refreshNotifications();
     }
 
     async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadline:string, tags:string[], recur:string, recurEnd:string) {
@@ -50,6 +52,7 @@ function Todo() {
         await pb.collection('Todo').update(id, data);
         console.log('Task updated');
         fetchTodos();
+        refreshNotifications();
         resetForm();
         setEditingTask(null);
     }
@@ -58,6 +61,7 @@ function Todo() {
         if (confirm('Are you sure you want to delete this task?')) {
             await pb.collection('Todo').delete(id);
             fetchTodos();
+            refreshNotifications();
         }
     }
 
@@ -67,6 +71,7 @@ function Todo() {
             CompletedAt: !currentStatus ? new Date().toISOString() : null
         });
         fetchTodos();
+        refreshNotifications();
         
         // Sync with calendar: mark all events that have this task
         try {

@@ -1,6 +1,7 @@
 import { createSignal, onMount, For, Show, createEffect } from 'solid-js';
 import { A } from '@solidjs/router';
 import { pb, currentUser } from '../lib/pocketbase';
+import { sendNotification, isPermissionGranted, requestPermission } from '@tauri-apps/plugin-notification';
 
 interface DashboardSettings {
     showCompletedToday: boolean;
@@ -288,17 +289,47 @@ function Dashboard() {
         };
     });
 
+    async function sendTestNotification() {
+        let permissionGranted = await isPermissionGranted();
+        if (!permissionGranted) {
+            const permission = await requestPermission();
+            permissionGranted = permission === 'granted';
+        }
+        
+        if (permissionGranted) {
+            await sendNotification({ 
+                title: '🔔 Test Notification', 
+                body: 'Your notification system is working perfectly!',
+                sound: 'default', // Play notification sound
+            });
+        } else {
+            alert('Notification permission denied');
+        }
+    }
+
     return (
         <div class="flex-1 w-full max-w-7xl">
             {/* Header */}
             <div class="mb-8">
-                <h1 class="text-5xl font-bold text-white mb-2">{greeting} 👋</h1>
-                <p class="text-xl text-gray-400">{new Date().toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    month: 'long', 
-                    day: 'numeric', 
-                    year: 'numeric' 
-                })}</p>
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h1 class="text-5xl font-bold text-white mb-2">{greeting} 👋</h1>
+                        <p class="text-xl text-gray-400">{new Date().toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric', 
+                            year: 'numeric' 
+                        })}</p>
+                    </div>
+                    <button
+                        onClick={sendTestNotification}
+                        class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-white transition-all duration-200 flex items-center gap-2"
+                        title="Send test notification"
+                    >
+                        <span>🔔</span>
+                        <span class="hidden md:inline">Test Notification</span>
+                    </button>
+                </div>
             </div>
 
             <Show when={isLoading()}>

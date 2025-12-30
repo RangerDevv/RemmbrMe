@@ -1,5 +1,5 @@
 import { Router, Route } from "@solidjs/router";
-import { Show, createEffect } from "solid-js";
+import { Show, createEffect, onMount, onCleanup } from "solid-js";
 import Dashboard from "./pages/Dashboard";
 import Todo from "./pages/Todo";
 import Calendar from "./pages/Calendar";
@@ -14,12 +14,36 @@ import QuickAdd from "./components/QuickAdd";
 import Sidebar from "./components/Sidebar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { isAuthenticated } from "./lib/pocketbase";
+import { initNotifications, updateNotificationSchedule, stopNotificationChecker } from "./lib/notifications";
 
 export default function App() {
   const isAuthPage = () => {
     const path = window.location.pathname;
     return path === '/login' || path === '/signup';
   };
+
+  // Initialize notifications when user is authenticated
+  onMount(async () => {
+    if (isAuthenticated()) {
+      await initNotifications();
+      await updateNotificationSchedule();
+    }
+  });
+
+  // Update notification schedule when auth state changes
+  createEffect(async () => {
+    if (isAuthenticated()) {
+      await initNotifications();
+      await updateNotificationSchedule();
+    } else {
+      stopNotificationChecker();
+    }
+  });
+
+  // Cleanup on unmount
+  onCleanup(() => {
+    stopNotificationChecker();
+  });
 
   // Debug: Log auth state changes
   createEffect(() => {
