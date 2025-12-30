@@ -495,24 +495,29 @@ Title:
     }
 
     function getWeekDays(): Date[] {
-        const start = new Date(currentDate());
-        start.setDate(start.getDate() - start.getDay());
+        const current = new Date(currentDate());
+        // Set to start of week (Sunday) 
+        const dayOfWeek = current.getDay();
+        const sunday = new Date(current);
+        sunday.setDate(current.getDate() - dayOfWeek);
+        sunday.setHours(0, 0, 0, 0);
         
         const days: Date[] = [];
         for (let i = 0; i < 7; i++) {
-            const day = new Date(start);
-            day.setDate(start.getDate() + i);
+            const day = new Date(sunday.getTime() + i * 24 * 60 * 60 * 1000);
             days.push(day);
         }
         return days;
     }
 
     function previousWeek() {
-        setCurrentDate(new Date(currentDate().getFullYear(), currentDate().getMonth(), currentDate().getDate() - 7));
+        const newDate = new Date(currentDate().getTime() - 7 * 24 * 60 * 60 * 1000);
+        setCurrentDate(newDate);
     }
 
     function nextWeek() {
-        setCurrentDate(new Date(currentDate().getFullYear(), currentDate().getMonth(), currentDate().getDate() + 7));
+        const newDate = new Date(currentDate().getTime() + 7 * 24 * 60 * 60 * 1000);
+        setCurrentDate(newDate);
     }
 
     onMount(async () => {
@@ -555,16 +560,43 @@ Title:
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
                         <button
-                            onClick={viewMode() === 'month' ? previousMonth : previousWeek}
+                            onClick={() => {
+                                if (viewMode() === 'month') {
+                                    previousMonth();
+                                } else {
+                                    previousWeek();
+                                }
+                            }}
                             class="px-2 py-1 bg-black border border-zinc-800 rounded text-gray-400 hover:text-white hover:border-zinc-700 transition-all duration-200"
                         >
                             ←
                         </button>
-                        <h2 class="text-xl font-bold text-white min-w-[200px] text-center">
-                            {currentDate().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        <h2 class="text-xl font-bold text-white min-w-[280px] text-center">
+                            <Show when={viewMode() === 'month'}>
+                                {currentDate().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            </Show>
+                            <Show when={viewMode() === 'week'}>
+                                {(() => {
+                                    const weekDays = getWeekDays();
+                                    const firstDay = weekDays[0];
+                                    const lastDay = weekDays[6];
+                                    const sameMonth = firstDay.getMonth() === lastDay.getMonth();
+                                    if (sameMonth) {
+                                        return `${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { day: 'numeric', year: 'numeric' })}`;
+                                    } else {
+                                        return `${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                                    }
+                                })()}
+                            </Show>
                         </h2>
                         <button
-                            onClick={viewMode() === 'month' ? nextMonth : nextWeek}
+                            onClick={() => {
+                                if (viewMode() === 'month') {
+                                    nextMonth();
+                                } else {
+                                    nextWeek();
+                                }
+                            }}
                             class="px-2 py-1 bg-black border border-zinc-800 rounded text-gray-400 hover:text-white hover:border-zinc-700 transition-all duration-200"
                         >
                             →
