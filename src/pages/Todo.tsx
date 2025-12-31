@@ -3,6 +3,7 @@ import { Index, Show, createSignal, onMount } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
 import { pb, currentUser } from '../lib/pocketbase';
 import { refreshNotifications } from '../lib/notifications';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Todo() {
 
@@ -65,11 +66,17 @@ function Todo() {
     }
 
     async function deleteTask(id: string) {
-        if (confirm('Are you sure you want to delete this task?')) {
-            await pb.collection('Todo').delete(id);
+        setConfirmDelete({ show: true, taskId: id });
+    }
+
+    async function confirmDeleteTask() {
+        const taskId = confirmDelete().taskId;
+        if (taskId) {
+            await pb.collection('Todo').delete(taskId);
             fetchTodos();
             setTimeout(() => refreshNotifications(), 100);
         }
+        setConfirmDelete({ show: false, taskId: '' });
     }
 
     async function toggleComplete(id: string, currentStatus: boolean) {
@@ -104,6 +111,7 @@ function Todo() {
     const [touchEnd, setTouchEnd] = createSignal(0);
     const [swipingTask, setSwipingTask] = createSignal<string | null>(null);
     const [showModal, setShowModal] = createSignal(false);
+    const [confirmDelete, setConfirmDelete] = createSignal({ show: false, taskId: '' });
     let isFetchingTodos = false;
     let needsRefetch = false;
     
@@ -728,6 +736,17 @@ function Todo() {
                 </div>
             </div>
         </Show>
+
+        <ConfirmModal 
+            show={confirmDelete().show}
+            title="Delete Task"
+            message="Are you sure you want to delete this task? This action cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+            type="danger"
+            onConfirm={confirmDeleteTask}
+            onCancel={() => setConfirmDelete({ show: false, taskId: '' })}
+        />
         </div>
     );
 }

@@ -1,11 +1,13 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
 import { pb, currentUser } from '../lib/pocketbase';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Tags() {
     const [tags, setTags] = createSignal([] as any[]);
     const [tagName, setTagName] = createSignal('');
     const [tagColor, setTagColor] = createSignal('#3b82f6');
     const [editingTag, setEditingTag] = createSignal<any>(null);
+    const [confirmDelete, setConfirmDelete] = createSignal({ show: false, tagId: '' });
 
     const colorPresets = [
         '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444',
@@ -50,10 +52,16 @@ function Tags() {
     }
 
     async function deleteTag(id: string) {
-        if (confirm('Delete this tag? It will be removed from all tasks and events.')) {
-            await pb.collection('Tags').delete(id);
+        setConfirmDelete({ show: true, tagId: id });
+    }
+
+    async function confirmDeleteTag() {
+        const tagId = confirmDelete().tagId;
+        if (tagId) {
+            await pb.collection('Tags').delete(tagId);
             fetchTags();
         }
+        setConfirmDelete({ show: false, tagId: '' });
     }
 
     function startEditing(tag: any) {
@@ -206,6 +214,17 @@ function Tags() {
                     </div>
                 </div>
             </div>
+
+            <ConfirmModal 
+                show={confirmDelete().show}
+                title="Delete Tag"
+                message="Delete this tag? It will be removed from all tasks and events."
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+                onConfirm={confirmDeleteTag}
+                onCancel={() => setConfirmDelete({ show: false, tagId: '' })}
+            />
         </div>
     );
 }

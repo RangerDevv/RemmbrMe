@@ -1,6 +1,7 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
 import { pb, currentUser } from '../lib/pocketbase';
 import { refreshNotifications } from '../lib/notifications';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Calendar() {
 
@@ -40,6 +41,7 @@ function Calendar() {
     const [allTags, setAllTags] = createSignal([] as any[]);
     const [showTasksModal, setShowTasksModal] = createSignal(false);
     const [selectedDateTasks, setSelectedDateTasks] = createSignal<Date | null>(null);
+    const [confirmDelete, setConfirmDelete] = createSignal({ show: false, eventId: '' });
     let isFetchingTodos = false;
     
     const colorPresets = [
@@ -312,13 +314,19 @@ function Calendar() {
     }
 
     async function deleteEvent(id: string) {
-        if (confirm('Are you sure you want to delete this event?')) {
-            await pb.collection('Calendar').delete(id);
+        setConfirmDelete({ show: true, eventId: id });
+    }
+
+    async function confirmDeleteEvent() {
+        const eventId = confirmDelete().eventId;
+        if (eventId) {
+            await pb.collection('Calendar').delete(eventId);
             setQuickViewEvent(null);
             setQuickViewEvent(null);
             fetchEvents();
             refreshNotifications();
         }
+        setConfirmDelete({ show: false, eventId: '' });
     }
 
     function startEditingEvent(event: any) {
@@ -332,8 +340,6 @@ function Calendar() {
         
         setStartDate(startDateTime.toISOString().split('T')[0]);
         setEndDate(endDateTime.toISOString().split('T')[0]);
-
-Title:
 
         if (!event.AllDay) {
             setStartTime(startDateTime.toTimeString().slice(0, 5));
@@ -396,17 +402,6 @@ Title:
             } catch (error) {
                 console.error('Error refreshing quick view event:', error);
             }
-        }
-    }
-
-    async function openEventModal(eventId: string) {
-        try {
-            const event = await pb.collection('Calendar').getOne(eventId, {
-                expand: 'Tasks,Tags'
-            });
-            setQuickViewEvent(event);
-        } catch (error) {
-            console.error('Error fetching event:', error);
         }
     }
 
@@ -1907,6 +1902,17 @@ Title:
                     </div>
                 </div>
             </Show>
+
+            <ConfirmModal 
+                show={confirmDelete().show}
+                title="Delete Event"
+                message="Are you sure you want to delete this event? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+                onConfirm={confirmDeleteEvent}
+                onCancel={() => setConfirmDelete({ show: false, eventId: '' })}
+            />
         </div>
     );
 }
