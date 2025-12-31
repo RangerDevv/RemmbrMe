@@ -1,4 +1,4 @@
-import { createSignal, onMount, For, Show } from 'solid-js';
+import { createSignal, onMount, For, Show, createMemo } from 'solid-js';
 import { pb, currentUser } from '../lib/pocketbase';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
@@ -67,7 +67,7 @@ function Calendar() {
             // Expand recurring events into instances
             const expandedEvents: any[] = [];
             const viewEndDate = new Date();
-            viewEndDate.setMonth(viewEndDate.getMonth() + 3); // Show 3 months ahead
+            viewEndDate.setMonth(viewEndDate.getMonth() + 6); // Show 6 months ahead to ensure events are visible
             
             for (const event of records) {
                 expandedEvents.push(event); // Add original event
@@ -116,10 +116,8 @@ function Calendar() {
                 }
             }
             
-            // Force a clean update by clearing first
-            setEvents([]);
-            await new Promise(resolve => setTimeout(resolve, 5));
-            setEvents(expandedEvents);
+            // Update events signal - using a new array reference to trigger reactivity
+            setEvents([...expandedEvents]);
             
             console.log('Events signal after fetch (with recurring):', expandedEvents.length);
         } catch (error) {
@@ -248,8 +246,8 @@ function Calendar() {
         
         // Recurring instances are generated virtually in fetchEvents()
         
-        fetchEvents();
-        fetchTodos();
+        await fetchEvents();
+        await fetchTodos();
         refreshNotifications();
         resetForm();
         setShowEventModal(false);
@@ -322,8 +320,8 @@ function Calendar() {
         if (eventId) {
             await pb.collection('Calendar').delete(eventId);
             setQuickViewEvent(null);
-            setQuickViewEvent(null);
-            fetchEvents();
+            await fetchEvents();
+            await fetchTodos();
             refreshNotifications();
         }
         setConfirmDelete({ show: false, eventId: '' });
@@ -718,9 +716,10 @@ function Calendar() {
                                     {(day) => {
                                         const isCurrentMonth = day.getMonth() === currentDate().getMonth();
                                         const isToday = day.toDateString() === new Date().toDateString();
-                                        const dayEvents = getEventsForDate(day);
-                                        const tasksForDay = getTasksForDate(day);
-                                        const taskCount = tasksForDay.length;
+                                        // Use createMemo to make this reactive to events() changes
+                                        const dayEvents = createMemo(() => getEventsForDate(day));
+                                        const tasksForDay = createMemo(() => getTasksForDate(day));
+                                        const taskCount = createMemo(() => tasksForDay().length);
 
                                         return (
                                             <div
@@ -741,7 +740,7 @@ function Calendar() {
                                                     }`}>
                                                         {day.getDate()}
                                                     </div>
-                                                    <Show when={taskCount > 0}>
+                                                    <Show when={taskCount() > 0}>
                                                         <div 
                                                             class="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded text-[10px] font-medium cursor-pointer hover:bg-blue-500/30 transition-colors"
                                                             onClick={(e) => {
@@ -750,12 +749,12 @@ function Calendar() {
                                                                 setShowTasksModal(true);
                                                             }}
                                                         >
-                                                            {taskCount}✓
+                                                            {taskCount()}✓
                                                         </div>
                                                     </Show>
                                                 </div>
                                                 <div class="space-y-1">
-                                                    <For each={dayEvents.slice(0, 3)}>
+                                                    <For each={dayEvents().slice(0, 3)}>
                                                         {(event) => {
                                                             const totalTasks = event.expand?.Tasks?.length || 0;
                                                             const completedTasks = event.expand?.Tasks?.filter((t: any) => t.Completed).length || 0;
@@ -787,9 +786,9 @@ function Calendar() {
                                                             );
                                                         }}
                                                     </For>
-                                                    <Show when={dayEvents.length > 3}>
+                                                    <Show when={dayEvents().length > 3}>
                                                         <div class="text-xs text-gray-500 px-2">
-                                                            +{dayEvents.length - 3} more
+                                                            +{dayEvents().length - 3} more
                                                         </div>
                                                     </Show>
                                                 </div>
