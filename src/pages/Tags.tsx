@@ -113,7 +113,7 @@ function Tags() {
                                             class={`w-full aspect-square rounded-lg transition-all duration-200 ${
                                                 tagColor() === color
                                                     ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110'
-                                                    : 'hover:scale-105'
+                                                    : 'hover:border-zinc-700'
                                             }`}
                                             style={{ 'background-color': color }}
                                         />

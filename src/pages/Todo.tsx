@@ -254,7 +254,7 @@ function Todo() {
     }
 
     return (
-        <div class="flex flex-col gap-6 w-full max-w-7xl">
+        <div class="flex flex-col gap-6 w-full">
             {/* Header with Stats */}
             <div class="flex items-center justify-between">
                 <div>
@@ -270,8 +270,8 @@ function Todo() {
             </div>
 
             {/* Search and Filters */}
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 lg:p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 lg:gap-6">
                     <div class="md:col-span-2">
                         <input
                             type="text"
@@ -345,7 +345,7 @@ function Todo() {
                 </h3>
                 <button
                     onClick={() => setShowModal(true)}
-                    class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                    class="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 text-white font-semibold rounded-lg hover:bg-zinc-800 hover:border-zinc-700 transition-all duration-200"
                 >
                     <span class="text-lg">+</span>
                     <span>New Task</span>
@@ -671,7 +671,7 @@ function Todo() {
                                     class={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white transition-all duration-200 ${
                                         selectedTags().includes(tag().id)
                                             ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-105'
-                                            : 'hover:scale-105'
+                                            : 'hover:opacity-80'
                                     }`}
                                     style={{ 'background-color': `${tag().color}${selectedTags().includes(tag().id) ? '' : '40'}`, 'border': `1px solid ${tag().color}60` }}
                                 >

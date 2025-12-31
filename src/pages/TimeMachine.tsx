@@ -218,20 +218,20 @@ function TimeMachine() {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-gradient-to-br from-blue-600/20 to-blue-600/5 border border-blue-600/20 rounded-2xl p-6">
-                    <div class="text-blue-400 text-3xl mb-2">📊</div>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
+                    <div class="text-gray-400 text-3xl mb-2">📊</div>
                     <div class="text-3xl font-bold text-white mb-1">{getProductivityScore()}%</div>
                     <div class="text-sm text-gray-400">Tasks Completed This Month</div>
                 </div>
 
-                <div class="bg-gradient-to-br from-purple-600/20 to-purple-600/5 border border-purple-600/20 rounded-2xl p-6">
-                    <div class="text-purple-400 text-3xl mb-2">📆</div>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
+                    <div class="text-gray-400 text-3xl mb-2">📆</div>
                     <div class="text-3xl font-bold text-white mb-1">{getStreakDays()} days</div>
                     <div class="text-sm text-gray-400">Active Days This Month</div>
                 </div>
 
-                <div class="bg-gradient-to-br from-pink-600/20 to-pink-600/5 border border-pink-600/20 rounded-2xl p-6">
-                    <div class="text-pink-400 text-3xl mb-2">🎯</div>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
+                    <div class="text-gray-400 text-3xl mb-2">🎯</div>
                     <div class="text-3xl font-bold text-white mb-1">{getMonthEvents().length}</div>
                     <div class="text-sm text-gray-400">Events This Month</div>
                 </div>
@@ -258,7 +258,7 @@ function TimeMachine() {
                     <For each={getHeatMapData()}>
                         {(day) => (
                             <div
-                                class="aspect-square rounded-lg flex flex-col items-center justify-center hover:scale-110 transition-transform duration-200 cursor-pointer border border-zinc-800"
+                                class="aspect-square rounded-lg flex flex-col items-center justify-center hover:border-zinc-700 transition-transform duration-200 cursor-pointer border border-zinc-800"
                                 style={{ 'background-color': getHeatColor(day.count) }}
                                 title={`${new Date(day.date).toLocaleDateString()}: ${day.count} event${day.count !== 1 ? 's' : ''}`}
                             >

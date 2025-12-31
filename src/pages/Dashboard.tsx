@@ -290,7 +290,7 @@ function Dashboard() {
     });
 
     return (
-        <div class="flex-1 w-full max-w-7xl">
+        <div class="flex-1 w-full">
             {/* Header */}
             <div class="mb-8">
                 <div>
@@ -315,32 +315,32 @@ function Dashboard() {
                 <Show when={settings().showCompletedToday || settings().showActiveTasks || settings().showEventsToday || settings().showUpcomingDeadlines}>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <Show when={settings().showCompletedToday}>
-                            <div class="bg-gradient-to-br from-blue-600/20 to-blue-600/5 border border-blue-600/20 rounded-2xl p-6 hover:scale-105 transition-transform duration-200">
-                                <div class="text-blue-400 text-2xl mb-2">✅</div>
+                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
+                                <div class="text-gray-400 text-2xl mb-2">✅</div>
                                 <div class="text-3xl font-bold text-white mb-1">{stats().completedToday}</div>
                                 <div class="text-sm text-gray-400">Completed Today</div>
                             </div>
                         </Show>
 
                         <Show when={settings().showActiveTasks}>
-                            <div class="bg-gradient-to-br from-purple-600/20 to-purple-600/5 border border-purple-600/20 rounded-2xl p-6 hover:scale-105 transition-transform duration-200">
-                                <div class="text-purple-400 text-2xl mb-2">📋</div>
+                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
+                                <div class="text-gray-400 text-2xl mb-2">📋</div>
                                 <div class="text-3xl font-bold text-white mb-1">{stats().totalTasks}</div>
                                 <div class="text-sm text-gray-400">Active Tasks</div>
                             </div>
                         </Show>
 
                         <Show when={settings().showEventsToday}>
-                            <div class="bg-gradient-to-br from-pink-600/20 to-pink-600/5 border border-pink-600/20 rounded-2xl p-6 hover:scale-105 transition-transform duration-200">
-                                <div class="text-pink-400 text-2xl mb-2">📅</div>
+                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
+                                <div class="text-gray-400 text-2xl mb-2">📅</div>
                                 <div class="text-3xl font-bold text-white mb-1">{stats().eventsToday}</div>
                                 <div class="text-sm text-gray-400">Events Today</div>
                             </div>
                         </Show>
 
                         <Show when={settings().showUpcomingDeadlines}>
-                            <div class="bg-gradient-to-br from-amber-600/20 to-amber-600/5 border border-amber-600/20 rounded-2xl p-6 hover:scale-105 transition-transform duration-200">
-                                <div class="text-amber-400 text-2xl mb-2">⏰</div>
+                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
+                                <div class="text-gray-400 text-2xl mb-2">⏰</div>
                                 <div class="text-3xl font-bold text-white mb-1">{stats().upcomingDeadlines}</div>
                                 <div class="text-sm text-gray-400">Due This Week</div>
                             </div>
@@ -387,7 +387,7 @@ function Dashboard() {
 
                 {/* Overdue Tasks Alert */}
                 <Show when={settings().showOverdueAlert && getOverdueTasks().length > 0}>
-                    <div class="mb-6 bg-gradient-to-r from-red-600/20 to-red-600/5 border border-red-600/30 rounded-2xl p-6">
+                    <div class="mb-6 bg-zinc-900 border border-red-900/50 rounded-2xl p-6">
                         <div class="flex items-start gap-4">
                             <div class="text-3xl">⚠️</div>
                             <div class="flex-1">
@@ -431,7 +431,7 @@ function Dashboard() {
                         </div>
                         <div class="w-full bg-zinc-800 rounded-full h-4 overflow-hidden">
                             <div 
-                                class="h-full bg-gradient-to-r from-blue-600 to-purple-600 rounded-full transition-all duration-500"
+                                class="h-full bg-zinc-600 rounded-full transition-all duration-500"
                                 style={{ width: `${stats().completionRate}%` }}
                             ></div>
                         </div>
@@ -525,7 +525,7 @@ function Dashboard() {
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     {/* Upcoming Tasks */}
                     <Show when={settings().showPriorityTasks}>
-                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-xl font-bold text-white">📋 Priority Tasks</h3>
                             <A href="/todo" class="text-sm text-blue-400 hover:text-blue-300">
@@ -601,7 +601,7 @@ function Dashboard() {
 
                     {/* Top Tags */}
                     <Show when={settings().showTopTags}>
-                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-xl font-bold text-white">🏷️ Top Tags</h3>
                             <A href="/tags" class="text-sm text-blue-400 hover:text-blue-300">
@@ -647,29 +647,29 @@ function Dashboard() {
                     <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <A 
                             href="/ai" 
-                            class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 hover:scale-105 transition-transform duration-200"
+                            class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 hover:bg-zinc-800 transition-all duration-200"
                         >
                             <div class="text-3xl mb-2">🤖</div>
                             <h4 class="text-xl font-bold text-white mb-1">AI Assistant</h4>
-                            <p class="text-sm text-white/80">Brain dump & get insights</p>
+                            <p class="text-sm text-gray-400">Brain dump & get insights</p>
                         </A>
 
                         <A 
                             href="/calendar" 
-                            class="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-6 hover:scale-105 transition-transform duration-200"
+                            class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 hover:bg-zinc-800 transition-all duration-200"
                         >
                             <div class="text-3xl mb-2">📅</div>
                             <h4 class="text-xl font-bold text-white mb-1">Plan Your Day</h4>
-                            <p class="text-sm text-white/80">Schedule new events</p>
+                            <p class="text-sm text-gray-400">Schedule new events</p>
                         </A>
 
                         <A 
                             href="/timemachine" 
-                            class="bg-gradient-to-r from-amber-600 to-orange-600 rounded-2xl p-6 hover:scale-105 transition-transform duration-200"
+                            class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 hover:bg-zinc-800 transition-all duration-200"
                         >
                             <div class="text-3xl mb-2">⏰</div>
                             <h4 class="text-xl font-bold text-white mb-1">Reflect</h4>
-                            <p class="text-sm text-white/80">Review your progress</p>
+                            <p class="text-sm text-gray-400">Review your progress</p>
                         </A>
                     </div>
                 </Show>

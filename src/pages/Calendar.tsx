@@ -768,7 +768,7 @@ Title:
                                                             
                                                             return (
                                                                 <div
-                                                                    class="text-xs px-2 py-1 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
+                                                                    class="text-xs px-2 py-1 rounded transition-all duration-200 hover:opacity-80 cursor-pointer"
                                                                     style={{ 
                                                                         'background-color': event.Color || '#3b82f6',
                                                                         opacity: allTasksCompleted ? 0.6 : 0.9
@@ -1038,7 +1038,7 @@ Title:
                                                                     class={`absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 ${
                                                                         isBreak 
                                                                             ? 'border border-dashed border-zinc-700 bg-zinc-900/30'
-                                                                            : 'cursor-pointer hover:scale-[1.02] transition-all duration-200'
+                                                                            : 'cursor-pointer hover:opacity-80 transition-all duration-200'
                                                                     }`}
                                                                     style={{ 
                                                                         'background-color': isBreak ? 'transparent' : (event.Color || '#3b82f6'),
@@ -1114,7 +1114,7 @@ Title:
                                                             
                                                             return (
                                                                 <div
-                                                                    class="absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 cursor-pointer hover:scale-[1.02] transition-all duration-200 border-l-2"
+                                                                    class="absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 cursor-pointer hover:opacity-80 transition-all duration-200 border-l-2"
                                                                     style={{ 
                                                                         'background-color': task.Priority === 'P1' ? '#ef444420' : task.Priority === 'P2' ? '#f9731620' : '#22c55e20',
                                                                         'border-left-color': task.Priority === 'P1' ? '#ef4444' : task.Priority === 'P2' ? '#f97316' : '#22c55e',
@@ -1418,7 +1418,7 @@ Title:
                                                 class={`w-10 h-10 rounded-lg transition-all duration-200 border-2 ${
                                                     eventColor() === color.value 
                                                         ? 'border-white scale-110' 
-                                                        : 'border-transparent hover:scale-105'
+                                                        : 'border-transparent hover:border-zinc-600'
                                                 }`}
                                                 style={{ 'background-color': color.value }}
                                             />
@@ -1671,7 +1671,7 @@ Title:
                                                 class={`w-10 h-10 rounded-lg transition-all duration-200 border-2 ${
                                                     eventColor() === color.value 
                                                         ? 'border-white scale-110' 
-                                                        : 'border-transparent hover:scale-105'
+                                                        : 'border-transparent hover:border-zinc-600'
                                                 }`}
                                                 style={{ 'background-color': color.value }}
                                             />

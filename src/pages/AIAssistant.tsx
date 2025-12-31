@@ -416,7 +416,7 @@ Return ONLY the JSON array, no markdown.`;
 
             {/* API Key Setup */}
             <Show when={showApiKeyInput()}>
-                <div class="bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-600/30 rounded-2xl p-6 mb-6">
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6">
                     <h2 class="text-xl font-bold text-white mb-3">🔑 API Key Setup</h2>
                     <p class="text-gray-300 text-sm mb-4">
                         Get your free API key from <a href="https://aistudio.google.com/apikey" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Google AI Studio</a>
@@ -558,7 +558,7 @@ Return ONLY the JSON array, no markdown.`;
                         <button
                             onClick={getFeedback}
                             disabled={isProcessing()}
-                            class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            class="px-4 py-2 bg-zinc-800 border border-zinc-700 text-white font-semibold rounded-lg hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                         >
                             {isProcessing() ? 'Analyzing...' : 'Analyze My Day'}
                         </button>
@@ -600,7 +600,7 @@ Return ONLY the JSON array, no markdown.`;
                         <button
                             onClick={getDailyBriefing}
                             disabled={isProcessing()}
-                            class="px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-semibold rounded-lg hover:from-orange-700 hover:to-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            class="px-4 py-2 bg-zinc-800 border border-zinc-700 text-white font-semibold rounded-lg hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                         >
                             {isProcessing() ? 'Loading...' : 'Get Briefing'}
                         </button>
@@ -639,7 +639,7 @@ Return ONLY the JSON array, no markdown.`;
                         <button
                             onClick={getSmartSuggestions}
                             disabled={isProcessing()}
-                            class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            class="px-4 py-2 bg-zinc-800 border border-zinc-700 text-white font-semibold rounded-lg hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                         >
                             {isProcessing() ? 'Thinking...' : 'Generate'}
                         </button>
@@ -677,7 +677,7 @@ Return ONLY the JSON array, no markdown.`;
             </div>
 
             {/* Info Section */}
-            <div class="bg-gradient-to-r from-zinc-900 to-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                 <h3 class="text-lg font-bold text-white mb-3">ℹ️ AI Features</h3>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-400">
                     <div>
