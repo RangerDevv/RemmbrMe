@@ -38,6 +38,9 @@ function Calendar() {
     const [recurrence, setRecurrence] = createSignal('none');
     const [recurrenceEndDate, setRecurrenceEndDate] = createSignal('');
     const [allTags, setAllTags] = createSignal([] as any[]);
+    const [showTasksModal, setShowTasksModal] = createSignal(false);
+    const [selectedDateTasks, setSelectedDateTasks] = createSignal<Date | null>(null);
+    let isFetchingTodos = false;
     
     const colorPresets = [
         { name: 'Blue', value: '#3b82f6' },
@@ -123,14 +126,69 @@ function Calendar() {
     }
 
     async function fetchTodos() {
+        if (isFetchingTodos) {
+            console.log('Already fetching todos, skipping...');
+            return;
+        }
+        
+        isFetchingTodos = true;
         try {
             const items = await pb.collection('Todo').getFullList({
-                filter: `user = "${currentUser()?.id}"`
+                filter: `user = "${currentUser()?.id}"`,
+                expand: 'Tags'
             });
+            console.log('Fetched todos:', items.length);
+            console.log('All todos:', items.map(t => ({
+                title: t.Title,
+                deadline: t.Deadline,
+                hasDeadline: !!t.Deadline
+            })));
+            console.log('Todos with deadlines:', items.filter(t => t.Deadline).map(t => ({
+                title: t.Title,
+                deadline: t.Deadline
+            })));
             setTodoItems(items);
         } catch (error) {
             console.error('Error fetching todos:', error);
+        } finally {
+            isFetchingTodos = false;
         }
+    }
+    
+    function getTasksForDate(date: Date): any[] {
+        const filtered = todoItems().filter(task => {
+            if (!task.Deadline) return false;
+            
+            // Parse the deadline - it's in UTC
+            const deadline = new Date(task.Deadline);
+            const checkDate = new Date(date);
+            
+            // Get the local date parts from the deadline (this converts from UTC to local time)
+            const deadlineYear = deadline.getFullYear();
+            const deadlineMonth = deadline.getMonth();
+            const deadlineDay = deadline.getDate();
+            
+            // Compare with check date
+            return deadlineYear === checkDate.getFullYear() &&
+                   deadlineMonth === checkDate.getMonth() &&
+                   deadlineDay === checkDate.getDate();
+        });
+        
+        // Debug logging
+        if (filtered.length > 0) {
+            console.log('Tasks for date:', date, filtered);
+        }
+        
+        return filtered;
+    }
+    
+    async function toggleTaskCompletion(taskId: string, currentStatus: boolean) {
+        await pb.collection('Todo').update(taskId, {
+            Completed: !currentStatus,
+            CompletedAt: !currentStatus ? new Date().toISOString() : null
+        });
+        await fetchTodos();
+        refreshNotifications();
     }
     
     async function fetchTags() {
@@ -536,6 +594,16 @@ Title:
                 <h1 class="text-4xl font-bold text-white">📅 Calendar</h1>
                 <div class="flex gap-2">
                     <button
+                        onClick={async () => {
+                            await fetchTodos();
+                            await fetchEvents();
+                        }}
+                        class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-gray-400 hover:text-white hover:border-zinc-700 transition-all duration-200 text-sm"
+                        title="Refresh tasks and events"
+                    >
+                        🔄
+                    </button>
+                    <button
                         onClick={() => setViewMode(viewMode() === 'month' ? 'week' : 'month')}
                         class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-gray-400 hover:text-white hover:border-zinc-700 transition-all duration-200 text-sm"
                     >
@@ -656,6 +724,8 @@ Title:
                                         const isCurrentMonth = day.getMonth() === currentDate().getMonth();
                                         const isToday = day.toDateString() === new Date().toDateString();
                                         const dayEvents = getEventsForDate(day);
+                                        const tasksForDay = getTasksForDate(day);
+                                        const taskCount = tasksForDay.length;
 
                                         return (
                                             <div
@@ -668,12 +738,26 @@ Title:
                                                     setSelectedDate(day);
                                                 }}
                                             >
-                                                <div class={`text-sm font-medium mb-1 ${
-                                                    isToday 
-                                                        ? 'bg-white text-black w-6 h-6 rounded-full flex items-center justify-center font-bold' 
-                                                        : isCurrentMonth ? 'text-white' : 'text-gray-600'
-                                                }`}>
-                                                    {day.getDate()}
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <div class={`text-sm font-medium ${
+                                                        isToday 
+                                                            ? 'bg-white text-black w-6 h-6 rounded-full flex items-center justify-center font-bold' 
+                                                            : isCurrentMonth ? 'text-white' : 'text-gray-600'
+                                                    }`}>
+                                                        {day.getDate()}
+                                                    </div>
+                                                    <Show when={taskCount > 0}>
+                                                        <div 
+                                                            class="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded text-[10px] font-medium cursor-pointer hover:bg-blue-500/30 transition-colors"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedDateTasks(day);
+                                                                setShowTasksModal(true);
+                                                            }}
+                                                        >
+                                                            {taskCount}✓
+                                                        </div>
+                                                    </Show>
                                                 </div>
                                                 <div class="space-y-1">
                                                     <For each={dayEvents.slice(0, 3)}>
@@ -842,8 +926,19 @@ Title:
                             <For each={getWeekDays()}>
                                 {(day) => {
                                     const isToday = day.toDateString() === new Date().toDateString();
+                                    const tasksForDay = getTasksForDate(day);
+                                    const taskCount = tasksForDay.length;
+                                    const incompleteTasks = tasksForDay.filter(t => !t.Completed).length;
                                     return (
-                                        <div class={`p-3 text-center border-r border-zinc-800 ${isToday ? 'bg-white/5' : ''}`}>
+                                        <div 
+                                            class={`p-3 text-center border-r border-zinc-800 relative ${isToday ? 'bg-white/5' : ''} ${taskCount > 0 ? 'cursor-pointer hover:bg-zinc-800/50' : ''} transition-colors duration-200`}
+                                            onClick={() => {
+                                                if (taskCount > 0) {
+                                                    setSelectedDateTasks(day);
+                                                    setShowTasksModal(true);
+                                                }
+                                            }}
+                                        >
                                             <div class="text-sm font-semibold text-gray-400">
                                                 {day.toLocaleDateString('en-US', { weekday: 'short' })}
                                             </div>
@@ -854,6 +949,18 @@ Title:
                                             }`}>
                                                 {day.getDate()}
                                             </div>
+                                            <Show when={taskCount > 0}>
+                                                <div class="mt-2 flex items-center justify-center gap-1">
+                                                    <div class={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                        incompleteTasks === 0 
+                                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                                            : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                                    }`}>
+                                                        <span>✓</span>
+                                                        <span>{taskCount}</span>
+                                                    </div>
+                                                </div>
+                                            </Show>
                                         </div>
                                     );
                                 }}
@@ -873,9 +980,11 @@ Title:
                                         <For each={getWeekDays()}>
                                             {(day) => {
                                                 const dayEvents = getEventsWithBreaks(day);
+                                                const dayTasks = getTasksForDate(day);
                                                 
                                                 return (
                                                     <div class="relative border-r border-zinc-800 min-h-[60px] hover:bg-zinc-900/50 transition-colors duration-200">
+                                                        {/* Render Events */}
                                                         <For each={dayEvents}>
                                                             {(event) => {
                                                                 const eventStart = new Date(event.Start);
@@ -982,6 +1091,46 @@ Title:
                                                                             {event.Description}
                                                                         </div>
                                                                     </Show>
+                                                                </div>
+                                                            );
+                                                        }}
+                                                    </For>
+                                                    
+                                                    {/* Render Tasks */}
+                                                    <For each={dayTasks}>
+                                                        {(task) => {
+                                                            const deadline = new Date(task.Deadline);
+                                                            const taskHour = deadline.getHours();
+                                                            const taskMinute = deadline.getMinutes();
+                                                            
+                                                            // Only show task in its hour slot
+                                                            if (taskHour !== hour) {
+                                                                return null;
+                                                            }
+                                                            
+                                                            // Calculate position and height (30 min block)
+                                                            const topOffset = (taskMinute / 60) * 60;
+                                                            const height = 30;
+                                                            
+                                                            return (
+                                                                <div
+                                                                    class="absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 cursor-pointer hover:scale-[1.02] transition-all duration-200 border-l-2"
+                                                                    style={{ 
+                                                                        'background-color': task.Priority === 'P1' ? '#ef444420' : task.Priority === 'P2' ? '#f9731620' : '#22c55e20',
+                                                                        'border-left-color': task.Priority === 'P1' ? '#ef4444' : task.Priority === 'P2' ? '#f97316' : '#22c55e',
+                                                                        'top': `${topOffset}px`,
+                                                                        'height': `${height}px`,
+                                                                        'opacity': task.Completed ? 0.5 : 0.9
+                                                                    }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedDateTasks(day);
+                                                                        setShowTasksModal(true);
+                                                                    }}
+                                                                >
+                                                                    <div class={`font-medium truncate ${task.Completed ? 'line-through' : ''}`}>
+                                                                        {task.Completed ? '✓ ' : '📋 '}{task.Title}
+                                                                    </div>
                                                                 </div>
                                                             );
                                                         }}
@@ -1635,6 +1784,126 @@ Title:
                                 Create Event
                             </button>
                         </form>
+                    </div>
+                </div>
+            </Show>
+
+            {/* Tasks Modal */}
+            <Show when={showTasksModal() && selectedDateTasks()}>
+                <div
+                    class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    onClick={() => {
+                        setShowTasksModal(false);
+                        setSelectedDateTasks(null);
+                    }}
+                >
+                    <div
+                        class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div class="sticky top-0 bg-zinc-900 border-b border-zinc-800 p-6 flex items-center justify-between">
+                            <h2 class="text-2xl font-bold text-white">
+                                Tasks Due: {selectedDateTasks()!.toLocaleDateString('en-US', { 
+                                    weekday: 'long',
+                                    month: 'long', 
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                })}
+                            </h2>
+                            <button
+                                onClick={() => {
+                                    setShowTasksModal(false);
+                                    setSelectedDateTasks(null);
+                                }}
+                                class="text-gray-400 hover:text-white transition-colors duration-200 text-2xl w-8 h-8 flex items-center justify-center"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div class="p-6 overflow-y-auto max-h-[calc(80vh-100px)]">
+                            <Show when={getTasksForDate(selectedDateTasks()!).length === 0}>
+                                <div class="text-center py-8 text-gray-400">
+                                    No tasks due on this date
+                                </div>
+                            </Show>
+                            <div class="space-y-3">
+                                <For each={getTasksForDate(selectedDateTasks()!)}>
+                                    {(task) => {
+                                        const deadline = new Date(task.Deadline);
+                                        // Check if time is set by checking if hours/minutes are not midnight
+                                        const hasTime = deadline.getHours() !== 0 || deadline.getMinutes() !== 0;
+                                        
+                                        return (
+                                            <div class="bg-black border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-all duration-200">
+                                                <div class="flex items-start gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={task.Completed}
+                                                        onChange={() => toggleTaskCompletion(task.id, task.Completed)}
+                                                        class="w-5 h-5 mt-1 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0 bg-black cursor-pointer transition-all duration-200"
+                                                    />
+                                                    <div class="flex-1">
+                                                        <div class="flex items-start justify-between">
+                                                            <h3 class={`text-lg font-semibold transition-all duration-200 ${
+                                                                task.Completed ? 'text-gray-500 line-through' : 'text-white'
+                                                            }`}>
+                                                                {task.Title}
+                                                            </h3>
+                                                            <div class="flex items-center gap-2">
+                                                                <span class={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                                    task.Priority === 'P1' ? 'bg-red-500/15 text-red-400 border border-red-500/20' :
+                                                                    task.Priority === 'P2' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
+                                                                    'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                                                }`}>
+                                                                    {task.Priority}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <Show when={task.Description}>
+                                                            <p class={`text-sm mt-1 ${task.Completed ? 'text-gray-500 line-through' : 'text-gray-400'}`}>
+                                                                {task.Description}
+                                                            </p>
+                                                        </Show>
+                                                        <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                                                            <Show when={hasTime}>
+                                                                <span>⏰ {deadline.toLocaleTimeString('en-US', { 
+                                                                    hour: 'numeric', 
+                                                                    minute: '2-digit' 
+                                                                })}</span>
+                                                            </Show>
+                                                            <Show when={!hasTime}>
+                                                                <span>📅 Anytime today</span>
+                                                            </Show>
+                                                        </div>
+                                                        <Show when={task.expand?.Tags && task.expand.Tags.length > 0}>
+                                                            <div class="flex flex-wrap gap-1 mt-2">
+                                                                <For each={task.expand.Tags}>
+                                                                    {(tag: any) => (
+                                                                        <span
+                                                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                                                                            style={{ 
+                                                                                'background-color': `${tag.color}40`, 
+                                                                                'border': `1px solid ${tag.color}60` 
+                                                                            }}
+                                                                        >
+                                                                            <div
+                                                                                class="w-1.5 h-1.5 rounded-full"
+                                                                                style={{ 'background-color': tag.color }}
+                                                                            />
+                                                                            {tag.name}
+                                                                        </span>
+                                                                    )}
+                                                                </For>
+                                                            </div>
+                                                        </Show>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    }}
+                                </For>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </Show>

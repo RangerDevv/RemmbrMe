@@ -17,6 +17,8 @@ interface NotificationSchedule {
 let notificationSchedule: NotificationSchedule[] = [];
 let checkInterval: number | null = null;
 let permissionGranted = false;
+let isFetchingSchedule = false;
+let needsRefetch = false;
 
 // Initialize notifications system
 export async function initNotifications() {
@@ -68,6 +70,14 @@ export async function updateNotificationSchedule() {
   const userId = pb.authStore.model?.id;
   if (!userId) return;
 
+  if (isFetchingSchedule) {
+    needsRefetch = true;
+    return;
+  }
+
+  isFetchingSchedule = true;
+  needsRefetch = false;
+
   const now = new Date();
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -76,21 +86,21 @@ export async function updateNotificationSchedule() {
   notificationSchedule = [];
 
   try {
-    // Fetch tasks due today or tomorrow
-    const tasks = await pb.collection('Todos').getFullList({
-      filter: `User="${userId}" && Completed=false && DueDate>="${now.toISOString()}" && DueDate<="${tomorrow.toISOString()}"`,
-      sort: 'DueDate',
+    // Fetch tasks due today or tomorrow (using correct collection name and field)
+    const tasks = await pb.collection('Todo').getFullList({
+      filter: `user="${userId}" && Completed=false && Deadline>="${now.toISOString()}" && Deadline<="${tomorrow.toISOString()}"`,
+      sort: 'Deadline',
     });
 
     // Fetch events today or tomorrow
     const events = await pb.collection('Calendar').getFullList({
-      filter: `User="${userId}" && Start>="${now.toISOString()}" && Start<="${tomorrow.toISOString()}"`,
+      filter: `user="${userId}" && Start>="${now.toISOString()}" && Start<="${tomorrow.toISOString()}"`,
       sort: 'Start',
     });
 
     // Schedule notifications for tasks
     for (const task of tasks) {
-      const dueDate = new Date(task.DueDate);
+      const dueDate = new Date(task.Deadline);
       
       // 10 minutes before
       const tenMinsBefore = new Date(dueDate.getTime() - 10 * 60 * 1000);
@@ -154,6 +164,14 @@ export async function updateNotificationSchedule() {
     console.log(`📅 Scheduled ${notificationSchedule.length} notifications`);
   } catch (error) {
     console.error('Failed to update notification schedule:', error);
+  } finally {
+    isFetchingSchedule = false;
+    
+    // If another fetch was requested while we were fetching, do it now
+    if (needsRefetch) {
+      needsRefetch = false;
+      updateNotificationSchedule();
+    }
   }
 }
 

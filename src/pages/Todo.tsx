@@ -7,6 +7,9 @@ import { refreshNotifications } from '../lib/notifications';
 function Todo() {
 
     async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadline:string, tags:string[], recur:string, recurEnd:string) {
+        // Convert datetime-local format to ISO string
+        const deadlineISO = deadline ? new Date(deadline).toISOString() : null;
+        
         const data = {
             Title: name,
             Description: description,
@@ -14,12 +17,13 @@ function Todo() {
             URL: url,
             File: file,
             Priority: priority,
-            Deadline: deadline,
+            Deadline: deadlineISO,
             Tags: tags,
             Recurrence: recur,
             RecurrenceEndDate: recurEnd || null,
             user: currentUser()?.id
         };
+        console.log('Creating task with data:', data);
         const record = await pb.collection('Todo').create(data);
         console.log('Task created:', record);
         
@@ -32,10 +36,13 @@ function Todo() {
         }
         
         fetchTodos();
-        refreshNotifications();
+        setTimeout(() => refreshNotifications(), 100);
     }
 
     async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadline:string, tags:string[], recur:string, recurEnd:string) {
+        // Convert datetime-local format to ISO string
+        const deadlineISO = deadline ? new Date(deadline).toISOString() : null;
+        
         const data = {
             Title: name,
             Description: description,
@@ -43,7 +50,7 @@ function Todo() {
             URL: url,
             File: file,
             Priority: priority,
-            Deadline: deadline,
+            Deadline: deadlineISO,
             Tags: tags,
             Recurrence: recur,
             RecurrenceEndDate: recurEnd || null,
@@ -52,7 +59,7 @@ function Todo() {
         await pb.collection('Todo').update(id, data);
         console.log('Task updated');
         fetchTodos();
-        refreshNotifications();
+        setTimeout(() => refreshNotifications(), 100);
         resetForm();
         setEditingTask(null);
     }
@@ -61,7 +68,7 @@ function Todo() {
         if (confirm('Are you sure you want to delete this task?')) {
             await pb.collection('Todo').delete(id);
             fetchTodos();
-            refreshNotifications();
+            setTimeout(() => refreshNotifications(), 100);
         }
     }
 
@@ -71,27 +78,7 @@ function Todo() {
             CompletedAt: !currentStatus ? new Date().toISOString() : null
         });
         fetchTodos();
-        refreshNotifications();
-        
-        // Sync with calendar: mark all events that have this task
-        try {
-            const events = await pb.collection('Calendar').getFullList({
-                expand: 'Tasks',
-                filter: `Tasks ~ "${id}"`
-            });
-            
-            for (const event of events) {
-                // Check if all tasks in this event are now completed
-                const allTasksCompleted = event.expand?.Tasks?.every((t: any) => 
-                    t.id === id ? !currentStatus : t.Completed
-                );
-                
-                // Could add a field to track if event is considered done
-                console.log(`Event ${event.EventName}: all tasks completed = ${allTasksCompleted}`);
-            }
-        } catch (error) {
-            console.error('Error syncing with calendar:', error);
-        }
+        setTimeout(() => refreshNotifications(), 100);
     }
 
     const [TaskName, setTaskName] = createSignal('');
@@ -117,13 +104,14 @@ function Todo() {
     const [touchEnd, setTouchEnd] = createSignal(0);
     const [swipingTask, setSwipingTask] = createSignal<string | null>(null);
     const [showModal, setShowModal] = createSignal(false);
+    let isFetchingTodos = false;
+    let needsRefetch = false;
     
     async function fetchTodos() {
-        const items = await pb.collection('Todo').getFullList({
-            expand: 'Tags'
-        });
-        console.log(items);
-        setTodoItems(items);
+            const items = await pb.collection('Todo').getFullList({
+                expand: 'Tags'
+            });
+            setTodoItems(items);
     }
     
     async function fetchTags() {
@@ -153,7 +141,20 @@ function Todo() {
         setTaskCompleted(task.Completed);
         setTaskURL(task.URL || '');
         setTaskPriority(task.Priority || 'P1');
-        setTaskDeadline(task.Deadline || '');
+        
+        // Convert ISO date to datetime-local format (YYYY-MM-DDTHH:MM)
+        if (task.Deadline) {
+            const date = new Date(task.Deadline);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            setTaskDeadline(`${year}-${month}-${day}T${hours}:${minutes}`);
+        } else {
+            setTaskDeadline('');
+        }
+        
         setSelectedTags(task.expand?.Tags?.map((t: any) => t.id) || []);
         setRecurrence(task.Recurrence || 'none');
         setRecurrenceEndDate(task.RecurrenceEndDate || '');
@@ -458,7 +459,7 @@ function Todo() {
                                         <div class="flex items-start gap-3 mb-2 opacity-60">
                                             <input 
                                                 type="checkbox" 
-                                                checked={true}
+                                                checked={item().Completed}
                                                 onChange={() => toggleComplete(item().id, item().Completed)}
                                                 class="w-5 h-5 mt-1 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0 bg-black cursor-pointer transition-all duration-200"
                                             />
@@ -642,14 +643,15 @@ function Todo() {
                         </select>
                     </div>
                 </div>
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Deadline:</label>
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Due By (Optional):</label>
                     <input 
-                        type="date" 
+                        type="datetime-local" 
                         value={TaskDeadline()} 
                         onInput={(e) => setTaskDeadline(e.currentTarget.value)} 
                         class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
                     />
+                    <p class="text-xs text-gray-500 mt-1">Select a date and optionally a time. If no time is specified, it's due anytime that day.</p>
                 </div>
                 <div class="mb-5">
                     <label class="block text-sm font-medium text-gray-400 mb-2">Tags:</label>
