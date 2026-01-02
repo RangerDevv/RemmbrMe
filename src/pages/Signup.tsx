@@ -46,14 +46,14 @@ export default function Signup() {
             <div class="w-full max-w-md">
                 {/* Logo and Title */}
                 <div class="text-center mb-8">
-                    <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+                    <h1 class="text-4xl font-bold text-white mb-2">
                         RemmbrMe
                     </h1>
                     <p class="text-gray-400">Your AI-powered organizer</p>
                 </div>
 
                 {/* Signup Card */}
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8">
                     <h2 class="text-2xl font-bold text-white mb-6">Create Account</h2>
                     
                     <Show when={error()}>
@@ -124,7 +124,7 @@ export default function Signup() {
                         <button
                             type="submit"
                             disabled={loading()}
-                            class="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
+                            class="w-full py-3 bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading() ? 'Creating account...' : 'Sign Up'}
                         </button>

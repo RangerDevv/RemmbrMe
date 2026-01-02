@@ -1,7 +1,7 @@
-import { createSignal, onMount, For, Show } from 'solid-js';
-import { bk, currentUser } from '../lib/backend.ts';
-import { Todo } from "../lib/models/Todo.ts";
+import { createSignal, onMount, For, Show, createMemo } from 'solid-js';
+import { bk, currentUser } from '../lib/pocketbase';
 import { refreshNotifications } from '../lib/notifications';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Calendar() {
 
@@ -41,6 +41,7 @@ function Calendar() {
     const [allTags, setAllTags] = createSignal([] as any[]);
     const [showTasksModal, setShowTasksModal] = createSignal(false);
     const [selectedDateTasks, setSelectedDateTasks] = createSignal<Date | null>(null);
+    const [confirmDelete, setConfirmDelete] = createSignal({ show: false, eventId: '' });
     let isFetchingTodos = false;
     
     const colorPresets = [
@@ -66,7 +67,7 @@ function Calendar() {
             // Expand recurring events into instances
             const expandedEvents: any[] = [];
             const viewEndDate = new Date();
-            viewEndDate.setMonth(viewEndDate.getMonth() + 3); // Show 3 months ahead
+            viewEndDate.setMonth(viewEndDate.getMonth() + 6); // Show 6 months ahead to ensure events are visible
             
             for (const event of records) {
                 expandedEvents.push(event); // Add original event
@@ -115,10 +116,8 @@ function Calendar() {
                 }
             }
             
-            // Force a clean update by clearing first
-            setEvents([]);
-            await new Promise(resolve => setTimeout(resolve, 5));
-            setEvents(expandedEvents);
+            // Update events signal - using a new array reference to trigger reactivity
+            setEvents([...expandedEvents]);
             
             console.log('Events signal after fetch (with recurring):', expandedEvents.length);
         } catch (error) {
@@ -247,8 +246,8 @@ function Calendar() {
         
         // Recurring instances are generated virtually in fetchEvents()
         
-        fetchEvents();
-        fetchTodos();
+        await fetchEvents();
+        await fetchTodos();
         refreshNotifications();
         resetForm();
         setShowEventModal(false);
@@ -313,13 +312,19 @@ function Calendar() {
     }
 
     async function deleteEvent(id: string) {
-        if (confirm('Are you sure you want to delete this event?')) {
-            await bk.collection('Calendar').delete(id);
+        setConfirmDelete({ show: true, eventId: id });
+    }
+
+    async function confirmDeleteEvent() {
+        const eventId = confirmDelete().eventId;
+        if (eventId) {
+            await bk.collection('Calendar').delete(eventId);
             setQuickViewEvent(null);
-            setQuickViewEvent(null);
-            fetchEvents();
+            await fetchEvents();
+            await fetchTodos();
             refreshNotifications();
         }
+        setConfirmDelete({ show: false, eventId: '' });
     }
 
     function startEditingEvent(event: any) {
@@ -333,8 +338,6 @@ function Calendar() {
         
         setStartDate(startDateTime.toISOString().split('T')[0]);
         setEndDate(endDateTime.toISOString().split('T')[0]);
-
-Title:
 
         if (!event.AllDay) {
             setStartTime(startDateTime.toTimeString().slice(0, 5));
@@ -397,17 +400,6 @@ Title:
             } catch (error) {
                 console.error('Error refreshing quick view event:', error);
             }
-        }
-    }
-
-    async function openEventModal(eventId: string) {
-        try {
-            const event = await bk.collection('Calendar').getOne(eventId, {
-                expand: 'Tasks,Tags'
-            });
-            setQuickViewEvent(event);
-        } catch (error) {
-            console.error('Error fetching event:', error);
         }
     }
 
@@ -724,9 +716,10 @@ Title:
                                     {(day) => {
                                         const isCurrentMonth = day.getMonth() === currentDate().getMonth();
                                         const isToday = day.toDateString() === new Date().toDateString();
-                                        const dayEvents = getEventsForDate(day);
-                                        const tasksForDay = getTasksForDate(day);
-                                        const taskCount = tasksForDay.length;
+                                        // Use createMemo to make this reactive to events() changes
+                                        const dayEvents = createMemo(() => getEventsForDate(day));
+                                        const tasksForDay = createMemo(() => getTasksForDate(day));
+                                        const taskCount = createMemo(() => tasksForDay().length);
 
                                         return (
                                             <div
@@ -747,7 +740,7 @@ Title:
                                                     }`}>
                                                         {day.getDate()}
                                                     </div>
-                                                    <Show when={taskCount > 0}>
+                                                    <Show when={taskCount() > 0}>
                                                         <div 
                                                             class="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded text-[10px] font-medium cursor-pointer hover:bg-blue-500/30 transition-colors"
                                                             onClick={(e) => {
@@ -756,12 +749,12 @@ Title:
                                                                 setShowTasksModal(true);
                                                             }}
                                                         >
-                                                            {taskCount}✓
+                                                            {taskCount()}✓
                                                         </div>
                                                     </Show>
                                                 </div>
                                                 <div class="space-y-1">
-                                                    <For each={dayEvents.slice(0, 3)}>
+                                                    <For each={dayEvents().slice(0, 3)}>
                                                         {(event) => {
                                                             const totalTasks = event.expand?.Tasks?.length || 0;
                                                             const completedTasks = event.expand?.Tasks?.filter((t: any) => t.Completed).length || 0;
@@ -769,7 +762,7 @@ Title:
                                                             
                                                             return (
                                                                 <div
-                                                                    class="text-xs px-2 py-1 rounded transition-all duration-200 hover:scale-105 cursor-pointer"
+                                                                    class="text-xs px-2 py-1 rounded transition-all duration-200 hover:opacity-80 cursor-pointer"
                                                                     style={{ 
                                                                         'background-color': event.Color || '#3b82f6',
                                                                         opacity: allTasksCompleted ? 0.6 : 0.9
@@ -793,9 +786,9 @@ Title:
                                                             );
                                                         }}
                                                     </For>
-                                                    <Show when={dayEvents.length > 3}>
+                                                    <Show when={dayEvents().length > 3}>
                                                         <div class="text-xs text-gray-500 px-2">
-                                                            +{dayEvents.length - 3} more
+                                                            +{dayEvents().length - 3} more
                                                         </div>
                                                     </Show>
                                                 </div>
@@ -1039,7 +1032,7 @@ Title:
                                                                     class={`absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 ${
                                                                         isBreak 
                                                                             ? 'border border-dashed border-zinc-700 bg-zinc-900/30'
-                                                                            : 'cursor-pointer hover:scale-[1.02] transition-all duration-200'
+                                                                            : 'cursor-pointer hover:opacity-80 transition-all duration-200'
                                                                     }`}
                                                                     style={{ 
                                                                         'background-color': isBreak ? 'transparent' : (event.Color || '#3b82f6'),
@@ -1115,7 +1108,7 @@ Title:
                                                             
                                                             return (
                                                                 <div
-                                                                    class="absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 cursor-pointer hover:scale-[1.02] transition-all duration-200 border-l-2"
+                                                                    class="absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 cursor-pointer hover:opacity-80 transition-all duration-200 border-l-2"
                                                                     style={{ 
                                                                         'background-color': task.Priority === 'P1' ? '#ef444420' : task.Priority === 'P2' ? '#f9731620' : '#22c55e20',
                                                                         'border-left-color': task.Priority === 'P1' ? '#ef4444' : task.Priority === 'P2' ? '#f97316' : '#22c55e',
@@ -1419,7 +1412,7 @@ Title:
                                                 class={`w-10 h-10 rounded-lg transition-all duration-200 border-2 ${
                                                     eventColor() === color.value 
                                                         ? 'border-white scale-110' 
-                                                        : 'border-transparent hover:scale-105'
+                                                        : 'border-transparent hover:border-zinc-600'
                                                 }`}
                                                 style={{ 'background-color': color.value }}
                                             />
@@ -1672,7 +1665,7 @@ Title:
                                                 class={`w-10 h-10 rounded-lg transition-all duration-200 border-2 ${
                                                     eventColor() === color.value 
                                                         ? 'border-white scale-110' 
-                                                        : 'border-transparent hover:scale-105'
+                                                        : 'border-transparent hover:border-zinc-600'
                                                 }`}
                                                 style={{ 'background-color': color.value }}
                                             />
@@ -1908,6 +1901,17 @@ Title:
                     </div>
                 </div>
             </Show>
+
+            <ConfirmModal 
+                show={confirmDelete().show}
+                title="Delete Event"
+                message="Are you sure you want to delete this event? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+                onConfirm={confirmDeleteEvent}
+                onCancel={() => setConfirmDelete({ show: false, eventId: '' })}
+            />
         </div>
     );
 }

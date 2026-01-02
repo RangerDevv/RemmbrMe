@@ -141,14 +141,14 @@ export default function Profile() {
             <Show when={activeTab() === 'profile'}>
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8">
                     <div class="flex items-center gap-4 mb-8">
-                        <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
+                        <div class="w-20 h-20 bg-zinc-700 rounded-full flex items-center justify-center text-white text-3xl font-bold">
                             {currentUser()?.name?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div>
                             <h2 class="text-xl font-bold text-white">{currentUser()?.name}</h2>
                             <p class="text-gray-400">{currentUser()?.email}</p>
                             <Show when={currentUser()?.proUser}>
-                                <span class="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/50 rounded-lg text-xs text-yellow-400 font-semibold">
+                                <span class="inline-block mt-2 px-3 py-1 bg-zinc-800 border border-zinc-700 rounded-lg text-xs text-gray-400 font-semibold">
                                     PRO USER
                                 </span>
                             </Show>

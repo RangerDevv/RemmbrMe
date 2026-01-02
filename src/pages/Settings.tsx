@@ -1,5 +1,6 @@
 import { createSignal, onMount, createEffect } from 'solid-js';
 import { A } from '@solidjs/router';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface DashboardSettings {
     showCompletedToday: boolean;
@@ -43,6 +44,7 @@ function Settings() {
     const [settings, setSettings] = createSignal<DashboardSettings>(DEFAULT_SETTINGS);
     const [saved, setSaved] = createSignal(false);
     const [isInitialLoad, setIsInitialLoad] = createSignal(true);
+    const [confirmReset, setConfirmReset] = createSignal(false);
 
     onMount(() => {
         loadSettings();
@@ -67,9 +69,12 @@ function Settings() {
     }
 
     function resetToDefaults() {
-        if (confirm('Reset all settings to defaults?')) {
-            setSettings(DEFAULT_SETTINGS);
-        }
+        setConfirmReset(true);
+    }
+
+    function confirmResetSettings() {
+        setSettings(DEFAULT_SETTINGS);
+        setConfirmReset(false);
     }
 
     function updateSetting(key: keyof DashboardSettings, value: boolean | number) {
@@ -357,6 +362,17 @@ function Settings() {
                     </A>
                 </div>
             </div>
+
+            <ConfirmModal 
+                show={confirmReset()}
+                title="Reset Settings"
+                message="Are you sure you want to reset all settings to their default values?"
+                confirmText="Reset"
+                cancelText="Cancel"
+                type="warning"
+                onConfirm={confirmResetSettings}
+                onCancel={() => setConfirmReset(false)}
+            />
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { Index, Show, createSignal, onMount } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Todo() {
 
@@ -65,11 +66,17 @@ function Todo() {
     }
 
     async function deleteTask(id: string) {
-        if (confirm('Are you sure you want to delete this task?')) {
-            await bk.collection('Todo').delete(id);
+        setConfirmDelete({ show: true, taskId: id });
+    }
+
+    async function confirmDeleteTask() {
+        const taskId = confirmDelete().taskId;
+        if (taskId) {
+            await bk.collection('Todo').delete(taskId);
             fetchTodos();
             setTimeout(() => refreshNotifications(), 100);
         }
+        setConfirmDelete({ show: false, taskId: '' });
     }
 
     async function toggleComplete(id: string, currentStatus: boolean) {
@@ -104,6 +111,7 @@ function Todo() {
     const [touchEnd, setTouchEnd] = createSignal(0);
     const [swipingTask, setSwipingTask] = createSignal<string | null>(null);
     const [showModal, setShowModal] = createSignal(false);
+    const [confirmDelete, setConfirmDelete] = createSignal({ show: false, taskId: '' });
     let isFetchingTodos = false;
     let needsRefetch = false;
     
@@ -254,7 +262,7 @@ function Todo() {
     }
 
     return (
-        <div class="flex flex-col gap-6 w-full max-w-7xl">
+        <div class="flex flex-col gap-6 w-full">
             {/* Header with Stats */}
             <div class="flex items-center justify-between">
                 <div>
@@ -270,8 +278,8 @@ function Todo() {
             </div>
 
             {/* Search and Filters */}
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 lg:p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 lg:gap-6">
                     <div class="md:col-span-2">
                         <input
                             type="text"
@@ -345,7 +353,7 @@ function Todo() {
                 </h3>
                 <button
                     onClick={() => setShowModal(true)}
-                    class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+                    class="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 text-white font-semibold rounded-lg hover:bg-zinc-800 hover:border-zinc-700 transition-all duration-200"
                 >
                     <span class="text-lg">+</span>
                     <span>New Task</span>
@@ -671,7 +679,7 @@ function Todo() {
                                     class={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white transition-all duration-200 ${
                                         selectedTags().includes(tag().id)
                                             ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-105'
-                                            : 'hover:scale-105'
+                                            : 'hover:opacity-80'
                                     }`}
                                     style={{ 'background-color': `${tag().color}${selectedTags().includes(tag().id) ? '' : '40'}`, 'border': `1px solid ${tag().color}60` }}
                                 >
@@ -728,6 +736,17 @@ function Todo() {
                 </div>
             </div>
         </Show>
+
+        <ConfirmModal 
+            show={confirmDelete().show}
+            title="Delete Task"
+            message="Are you sure you want to delete this task? This action cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+            type="danger"
+            onConfirm={confirmDeleteTask}
+            onCancel={() => setConfirmDelete({ show: false, taskId: '' })}
+        />
         </div>
     );
 }

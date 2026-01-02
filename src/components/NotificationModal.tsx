@@ -19,10 +19,10 @@ export default function NotificationModal(props: NotificationModalProps) {
 
     const getColor = () => {
         switch (props.type) {
-            case 'warning': return 'from-yellow-600/20 to-orange-600/20 border-yellow-600/30';
-            case 'error': return 'from-red-600/20 to-red-600/20 border-red-600/30';
-            case 'success': return 'from-green-600/20 to-emerald-600/20 border-green-600/30';
-            default: return 'from-blue-600/20 to-purple-600/20 border-blue-600/30';
+            case 'warning': return 'border-yellow-900/50';
+            case 'error': return 'border-red-900/50';
+            case 'success': return 'border-green-900/50';
+            default: return 'border-blue-900/50';
         }
     };
 

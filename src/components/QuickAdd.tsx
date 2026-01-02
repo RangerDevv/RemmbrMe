@@ -69,7 +69,7 @@ function QuickAdd() {
             {/* Floating Action Button */}
             <button
                 onClick={() => setShowModal(true)}
-                class="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all duration-200 z-50 flex items-center justify-center text-3xl"
+                class="fixed bottom-8 right-8 w-16 h-16 bg-zinc-900 border-2 border-zinc-800 rounded-full hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-200 z-50 flex items-center justify-center text-3xl text-white"
                 title="Quick Add (Ctrl+K)"
             >
                 +
