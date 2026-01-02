@@ -1,13 +1,9 @@
 import PocketBase from 'pocketbase';
-import { createSignal } from 'solid-js';
-import { iocContainer } from "./needle.ts";
-import { PocketbaseDriver } from "./PocketbaseDriver.ts";
+import {createSignal} from 'solid-js';
+import {iocContainer} from "./needle.ts";
+import {PocketbaseDriver} from "./pocketbase_driver.ts";
 import {User} from "./models/User.ts";
-
-export interface dependencies {
-    pocketbase: PocketBase,
-    backend: PocketbaseDriver
-}
+import {dependencies} from "./backend_types.ts";
 
 export const container = new iocContainer<dependencies>()
 

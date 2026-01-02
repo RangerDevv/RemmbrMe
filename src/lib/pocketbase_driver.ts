@@ -1,41 +1,18 @@
-import { Todo } from "./models/Todo.ts";
-import { User } from "./models/User.ts";
-import { Calendar } from "./models/Calendar.ts";
-import { Tags } from "./models/Tags.ts";
-import {dependencies} from "./backend.ts";
 import PocketBase, {RecordService} from "pocketbase";
 import {iocContainer} from "./needle.ts";
+import {
+    AuthResponse,
+    AuthStore,
+    BackendCollection,
+    BackendDriver,
+    collectionMapping,
+    collectionName,
+    createFields, dependencies,
+    QueryOptions,
+    updateFields
+} from "./backend_types.ts";
 
-interface collectionMapping {
-    Todo: Todo,
-    users: User,
-    Calendar: Calendar,
-    Tags: Tags
-}
-
-interface QueryOptions {
-    filter?: string,
-    expand?: string,
-    sort?: string,
-}
-
-interface AuthResponse {
-    record: User,
-    token: string,
-}
-
-interface AuthStore {
-    onChange: (callback: (token: string, record: User | null) => void) => () => void,
-    clear: () => void,
-    record: User,
-    isValid: boolean
-}
-
-type collectionName = keyof collectionMapping
-type createFields<T extends collectionName> = Omit<collectionMapping[T], "id"|"created"|"updated">
-type updateFields<T extends collectionName> = Partial<createFields<T>>
-
-class PocketbaseCollection<T extends collectionName> {
+class PocketbaseCollection<T extends collectionName> implements BackendCollection<T> {
     private pb: RecordService;
 
     constructor(pb: PocketBase, name: T) {
@@ -70,7 +47,7 @@ class PocketbaseCollection<T extends collectionName> {
     }
 }
 
-export class PocketbaseDriver {
+export class PocketbaseDriver implements BackendDriver {
     private readonly pb: PocketBase;
 
     public authStore: AuthStore;
