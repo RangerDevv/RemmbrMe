@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createSignal, Show, For } from 'solid-js';
-import { pb, currentUser } from '../lib/pocketbase';
+import { bk } from '../lib/backend.ts';
 import NotificationModal from '../components/NotificationModal';
 
 function AIAssistant() {
@@ -163,7 +163,7 @@ Guidelines:
             if (parsed.todos && parsed.todos.length > 0) {
                 setProcessingStatus(`📝 Creating ${parsed.todos.length} task(s)...`);
                 for (const todo of parsed.todos) {
-                    const record = await pb.collection('Todo').create({
+                    const record = await bk.collection('Todo').create({
                         Title: todo.title,
                         Description: todo.description || '',
                         Completed: false,
@@ -178,7 +178,7 @@ Guidelines:
             if (parsed.events && parsed.events.length > 0) {
                 setProcessingStatus(`📅 Creating ${parsed.events.length} event(s)...`);
                 for (const event of parsed.events) {
-                    const record = await pb.collection('Calendar').create({
+                    const record = await bk.collection('Calendar').create({
                         EventName: event.name,
                         Description: event.description || '',
                         AllDay: event.allDay || false,
@@ -221,13 +221,13 @@ Guidelines:
 
         try {
             // Fetch recent events and todos
-            const events = await pb.collection('Calendar').getFullList({
+            const events = await bk.collection('Calendar').getFullList({
                 expand: 'Tasks',
                 sort: '-Start',
                 filter: `Start >= '${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}'`
             });
 
-            const todos = await pb.collection('Todo').getFullList({
+            const todos = await bk.collection('Todo').getFullList({
                 sort: '-created'
             });
 
@@ -296,12 +296,12 @@ Keep it personal, warm, and specific to their actual data. Use emojis occasional
             tomorrow.setDate(tomorrow.getDate() + 1);
 
             const [events, todos] = await Promise.all([
-                pb.collection('Calendar').getFullList({
+                bk.collection('Calendar').getFullList({
                     expand: 'Tasks',
                     filter: `Start >= '${today.toISOString()}' && Start < '${tomorrow.toISOString()}'`,
                     sort: 'Start'
                 }),
-                pb.collection('Todo').getFullList({
+                bk.collection('Todo').getFullList({
                     filter: 'Completed = false',
                     sort: 'Priority'
                 })
@@ -362,12 +362,12 @@ Keep it concise (under 300 words), personal, and actionable. Use emojis to make 
 
         try {
             const [events, todos] = await Promise.all([
-                pb.collection('Calendar').getFullList({
+                bk.collection('Calendar').getFullList({
                     expand: 'Tasks',
                     sort: '-Start',
                     limit: 50
                 }),
-                pb.collection('Todo').getFullList({
+                bk.collection('Todo').getFullList({
                     filter: 'Completed = false',
                     sort: 'Priority'
                 })

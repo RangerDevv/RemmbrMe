@@ -1,6 +1,6 @@
 import { Component, Show } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
-import { isAuthenticated } from '../lib/pocketbase';
+import { isAuthenticated } from '../lib/backend.ts';
 import { onMount } from 'solid-js';
 
 interface ProtectedRouteProps {

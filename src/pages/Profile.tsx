@@ -1,6 +1,6 @@
 import { createSignal, Show, onMount } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
-import { currentUser, updateProfile, logout, pb } from '../lib/pocketbase';
+import { currentUser, updateProfile, logout, bk } from '../lib/backend.ts';
 import NotificationModal from '../components/NotificationModal';
 
 export default function Profile() {
@@ -60,7 +60,7 @@ export default function Profile() {
         setLoading(true);
 
         try {
-            await pb.collection('users').update(currentUser()!.id, {
+            await bk.collection('users').update(currentUser()!.id, {
                 oldPassword: currentPassword(),
                 password: newPassword(),
                 passwordConfirm: confirmPassword()
@@ -85,7 +85,7 @@ export default function Profile() {
         setDeleteConfirm(false);
         
         try {
-            await pb.collection('users').delete(currentUser()!.id);
+            await bk.collection('users').delete(currentUser()!.id);
             logout();
             navigate('/signup');
         } catch (err: any) {

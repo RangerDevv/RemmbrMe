@@ -38,7 +38,7 @@ A comprehensive authentication system has been implemented with the following fe
 ```
 src/
 ├── lib/
-│   └── pocketbase.ts          # Centralized PocketBase instance & auth helpers
+│   └── backend.ts          # Centralized PocketBase instance & auth helpers
 ├── components/
 │   ├── Sidebar.tsx            # Enhanced sidebar with user profile
 │   └── ProtectedRoute.tsx     # HOC for protecting routes
@@ -182,7 +182,7 @@ import { currentUser } from './lib/pocketbase';
 
 ### "Cannot connect to PocketBase"
 - Ensure PocketBase is running on `http://127.0.0.1:8090`
-- Check the `pb` instance URL in `lib/pocketbase.ts`
+- Check the `pb` instance URL in `lib/backend.ts`
 
 ### "Invalid credentials"
 - Check email and password are correct
@@ -208,7 +208,7 @@ Consider implementing:
 
 ## API Reference
 
-### `lib/pocketbase.ts`
+### `lib/backend.ts`
 
 #### Exports
 
@@ -229,7 +229,7 @@ These signals automatically update when auth state changes, triggering UI re-ren
 
 ## Migration Guide
 
-All pages have been updated to use the centralized `pb` instance from `lib/pocketbase.ts` instead of creating individual instances. This ensures:
+All pages have been updated to use the centralized `pb` instance from `lib/backend.ts` instead of creating individual instances. This ensures:
 
 1. Single source of truth for auth state
 2. Automatic auth state synchronization

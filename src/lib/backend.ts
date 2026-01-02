@@ -1,15 +1,27 @@
 import PocketBase from 'pocketbase';
-import { createSignal } from 'solid-js';
+import {createSignal} from 'solid-js';
+import {iocContainer} from "./needle.ts";
+import {PocketbaseDriver} from "./pocketbase_driver.ts";
+import {User} from "./models/User.ts";
+import {dependencies} from "./backend_types.ts";
 
-// Create singleton PocketBase instance
-export const pb = new PocketBase('http://127.0.0.1:8090');
+export const container = new iocContainer<dependencies>()
+
+container.bind(
+    "pocketbase",
+    () => new PocketBase('http://127.0.0.1:8090')
+)
+
+container.load(PocketbaseDriver)
+
+export const bk = container.$import("backend")
 
 // Auth state signals
-export const [isAuthenticated, setIsAuthenticated] = createSignal(pb.authStore.isValid);
-export const [currentUser, setCurrentUser] = createSignal(pb.authStore.record);
+export const [isAuthenticated, setIsAuthenticated] = createSignal(bk.authStore.isValid);
+export const [currentUser, setCurrentUser] = createSignal<User | null>(bk.authStore.record);
 
 // Listen to auth state changes
-pb.authStore.onChange((token, record) => {
+bk.authStore.onChange((token, record) => {
     setIsAuthenticated(!!token);
     setCurrentUser(record);
 });
@@ -17,7 +29,7 @@ pb.authStore.onChange((token, record) => {
 // Auth helper functions
 export const login = async (email: string, password: string) => {
     try {
-        const authData = await pb.collection('users').authWithPassword(email, password);
+        const authData = await bk.collection('users').authWithPassword(email, password);
         // Explicitly update the signals to ensure immediate reactivity
         setIsAuthenticated(true);
         setCurrentUser(authData.record);
@@ -38,10 +50,10 @@ export const signup = async (email: string, password: string, passwordConfirm: s
             passwordConfirm
         };
         
-        const record = await pb.collection('users').create(data);
+        const record = await bk.collection('users').create(data);
         
         // Auto-login after signup
-        const authData = await pb.collection('users').authWithPassword(email, password);
+        const authData = await bk.collection('users').authWithPassword(email, password);
         // Explicitly update the signals to ensure immediate reactivity
         setIsAuthenticated(true);
         setCurrentUser(authData.record);
@@ -53,12 +65,12 @@ export const signup = async (email: string, password: string, passwordConfirm: s
 };
 
 export const logout = () => {
-    pb.authStore.clear();
+    bk.authStore.clear();
 };
 
 export const updateProfile = async (userId: string, data: any) => {
     try {
-        const record = await pb.collection('users').update(userId, data);
+        const record = await bk.collection('users').update(userId, data);
         return { success: true, data: record };
     } catch (error: any) {
         return { success: false, error: error.message };

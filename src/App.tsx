@@ -13,7 +13,7 @@ import Settings from './pages/Settings';
 import QuickAdd from "./components/QuickAdd";
 import Sidebar from "./components/Sidebar";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { isAuthenticated } from "./lib/pocketbase";
+import { isAuthenticated } from "./lib/backend.ts";
 import { initNotifications, updateNotificationSchedule, stopNotificationChecker } from "./lib/notifications";
 
 export default function App() {

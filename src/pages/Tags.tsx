@@ -1,5 +1,5 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
-import { pb, currentUser } from '../lib/pocketbase';
+import { bk, currentUser } from '../lib/pocketbase';
 import ConfirmModal from '../components/ConfirmModal';
 
 function Tags() {
@@ -16,7 +16,7 @@ function Tags() {
     ];
 
     async function fetchTags() {
-        const records = await pb.collection('Tags').getFullList({
+        const records = await bk.collection('Tags').getFullList({
             sort: 'created',
             filter: `user = "${currentUser()?.id}"`
         });
@@ -26,7 +26,7 @@ function Tags() {
     async function createTag() {
         if (!tagName().trim()) return;
 
-        await pb.collection('Tags').create({
+        await bk.collection('Tags').create({
             name: tagName(),
             color: tagColor(),
             user: currentUser()?.id
@@ -40,7 +40,7 @@ function Tags() {
     async function updateTag() {
         if (!editingTag() || !tagName().trim()) return;
 
-        await pb.collection('Tags').update(editingTag().id, {
+        await bk.collection('Tags').update(editingTag().id, {
             name: tagName(),
             color: tagColor()
         });
@@ -58,7 +58,7 @@ function Tags() {
     async function confirmDeleteTag() {
         const tagId = confirmDelete().tagId;
         if (tagId) {
-            await pb.collection('Tags').delete(tagId);
+            await bk.collection('Tags').delete(tagId);
             fetchTags();
         }
         setConfirmDelete({ show: false, tagId: '' });

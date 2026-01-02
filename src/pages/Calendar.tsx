@@ -1,5 +1,5 @@
 import { createSignal, onMount, For, Show, createMemo } from 'solid-js';
-import { pb, currentUser } from '../lib/pocketbase';
+import { bk, currentUser } from '../lib/pocketbase';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -58,7 +58,7 @@ function Calendar() {
     async function fetchEvents() {
         try {
             console.log('Fetching events...');
-            const records = await pb.collection('Calendar').getFullList({
+            const records = await bk.collection('Calendar').getFullList({
                 expand: 'Tasks,Tags',
                 sort: 'Start'
             });
@@ -133,7 +133,7 @@ function Calendar() {
         
         isFetchingTodos = true;
         try {
-            const items = await pb.collection('Todo').getFullList({
+            const items = await bk.collection('Todo').getFullList({
                 filter: `user = "${currentUser()?.id}"`,
                 expand: 'Tags'
             });
@@ -183,7 +183,7 @@ function Calendar() {
     }
     
     async function toggleTaskCompletion(taskId: string, currentStatus: boolean) {
-        await pb.collection('Todo').update(taskId, {
+        await bk.collection('Todo').update(taskId, {
             Completed: !currentStatus,
             CompletedAt: !currentStatus ? new Date().toISOString() : null
         });
@@ -193,7 +193,7 @@ function Calendar() {
     
     async function fetchTags() {
         try {
-            const tags = await pb.collection('Tags').getFullList({
+            const tags = await bk.collection('Tags').getFullList({
                 filter: `user = "${currentUser()?.id}"`
             });
             setAllTags(tags);
@@ -214,7 +214,7 @@ function Calendar() {
         const createdTaskIds: string[] = [];
         for (const taskTitle of quickAddTasks()) {
             if (taskTitle.trim()) {
-                const taskRecord = await pb.collection('Todo').create({
+                const taskRecord = await bk.collection('Todo').create({
                     Title: taskTitle,
                     Description: '',
                     Completed: false,
@@ -242,7 +242,7 @@ function Calendar() {
             user: currentUser()?.id
         };
 
-        const record = await pb.collection('Calendar').create(data);
+        const record = await bk.collection('Calendar').create(data);
         
         // Recurring instances are generated virtually in fetchEvents()
         
@@ -267,7 +267,7 @@ function Calendar() {
         const createdTaskIds: string[] = [];
         for (const taskTitle of quickAddTasks()) {
             if (taskTitle.trim()) {
-                const taskRecord = await pb.collection('Todo').create({
+                const taskRecord = await bk.collection('Todo').create({
                     Title: taskTitle,
                     Description: '',
                     Completed: false,
@@ -295,12 +295,12 @@ function Calendar() {
             user: currentUser()?.id
         };
 
-        await pb.collection('Calendar').update(editingEvent().id, data);
+        await bk.collection('Calendar').update(editingEvent().id, data);
         await fetchEvents();
         await fetchTodos();
         
         // Refresh quickViewEvent if it was showing this event
-        const updatedEvent = await pb.collection('Calendar').getOne(editingEvent().id, {
+        const updatedEvent = await bk.collection('Calendar').getOne(editingEvent().id, {
             expand: 'Tasks,Tags'
         });
         setQuickViewEvent(updatedEvent);
@@ -318,7 +318,7 @@ function Calendar() {
     async function confirmDeleteEvent() {
         const eventId = confirmDelete().eventId;
         if (eventId) {
-            await pb.collection('Calendar').delete(eventId);
+            await bk.collection('Calendar').delete(eventId);
             setQuickViewEvent(null);
             await fetchEvents();
             await fetchTodos();
@@ -381,7 +381,7 @@ function Calendar() {
     }
 
     async function toggleTaskCompletion(taskId: string, currentStatus: boolean) {
-        await pb.collection('Todo').update(taskId, {
+        await bk.collection('Todo').update(taskId, {
             Completed: !currentStatus,
             CompletedAt: !currentStatus ? new Date().toISOString() : null
         });
@@ -393,7 +393,7 @@ function Calendar() {
         // Refresh quickViewEvent if it's open
         if (quickViewEvent()) {
             try {
-                const refreshed = await pb.collection('Calendar').getOne(quickViewEvent()!.id, {
+                const refreshed = await bk.collection('Calendar').getOne(quickViewEvent()!.id, {
                     expand: 'Tasks,Tags'
                 });
                 setQuickViewEvent(refreshed);
@@ -405,7 +405,7 @@ function Calendar() {
 
     async function openEventModal(eventId: string) {
         try {
-            const event = await pb.collection('Calendar').getOne(eventId, {
+            const event = await bk.collection('Calendar').getOne(eventId, {
                 expand: 'Tasks,Tags'
             });
             setQuickViewEvent(event);

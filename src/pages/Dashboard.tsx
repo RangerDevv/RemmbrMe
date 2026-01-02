@@ -1,6 +1,6 @@
 import { createSignal, onMount, For, Show, createEffect } from 'solid-js';
 import { A } from '@solidjs/router';
-import { pb, currentUser } from '../lib/pocketbase';
+import { bk, currentUser } from '../lib/backend.ts';
 import { sendNotification, isPermissionGranted, requestPermission } from '@tauri-apps/plugin-notification';
 
 interface DashboardSettings {
@@ -91,15 +91,15 @@ function Dashboard() {
         setIsLoading(true);
         try {
             const [eventRecords, todoRecords, tagRecords] = await Promise.all([
-                pb.collection('Calendar').getFullList({
+                bk.collection('Calendar').getFullList({
                     expand: 'Tasks,Tags',
                     sort: 'Start'
                 }),
-                pb.collection('Todo').getFullList({
+                bk.collection('Todo').getFullList({
                     expand: 'Tags',
                     sort: '-created'
                 }),
-                pb.collection('Tags').getFullList()
+                bk.collection('Tags').getFullList()
             ]);
 
             setEvents(eventRecords);
@@ -199,7 +199,7 @@ function Dashboard() {
     }
 
     async function quickCompleteTask(taskId: string) {
-        await pb.collection('Todo').update(taskId, { Completed: true });
+        await bk.collection('Todo').update(taskId, { Completed: true });
         fetchDashboardData();
     }
 
