@@ -1,5 +1,5 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
-import { pb, currentUser } from '../lib/pocketbase';
+import { bk, currentUser } from '../lib/backend.ts';
 
 function Tags() {
     const [tags, setTags] = createSignal([] as any[]);
@@ -14,7 +14,7 @@ function Tags() {
     ];
 
     async function fetchTags() {
-        const records = await pb.collection('Tags').getFullList({
+        const records = await bk.collection('Tags').getFullList({
             sort: 'created',
             filter: `user = "${currentUser()?.id}"`
         });
@@ -24,7 +24,7 @@ function Tags() {
     async function createTag() {
         if (!tagName().trim()) return;
 
-        await pb.collection('Tags').create({
+        await bk.collection('Tags').create({
             name: tagName(),
             color: tagColor(),
             user: currentUser()?.id
@@ -38,7 +38,7 @@ function Tags() {
     async function updateTag() {
         if (!editingTag() || !tagName().trim()) return;
 
-        await pb.collection('Tags').update(editingTag().id, {
+        await bk.collection('Tags').update(editingTag().id, {
             name: tagName(),
             color: tagColor()
         });
@@ -51,7 +51,7 @@ function Tags() {
 
     async function deleteTag(id: string) {
         if (confirm('Delete this tag? It will be removed from all tasks and events.')) {
-            await pb.collection('Tags').delete(id);
+            await bk.collection('Tags').delete(id);
             fetchTags();
         }
     }

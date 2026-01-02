@@ -1,5 +1,5 @@
 import { createSignal, Show } from 'solid-js';
-import { pb, currentUser } from '../lib/pocketbase';
+import { bk, currentUser } from '../lib/backend.ts';
 
 function QuickAdd() {
     const [showModal, setShowModal] = createSignal(false);
@@ -24,7 +24,7 @@ function QuickAdd() {
                 const end = new Date(start);
                 end.setHours(10, 0, 0, 0);
 
-                await pb.collection('Calendar').create({
+                await bk.collection('Calendar').create({
                     EventName: input,
                     Description: '',
                     AllDay: false,
@@ -41,7 +41,7 @@ function QuickAdd() {
                 window.location.href = '/calendar';
             } else {
                 // Create as task
-                await pb.collection('Todo').create({
+                await bk.collection('Todo').create({
                     Title: input,
                     Description: '',
                     Completed: false,

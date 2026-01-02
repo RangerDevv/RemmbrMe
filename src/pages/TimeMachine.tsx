@@ -1,5 +1,5 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
-import { pb, currentUser } from '../lib/pocketbase';
+import { bk, currentUser } from '../lib/backend.ts';
 import NotificationModal from '../components/NotificationModal';
 
 function TimeMachine() {
@@ -20,14 +20,14 @@ function TimeMachine() {
     async function fetchData() {
         try {
             console.log('Fetching Time Machine data...');
-            const eventRecords = await pb.collection('Calendar').getFullList({
+            const eventRecords = await bk.collection('Calendar').getFullList({
                 expand: 'Tasks',
                 sort: '-Start'
             });
             console.log('Time Machine events fetched:', eventRecords.length);
             setEvents(eventRecords);
 
-            const todoRecords = await pb.collection('Todo').getFullList({
+            const todoRecords = await bk.collection('Todo').getFullList({
                 sort: '-created'
             });
             setTodos(todoRecords);
@@ -38,7 +38,7 @@ function TimeMachine() {
 
     async function fetchFutureNotes() {
         try {
-            const notes = await pb.collection('FutureNotes').getFullList({
+            const notes = await bk.collection('FutureNotes').getFullList({
                 sort: 'DeliveryDate',
                 filter: `user = "${currentUser()?.id}"`
             });
@@ -51,7 +51,7 @@ function TimeMachine() {
     async function createFutureNote() {
         if (!noteContent() || !noteDate()) return;
 
-        await pb.collection('FutureNotes').create({
+        await bk.collection('FutureNotes').create({
             Content: noteContent(),
             DeliveryDate: new Date(noteDate()).toISOString(),
             Delivered: false
@@ -72,7 +72,7 @@ function TimeMachine() {
         setDeleteConfirm({ show: false, noteId: '' });
         
         try {
-            await pb.collection('FutureNotes').delete(noteId);
+            await bk.collection('FutureNotes').delete(noteId);
             await fetchFutureNotes();
             setNotification({ show: true, message: 'Note deleted successfully', type: 'success' });
         } catch (error) {

@@ -1,6 +1,6 @@
 import { createSignal, Show } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
-import { login } from '../lib/pocketbase';
+import { login } from '../lib/backend.ts';
 
 export default function Login() {
     const navigate = useNavigate();

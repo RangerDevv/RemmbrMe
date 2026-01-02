@@ -3,7 +3,7 @@ import {
   requestPermission,
   sendNotification,
 } from '@tauri-apps/plugin-notification';
-import { pb } from './pocketbase';
+import { bk } from './backend.ts';
 
 interface NotificationSchedule {
   id: string;
@@ -65,9 +65,9 @@ export function stopNotificationChecker() {
 
 // Update notification schedule with current tasks and events
 export async function updateNotificationSchedule() {
-  if (!pb.authStore.isValid) return;
+  if (!bk.authStore.isValid) return;
 
-  const userId = pb.authStore.model?.id;
+  const userId = bk.authStore.model?.id;
   if (!userId) return;
 
   if (isFetchingSchedule) {
@@ -87,13 +87,13 @@ export async function updateNotificationSchedule() {
 
   try {
     // Fetch tasks due today or tomorrow (using correct collection name and field)
-    const tasks = await pb.collection('Todo').getFullList({
+    const tasks = await bk.collection('Todo').getFullList({
       filter: `user="${userId}" && Completed=false && Deadline>="${now.toISOString()}" && Deadline<="${tomorrow.toISOString()}"`,
       sort: 'Deadline',
     });
 
     // Fetch events today or tomorrow
-    const events = await pb.collection('Calendar').getFullList({
+    const events = await bk.collection('Calendar').getFullList({
       filter: `user="${userId}" && Start>="${now.toISOString()}" && Start<="${tomorrow.toISOString()}"`,
       sort: 'Start',
     });

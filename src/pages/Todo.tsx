@@ -1,7 +1,7 @@
 import { UploadFile, fileUploader } from '@solid-primitives/upload';
 import { Index, Show, createSignal, onMount } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
-import { pb, currentUser } from '../lib/pocketbase';
+import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 
 function Todo() {
@@ -24,7 +24,7 @@ function Todo() {
             user: currentUser()?.id
         };
         console.log('Creating task with data:', data);
-        const record = await pb.collection('Todo').create(data);
+        const record = await bk.collection('Todo').create(data);
         console.log('Task created:', record);
         
         // Generate recurring instances if recurrence is set
@@ -56,7 +56,7 @@ function Todo() {
             RecurrenceEndDate: recurEnd || null,
             user: currentUser()?.id
         };
-        await pb.collection('Todo').update(id, data);
+        await bk.collection('Todo').update(id, data);
         console.log('Task updated');
         fetchTodos();
         setTimeout(() => refreshNotifications(), 100);
@@ -66,14 +66,14 @@ function Todo() {
 
     async function deleteTask(id: string) {
         if (confirm('Are you sure you want to delete this task?')) {
-            await pb.collection('Todo').delete(id);
+            await bk.collection('Todo').delete(id);
             fetchTodos();
             setTimeout(() => refreshNotifications(), 100);
         }
     }
 
     async function toggleComplete(id: string, currentStatus: boolean) {
-        await pb.collection('Todo').update(id, {
+        await bk.collection('Todo').update(id, {
             Completed: !currentStatus,
             CompletedAt: !currentStatus ? new Date().toISOString() : null
         });
@@ -108,14 +108,14 @@ function Todo() {
     let needsRefetch = false;
     
     async function fetchTodos() {
-            const items = await pb.collection('Todo').getFullList({
+            const items = await bk.collection('Todo').getFullList({
                 expand: 'Tags'
             });
             setTodoItems(items);
     }
     
     async function fetchTags() {
-        const tags = await pb.collection('Tags').getFullList({
+        const tags = await bk.collection('Tags').getFullList({
             filter: `user = "${currentUser()?.id}"`
         });
         setAllTags(tags);

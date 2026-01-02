@@ -1,4 +1,4 @@
-import { pb } from '../lib/pocketbase';
+import { bk } from '../lib/backend.ts';
 
 export interface RecurrenceOptions {
     frequency: 'daily' | 'weekly' | 'monthly' | 'none';
@@ -54,7 +54,7 @@ export async function generateRecurringTasks(
         };
 
         try {
-            const created = await pb.collection('Todo').create(instance);
+            const created = await bk.collection('Todo').create(instance);
             instances.push(created);
             instanceCount++;
         } catch (error) {
@@ -119,7 +119,7 @@ export async function generateRecurringEvents(
         };
 
         try {
-            const created = await pb.collection('Calendar').create(instance);
+            const created = await bk.collection('Calendar').create(instance);
             instances.push(created);
             instanceCount++;
         } catch (error) {
@@ -135,12 +135,12 @@ export async function generateRecurringEvents(
  */
 export async function deleteFutureInstances(parentId: string, collection: 'Todo' | 'Calendar') {
     const fieldName = collection === 'Todo' ? 'ParentTaskId' : 'ParentEventId';
-    const instances = await pb.collection(collection).getFullList({
+    const instances = await bk.collection(collection).getFullList({
         filter: `${fieldName} = "${parentId}"`
     });
 
     for (const instance of instances) {
-        await pb.collection(collection).delete(instance.id);
+        await bk.collection(collection).delete(instance.id);
     }
 }
 
@@ -153,11 +153,11 @@ export async function updateFutureInstances(
     updates: any
 ) {
     const fieldName = collection === 'Todo' ? 'ParentTaskId' : 'ParentEventId';
-    const instances = await pb.collection(collection).getFullList({
+    const instances = await bk.collection(collection).getFullList({
         filter: `${fieldName} = "${parentId}"`
     });
 
     for (const instance of instances) {
-        await pb.collection(collection).update(instance.id, updates);
+        await bk.collection(collection).update(instance.id, updates);
     }
 }

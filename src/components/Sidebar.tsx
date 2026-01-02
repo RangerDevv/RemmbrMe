@@ -1,5 +1,5 @@
 import { createSignal, Show } from 'solid-js';
-import { currentUser, logout } from '../lib/pocketbase';
+import { currentUser, logout } from '../lib/backend.ts';
 
 export default function Sidebar() {
     const [showProfileMenu, setShowProfileMenu] = createSignal(false);
