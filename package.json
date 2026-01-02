@@ -1,7 +1,7 @@
 {
   "name": "remmbrme",
-  "version": "0.1.0",
-  "description": "",
+  "version": "1.0.0",
+  "description": "The all in one productivity and memory app powered by Generative AI.",
   "type": "module",
   "scripts": {
     "start": "vite",
