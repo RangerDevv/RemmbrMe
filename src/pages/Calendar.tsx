@@ -1,5 +1,5 @@
 import { createSignal, onMount, For, Show, createMemo } from 'solid-js';
-import { bk, currentUser } from '../lib/pocketbase';
+import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -181,15 +181,16 @@ function Calendar() {
         
         return filtered;
     }
-    
-    async function toggleTaskCompletion(taskId: string, currentStatus: boolean) {
-        await bk.collection('Todo').update(taskId, {
-            Completed: !currentStatus,
-            CompletedAt: !currentStatus ? new Date().toISOString() : null
-        });
-        await fetchTodos();
-        refreshNotifications();
-    }
+
+    //TODO: Remove this vibecoded bs
+    // async function toggleTaskCompletion(taskId: string, currentStatus: boolean) {
+    //     await bk.collection('Todo').update(taskId, {
+    //         Completed: !currentStatus,
+    //         CompletedAt: !currentStatus ? new Date().toISOString() : null
+    //     });
+    //     await fetchTodos();
+    //     refreshNotifications();
+    // }
     
     async function fetchTags() {
         try {
@@ -219,6 +220,7 @@ function Calendar() {
                     Description: '',
                     Completed: false,
                     Priority: 'P2',
+                    user: bk.authStore.record
                 });
                 createdTaskIds.push(taskRecord.id);
             }
@@ -242,7 +244,7 @@ function Calendar() {
             user: currentUser()?.id
         };
 
-        const record = await bk.collection('Calendar').create(data);
+        await bk.collection('Calendar').create(data);
         
         // Recurring instances are generated virtually in fetchEvents()
         

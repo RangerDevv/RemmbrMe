@@ -155,7 +155,7 @@ Guidelines:
             const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
             
             setProcessingStatus('📦 Parsing AI response...');
-            const parsed = JSON.parse(jsonText);
+            const parsed = JSON.parse(jsonText); //TODO: Probably need to make this typesafe if possible
 
             const created: any[] = [];
 
@@ -168,7 +168,8 @@ Guidelines:
                         Description: todo.description || '',
                         Completed: false,
                         Priority: todo.priority || 'P2',
-                        Deadline: todo.deadline || ''
+                        Deadline: todo.deadline || '',
+                        user: bk.authStore.record.id
                     });
                     created.push({ type: 'todo', data: record });
                 }
@@ -186,7 +187,8 @@ Guidelines:
                         End: event.end,
                         Location: { lat: 0, lon: 0 },
                         Color: event.color || '#3b82f6',
-                        Tasks: []
+                        Tasks: [],
+                        user: bk.authStore.record.id
                     });
                     created.push({ type: 'event', data: record });
                 }
@@ -660,7 +662,7 @@ Return ONLY the JSON array, no markdown.`;
                     <Show when={smartSuggestions().length > 0}>
                         <div class="space-y-3">
                             <For each={smartSuggestions()}>
-                                {(suggestion, index) => (
+                                {(suggestion, _) => (
                                     <div class="bg-black/50 border border-zinc-700 rounded-lg p-4 hover:border-emerald-600/50 transition-all duration-200">
                                         <div class="flex items-start gap-3">
                                             <span class="text-lg">💡</span>
