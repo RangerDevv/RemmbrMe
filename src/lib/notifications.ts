@@ -3,7 +3,7 @@ import {
   requestPermission,
   sendNotification,
 } from '@tauri-apps/plugin-notification';
-import { bk } from './backend.ts';
+import {bk, currentUser, isAuthenticated} from './backend.ts';
 
 interface NotificationSchedule {
   id: string;
@@ -65,9 +65,9 @@ export function stopNotificationChecker() {
 
 // Update notification schedule with current tasks and events
 export async function updateNotificationSchedule() {
-  if (!bk.authStore.isValid) return;
+  if (!isAuthenticated()) return;
 
-  const userId = bk.authStore.model?.id;
+  const userId = currentUser().id;
   if (!userId) return;
 
   if (isFetchingSchedule) {
@@ -100,7 +100,7 @@ export async function updateNotificationSchedule() {
 
     // Schedule notifications for tasks
     for (const task of tasks) {
-      const dueDate = new Date(task.Deadline);
+      const dueDate = new Date(task.Deadline!);
       
       // 10 minutes before
       const tenMinsBefore = new Date(dueDate.getTime() - 10 * 60 * 1000);

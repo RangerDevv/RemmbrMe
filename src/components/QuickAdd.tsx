@@ -48,8 +48,8 @@ function QuickAdd() {
                     Priority: 'P2',
                     Deadline: '',
                     Tags: [],
-                    Recurrence: '',
-                    RecurrenceEndDate: null,
+                    Recurrence: 'none',
+                    RecurrenceEndDate: undefined,
                     user: currentUser()?.id
                 });
                 

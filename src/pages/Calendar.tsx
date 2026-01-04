@@ -210,7 +210,7 @@ function Calendar() {
                     Description: '',
                     Completed: false,
                     Priority: 'P2',
-                    user: bk.authStore.record
+                    user: currentUser().id
                 });
                 createdTaskIds.push(taskRecord.id);
             }
@@ -229,8 +229,8 @@ function Calendar() {
             Tasks: allTaskIds,
             Color: eventColor() || '#3b82f6',
             Tags: selectedTags() || [],
-            Recurrence: recurrence() === 'none' ? null : recurrence(),
-            RecurrenceEndDate: recurrenceEndDate() || null,
+            Recurrence: recurrence() as "none"|"daily"|"weekly"|"monthly",
+            RecurrenceEndDate: recurrenceEndDate() || undefined,
             user: currentUser()?.id
         };
 
@@ -283,8 +283,8 @@ function Calendar() {
             Tasks: allTaskIds,
             Color: eventColor() || '#3b82f6',
             Tags: selectedTags() || [],
-            Recurrence: recurrence() === 'none' ? null : recurrence(),
-            RecurrenceEndDate: recurrenceEndDate() || null,
+            Recurrence: recurrence() as "none"|"daily"|"weekly"|"monthly",
+            RecurrenceEndDate: recurrenceEndDate() || undefined,
             user: currentUser()?.id
         };
 

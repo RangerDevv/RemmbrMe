@@ -18,7 +18,7 @@ export const bk = container.$import("backend")
 
 // Auth state signals
 export const [isAuthenticated, setIsAuthenticated] = createSignal(bk.authStore.isValid);
-export const [currentUser, setCurrentUser] = createSignal<User | null>(bk.authStore.record);
+export const [currentUser, setCurrentUser] = createSignal<User<"read">>(bk.authStore.record);
 
 // Listen to auth state changes
 bk.authStore.onChange((token, record) => {

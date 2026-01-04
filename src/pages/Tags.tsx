@@ -29,7 +29,7 @@ function Tags() {
         await bk.collection('Tags').create({
             name: tagName(),
             color: tagColor(),
-            user: currentUser()?.id
+            user: currentUser()!.id
         });
 
         setTagName('');

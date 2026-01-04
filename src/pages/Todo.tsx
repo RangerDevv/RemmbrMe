@@ -1,4 +1,4 @@
-import { UploadFile, fileUploader } from '@solid-primitives/upload';
+import { UploadFile} from '@solid-primitives/upload';
 import { Index, Show, createSignal, onMount } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
 import { bk, currentUser } from '../lib/backend.ts';
@@ -7,9 +7,9 @@ import ConfirmModal from '../components/ConfirmModal';
 
 function Todo() {
 
-    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadline:string, tags:string[], recur:string, recurEnd:string) {
+    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadline:string, tags:string[], recur:string, recurEnd:string) {
         // Convert datetime-local format to ISO string
-        const deadlineISO = deadline ? new Date(deadline).toISOString() : null;
+        const deadlineISO = deadline ? new Date(deadline).toISOString() : undefined;
         
         const data = {
             Title: name,
@@ -17,12 +17,12 @@ function Todo() {
             Completed: completed,
             URL: url,
             File: file,
-            Priority: priority,
+            Priority: priority as `P${number}`,
             Deadline: deadlineISO,
             Tags: tags,
-            Recurrence: recur,
-            RecurrenceEndDate: recurEnd || null,
-            user: currentUser()?.id
+            Recurrence: recur as "none" | "daily" | "weekly" | "monthly",
+            RecurrenceEndDate: recurEnd || undefined,
+            user: currentUser()!.id
         };
         console.log('Creating task with data:', data);
         const record = await bk.collection('Todo').create(data);
@@ -42,7 +42,7 @@ function Todo() {
 
     async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadline:string, tags:string[], recur:string, recurEnd:string) {
         // Convert datetime-local format to ISO string
-        const deadlineISO = deadline ? new Date(deadline).toISOString() : null;
+        const deadlineISO = deadline ? new Date(deadline).toISOString() : undefined;
         
         const data = {
             Title: name,
@@ -50,11 +50,11 @@ function Todo() {
             Completed: completed,
             URL: url,
             File: file,
-            Priority: priority,
+            Priority: priority as `P${number}`,
             Deadline: deadlineISO,
             Tags: tags,
-            Recurrence: recur,
-            RecurrenceEndDate: recurEnd || null,
+            Recurrence: recur as "none"|"daily"|"weekly"|"monthly",
+            RecurrenceEndDate: recurEnd || undefined,
             user: currentUser()?.id
         };
         await bk.collection('Todo').update(id, data);
@@ -81,8 +81,7 @@ function Todo() {
 
     async function toggleComplete(id: string, currentStatus: boolean) {
         await bk.collection('Todo').update(id, {
-            Completed: !currentStatus,
-            CompletedAt: !currentStatus ? new Date().toISOString() : null
+            Completed: !currentStatus
         });
         fetchTodos();
         setTimeout(() => refreshNotifications(), 100);

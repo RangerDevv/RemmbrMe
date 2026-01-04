@@ -1,7 +1,6 @@
 import { createSignal, Show, onMount } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { currentUser, updateProfile, logout, bk } from '../lib/backend.ts';
-import NotificationModal from '../components/NotificationModal';
 
 export default function Profile() {
     const navigate = useNavigate();

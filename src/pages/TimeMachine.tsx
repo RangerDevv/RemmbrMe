@@ -54,13 +54,14 @@ function TimeMachine() {
         await bk.collection('FutureNotes').create({
             Content: noteContent(),
             DeliveryDate: new Date(noteDate()).toISOString(),
-            Delivered: false
+            Delivered: false,
+            user: currentUser()!.id
         });
 
         setNoteContent('');
         setNoteDate('');
         setShowNoteModal(false);
-        fetchFutureNotes();
+        await fetchFutureNotes();
     }
 
     async function deleteFutureNote(id: string) {
@@ -142,7 +143,7 @@ function TimeMachine() {
         const month = selectedMonth().getMonth();
         const year = selectedMonth().getFullYear();
         
-        const firstDay = new Date(year, month, 1);
+        // const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const daysInMonth = lastDay.getDate();
         

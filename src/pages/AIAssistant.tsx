@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createSignal, Show, For } from 'solid-js';
-import { bk } from '../lib/backend.ts';
+import {bk, currentUser} from '../lib/backend.ts';
 import NotificationModal from '../components/NotificationModal';
 
 function AIAssistant() {
@@ -169,7 +169,7 @@ Guidelines:
                         Completed: false,
                         Priority: todo.priority || 'P2',
                         Deadline: todo.deadline || '',
-                        user: bk.authStore.record.id
+                        user: currentUser().id
                     });
                     created.push({ type: 'todo', data: record });
                 }
@@ -188,7 +188,7 @@ Guidelines:
                         Location: { lat: 0, lon: 0 },
                         Color: event.color || '#3b82f6',
                         Tasks: [],
-                        user: bk.authStore.record.id
+                        user: currentUser().id
                     });
                     created.push({ type: 'event', data: record });
                 }

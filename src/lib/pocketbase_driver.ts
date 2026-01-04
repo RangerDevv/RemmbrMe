@@ -14,9 +14,11 @@ import {
 
 class PocketbaseCollection<T extends collectionName> implements BackendCollection<T> {
     private pb: RecordService;
+    private authStore: AuthStore;
 
-    constructor(pb: PocketBase, name: T) {
+    constructor(pb: PocketBase, authStore: AuthStore, name: T) {
         this.pb = pb.collection(name);
+        this.authStore = authStore;
     }
 
     private _authWithPassword(usernameOrEmail: string, password: string): Promise<AuthResponse> {
@@ -27,6 +29,9 @@ class PocketbaseCollection<T extends collectionName> implements BackendCollectio
     public authWithPassword: (T extends "users" ? typeof this._authWithPassword: never) = this._authWithPassword as any
 
     public getOne(id: string, options?: QueryOptions): Promise<collectionMapping[T]> {
+        if (options) {
+            options.filter = `${options.filter || ""} && user = ${this.authStore.record.id}`
+        }
         return this.pb.getOne(id, options)
     }
 
@@ -34,11 +39,11 @@ class PocketbaseCollection<T extends collectionName> implements BackendCollectio
         return this.pb.getFullList(options)
     }
 
-    public create(fields: createFields<T>): Promise<collectionMapping[T]> {
+    public create(fields: createFields<T>): Promise<collectionMapping<"create">[T]> {
         return this.pb.create(fields);
     }
 
-    public update(id: string, fields: updateFields<T>): Promise<collectionMapping[T]> {
+    public update(id: string, fields: updateFields<T>): Promise<collectionMapping<"create">[T]> {
         return this.pb.update(id, fields);
     }
 
@@ -58,7 +63,7 @@ export class PocketbaseDriver implements BackendDriver {
     }
 
     public collection<T extends collectionName>(name: T) {
-        return new PocketbaseCollection(this.pb, name);
+        return new PocketbaseCollection(this.pb, this.authStore, name);
     }
 
     public static bind(container: iocContainer<dependencies>) {

@@ -5,7 +5,7 @@ export interface Tags<K extends objectModes> {
     id: string,
     name: string;
     color: string;
-    user: sqlRelation<User, K>;
-    created: Date;
-    updated: Date;
+    user: sqlRelation<User<K>, K>;
+    created: string;
+    updated: string;
 }

@@ -1,4 +1,4 @@
-import { bk } from '../lib/backend.ts';
+import {bk, currentUser} from '../lib/backend.ts';
 
 export interface RecurrenceOptions {
     frequency: 'daily' | 'weekly' | 'monthly' | 'none';
@@ -48,9 +48,10 @@ export async function generateRecurringTasks(
             Priority: parentTask.Priority,
             Deadline: currentDate.toISOString().split('T')[0],
             Tags: parentTask.Tags,
-            Recurrence: options.frequency,
+            Recurrence: options.frequency as "none"|"daily"|"weekly"|"monthly",
             ParentTaskId: parentTaskId,
             URL: parentTask.URL,
+            user: currentUser().id
         };
 
         try {
@@ -113,9 +114,10 @@ export async function generateRecurringEvents(
             Location: parentEvent.Location,
             Color: parentEvent.Color,
             Tags: parentEvent.Tags,
-            Recurrence: options.frequency,
+            Recurrence: options.frequency as "none"|"daily"|"weekly"|"monthly",
             ParentEventId: parentEventId,
             Tasks: [], // Don't duplicate tasks for recurring events
+            user: currentUser().id
         };
 
         try {

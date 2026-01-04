@@ -8,16 +8,16 @@ export interface Calendar<K extends objectModes> {
     AllDay: boolean;
     Description: string;
     EventName: string;
-    Start: Date;
-    End: Date;
+    Start: string;
+    End: string;
     Location: {lat: number, lon: number};
     Color: string;
     Tasks: sqlRelation<Todo<K>, K>[];
     Tags?: sqlRelation<Tags<K>, K>[];
     Recurrence?: "none"|"daily"|"weekly"|"monthly";
-    RecurrencePattern?: Object;
-    RecurrenceEndDate?: Date;
-    user: sqlRelation<User, K>;
-    created: Date;
-    updated: Date;
+    RecurrencePattern?: Object; //TODO add interface
+    RecurrenceEndDate?: string;
+    user: sqlRelation<User<K>, K>;
+    created: string;
+    updated: string;
 }

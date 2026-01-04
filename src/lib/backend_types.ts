@@ -3,15 +3,17 @@ import {Todo} from "./models/Todo";
 import {Calendar} from "./models/Calendar";
 import {Tags} from "./models/Tags";
 import PocketBase from "pocketbase";
+import {FutureNotes} from "./models/FutureNotes.ts";
 
 /**
  * Editable types; these should be changed when a new table is added in the db or a new dependency for IoC.
  */
 export interface collectionMapping<K extends objectModes="read"> {
     Todo: Todo<K>;
-    users: User;
+    users: User<K>;
     Calendar: Calendar<K>;
     Tags: Tags<K>;
+    FutureNotes: FutureNotes<K>;
 }
 
 export interface dependencies {
@@ -31,14 +33,14 @@ export interface QueryOptions {
 }
 
 export interface AuthResponse {
-    record: User;
+    record: User<"read">;
     token: string;
 }
 
 export interface AuthStore {
-    onChange: (callback: (token: string, record: User | null) => void) => () => void;
+    onChange: (callback: (token: string, record: User<"read">) => void) => () => void;
     clear: () => void;
-    record: User;
+    record: User<"read">;
     isValid: boolean;
 }
 

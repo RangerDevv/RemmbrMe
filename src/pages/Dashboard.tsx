@@ -1,7 +1,6 @@
 import { createSignal, onMount, For, Show, createEffect } from 'solid-js';
 import { A } from '@solidjs/router';
 import { bk, currentUser } from '../lib/backend.ts';
-import { sendNotification, isPermissionGranted, requestPermission } from '@tauri-apps/plugin-notification';
 
 interface DashboardSettings {
     showCompletedToday: boolean;
@@ -92,14 +91,18 @@ function Dashboard() {
         try {
             const [eventRecords, todoRecords, tagRecords] = await Promise.all([
                 bk.collection('Calendar').getFullList({
+                    filter: `user = ${currentUser()?.id}`,
                     expand: 'Tasks,Tags',
                     sort: 'Start'
                 }),
                 bk.collection('Todo').getFullList({
+                    filter: `user = ${currentUser()?.id}`,
                     expand: 'Tags',
                     sort: '-created'
                 }),
-                bk.collection('Tags').getFullList()
+                bk.collection('Tags').getFullList({
+                    filter: `user = ${currentUser()?.id}` //TODO: A lot of filtering is being done by user, maybe do this by default
+                })
             ]);
 
             setEvents(eventRecords);
