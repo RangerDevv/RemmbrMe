@@ -210,7 +210,7 @@ function Calendar() {
                     Description: '',
                     Completed: false,
                     Priority: 'P2',
-                    user: currentUser()?.id
+                    user: bk.authStore.record
                 });
                 createdTaskIds.push(taskRecord.id);
             }
@@ -234,7 +234,7 @@ function Calendar() {
             user: currentUser()?.id
         };
 
-        const record = await bk.collection('Calendar').create(data);
+        await bk.collection('Calendar').create(data);
         
         // Recurring instances are generated virtually in fetchEvents()
         
