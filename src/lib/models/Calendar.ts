@@ -15,7 +15,7 @@ export interface Calendar<K extends objectModes> {
     Tasks: sqlRelation<Todo<K>, K>[];
     Tags?: sqlRelation<Tags<K>, K>[];
     Recurrence?: "none"|"daily"|"weekly"|"monthly";
-    RecurrencePattern?: Object; //TODO add interface
+    RecurrencePattern?: Object;
     RecurrenceEndDate?: string;
     user: sqlRelation<User<K>, K>;
     created: string;

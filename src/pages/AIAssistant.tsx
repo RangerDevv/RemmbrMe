@@ -155,7 +155,7 @@ Guidelines:
             const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
             
             setProcessingStatus('📦 Parsing AI response...');
-            const parsed = JSON.parse(jsonText); //TODO: Probably need to make this typesafe if possible
+            const parsed = JSON.parse(jsonText);
 
             const created: any[] = [];
 

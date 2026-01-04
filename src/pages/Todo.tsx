@@ -1,9 +1,10 @@
-import { UploadFile} from '@solid-primitives/upload';
+import { UploadFile, fileUploader } from '@solid-primitives/upload';
 import { Index, Show, createSignal, onMount } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
+
 
 function Todo() {
 
@@ -92,7 +93,7 @@ function Todo() {
     const [TaskCompleted, setTaskCompleted] = createSignal(false);
     const [TaskURL, setTaskURL] = createSignal('');
     const [TaskFile, setTaskFile] = createSignal<UploadFile[]>([]);
-    const [TaskPriority, setTaskPriority] = createSignal('P1');
+    const [TaskPriority, setTaskPriority] = createSignal('P2');
     const [TaskDeadline, setTaskDeadline] = createSignal('');
     const [selectedTags, setSelectedTags] = createSignal<string[]>([]);
     const [recurrence, setRecurrence] = createSignal('none');
@@ -519,8 +520,9 @@ function Todo() {
         </div>
 
         {/* Create/Edit Modal */}
+
         <Show when={showModal()}>
-            <div 
+            <div
                 class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 onClick={() => {
                     setShowModal(false);
@@ -528,7 +530,7 @@ function Todo() {
                     resetForm();
                 }}
             >
-                <div 
+                <div
                     class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -546,197 +548,197 @@ function Todo() {
                         </button>
                     </div>
                     <div class="p-6">
-            <form 
-                class="transition-all duration-200"
-                onSubmit={async (e) => {
-                console.log(TaskFile());
-                e.preventDefault();
-                if (editingTask()) {
-                    await updateTask(
-                        editingTask().id,
-                        TaskName(),
-                        TaskDescription(),
-                        TaskCompleted(),
-                        TaskURL(),
-                        TaskFile().map(f => f.file),
-                        TaskPriority(),
-                        TaskDeadline(),
-                        selectedTags(),
-                        recurrence(),
-                        recurrenceEndDate()
-                    );
-                } else {
-                    await createTask(
-                        TaskName(),
-                        TaskDescription(),
-                        TaskCompleted(),
-                        TaskURL(),
-                        TaskFile().map(f => f.file),
-                        TaskPriority(),
-                        TaskDeadline(),
-                        selectedTags(),
-                        recurrence(),
-                        recurrenceEndDate()
-                    );
-                }
-                resetForm();
-                setShowModal(false);
-                setEditingTask(null);
-            }}>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Title:</label>
-                    <input 
-                        type="text" 
-                        value={TaskName()} 
-                        onInput={(e) => setTaskName(e.currentTarget.value)} 
-                        required 
-                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
-                        placeholder="Enter task title..."
-                    />
-                </div>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Description:</label>
-                    <textarea 
-                        value={TaskDescription()} 
-                        onInput={(e) => setTaskDescription(e.currentTarget.value)} 
-                        required
-                        rows="4"
-                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200 resize-none"
-                        placeholder="Describe your task..."
-                    ></textarea>
-                </div>
-                <div class="mb-5 flex items-center gap-3 p-3 bg-black/50 rounded-lg border border-zinc-800 transition-colors duration-200">
-                    <input 
-                        type="checkbox" 
-                        checked={TaskCompleted()} 
-                        onChange={(e) => setTaskCompleted(e.currentTarget.checked)} 
-                        class="w-5 h-5 rounded border-zinc-600 text-white focus:ring-1 focus:ring-zinc-500 focus:ring-offset-0 bg-black cursor-pointer"
-                    />
-                    <label class="text-sm font-medium text-gray-400 cursor-pointer">Mark as Completed</label>
-                </div>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">URL:</label>
-                    <input 
-                        type="url" 
-                        value={TaskURL()} 
-                        onInput={(e) => setTaskURL(e.currentTarget.value)} 
-                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
-                        placeholder="https://..."
-                    />
-                </div>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">File:</label>
-                    <input 
-                        type="file" 
-                        multiple 
-                        use:fileUploader={{
-                        userCallback: fs => fs.forEach(f => console.log(f)), setFiles: setTaskFile
-                    }} 
-                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white/5 file:text-gray-300 file:font-medium hover:file:bg-white/10 file:cursor-pointer focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
-                    />
-                </div>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Priority:</label>
-                    <div class="relative">
-                        <select 
-                            value={TaskPriority()} 
-                            onChange={(e) => setTaskPriority(e.currentTarget.value)}
-                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 cursor-pointer appearance-none"
-                            style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
-                        >
-                            <option value="P1" class="bg-zinc-900 text-white py-2">🔴 P1 - High Priority</option>
-                            <option value="P2" class="bg-zinc-900 text-white py-2">🟡 P2 - Medium Priority</option>
-                            <option value="P3" class="bg-zinc-900 text-white py-2">🟢 P3 - Low Priority</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Due By (Optional):</label>
-                    <input 
-                        type="datetime-local" 
-                        value={TaskDeadline()} 
-                        onInput={(e) => setTaskDeadline(e.currentTarget.value)} 
-                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
-                    />
-                    <p class="text-xs text-gray-500 mt-1">Select a date and optionally a time. If no time is specified, it's due anytime that day.</p>
-                </div>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Tags:</label>
-                    <div class="flex flex-wrap gap-2 p-3 bg-black border border-zinc-700 rounded-lg min-h-[44px]">
-                        <Index each={allTags()}>
-                            {(tag) => (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const tagId = tag().id;
-                                        if (selectedTags().includes(tagId)) {
-                                            setSelectedTags(selectedTags().filter(id => id !== tagId));
-                                        } else {
-                                            setSelectedTags([...selectedTags(), tagId]);
-                                        }
-                                    }}
-                                    class={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white transition-all duration-200 ${
-                                        selectedTags().includes(tag().id)
-                                            ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-105'
-                                            : 'hover:opacity-80'
-                                    }`}
-                                    style={{ 'background-color': `${tag().color}${selectedTags().includes(tag().id) ? '' : '40'}`, 'border': `1px solid ${tag().color}60` }}
-                                >
-                                    <div
-                                        class="w-2 h-2 rounded-full"
-                                        style={{ 'background-color': tag().color }}
+                        <form
+                            class="transition-all duration-200"
+                            onSubmit={async (e) => {
+                            console.log(TaskFile());
+                            e.preventDefault();
+                            if (editingTask()) {
+                                await updateTask(
+                                    editingTask().id,
+                                    TaskName(),
+                                    TaskDescription(),
+                                    TaskCompleted(),
+                                    TaskURL(),
+                                    TaskFile().map(f => f.file),
+                                    TaskPriority(),
+                                    TaskDeadline(),
+                                    selectedTags(),
+                                    recurrence(),
+                                    recurrenceEndDate()
+                                );
+                            } else {
+                                await createTask(
+                                    TaskName(),
+                                    TaskDescription(),
+                                    TaskCompleted(),
+                                    TaskURL(),
+                                    TaskFile().map(f => f.file),
+                                    TaskPriority(),
+                                    TaskDeadline(),
+                                    selectedTags(),
+                                    recurrence(),
+                                    recurrenceEndDate()
+                                );
+                            }
+                            resetForm();
+                            setShowModal(false);
+                            setEditingTask(null);
+                        }}>
+                            <div class="mb-5">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Title:</label>
+                                <input
+                                    type="text"
+                                    value={TaskName()}
+                                    onInput={(e) => setTaskName(e.currentTarget.value)}
+                                    required
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
+                                    placeholder="Enter task title..."
+                                />
+                            </div>
+                            <div class="mb-5">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Description:</label>
+                                <textarea
+                                    value={TaskDescription()}
+                                    onInput={(e) => setTaskDescription(e.currentTarget.value)}
+                                    required
+                                    rows="4"
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200 resize-none"
+                                    placeholder="Describe your task..."
+                                ></textarea>
+                            </div>
+                            <div class="mb-5 flex items-center gap-3 p-3 bg-black/50 rounded-lg border border-zinc-800 transition-colors duration-200">
+                                <input
+                                    type="checkbox"
+                                    checked={TaskCompleted()}
+                                    onChange={(e) => setTaskCompleted(e.currentTarget.checked)}
+                                    class="w-5 h-5 rounded border-zinc-600 text-white focus:ring-1 focus:ring-zinc-500 focus:ring-offset-0 bg-black cursor-pointer"
+                                />
+                                <label class="text-sm font-medium text-gray-400 cursor-pointer">Mark as Completed</label>
+                            </div>
+                            <div class="mb-5">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">URL:</label>
+                                <input
+                                    type="url"
+                                    value={TaskURL()}
+                                    onInput={(e) => setTaskURL(e.currentTarget.value)}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
+                                    placeholder="https://..."
+                                />
+                            </div>
+                            <div class="mb-5">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">File:</label>
+                                <input
+                                    type="file"
+                                    multiple
+                                    use:fileUploader={{
+                                    userCallback: fs => fs.forEach(f => console.log(f)), setFiles: setTaskFile
+                                }}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white/5 file:text-gray-300 file:font-medium hover:file:bg-white/10 file:cursor-pointer focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
+                                />
+                            </div>
+                            <div class="mb-5">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Priority:</label>
+                                <div class="relative">
+                                    <select
+                                        value={TaskPriority()}
+                                        onChange={(e) => setTaskPriority(e.currentTarget.value)}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 cursor-pointer appearance-none"
+                                        style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
+                                    >
+                                        <option value="P1" class="bg-zinc-900 text-white py-2">🔴 P1 - High Priority</option>
+                                        <option value="P2" class="bg-zinc-900 text-white py-2">🟡 P2 - Medium Priority</option>
+                                        <option value="P3" class="bg-zinc-900 text-white py-2">🟢 P3 - Low Priority</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-5">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Due By (Optional):</label>
+                                <input
+                                    type="datetime-local"
+                                    value={TaskDeadline()}
+                                    onInput={(e) => setTaskDeadline(e.currentTarget.value)}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
+                                />
+                                <p class="text-xs text-gray-500 mt-1">Select a date and optionally a time. If no time is specified, it's due anytime that day.</p>
+                            </div>
+                            <div class="mb-5">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Tags:</label>
+                                <div class="flex flex-wrap gap-2 p-3 bg-black border border-zinc-700 rounded-lg min-h-[44px]">
+                                    <Index each={allTags()}>
+                                        {(tag) => (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const tagId = tag().id;
+                                                    if (selectedTags().includes(tagId)) {
+                                                        setSelectedTags(selectedTags().filter(id => id !== tagId));
+                                                    } else {
+                                                        setSelectedTags([...selectedTags(), tagId]);
+                                                    }
+                                                }}
+                                                class={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white transition-all duration-200 ${
+                                                    selectedTags().includes(tag().id)
+                                                        ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-105'
+                                                        : 'hover:opacity-80'
+                                                }`}
+                                                style={{ 'background-color': `${tag().color}${selectedTags().includes(tag().id) ? '' : '40'}`, 'border': `1px solid ${tag().color}60` }}
+                                            >
+                                                <div
+                                                    class="w-2 h-2 rounded-full"
+                                                    style={{ 'background-color': tag().color }}
+                                                />
+                                                {tag().name}
+                                            </button>
+                                        )}
+                                    </Index>
+                                    <Show when={allTags().length === 0}>
+                                        <a href="/tags" class="text-sm text-gray-500 hover:text-gray-400 transition-colors duration-200">
+                                            Create tags in Tags page →
+                                        </a>
+                                    </Show>
+                                </div>
+                            </div>
+                            <div class="mb-5">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence:</label>
+                                <div class="relative">
+                                    <select
+                                        value={recurrence()}
+                                        onChange={(e) => setRecurrence(e.currentTarget.value)}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 cursor-pointer appearance-none"
+                                        style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
+                                    >
+                                        <option value="none" class="bg-zinc-900">None</option>
+                                        <option value="daily" class="bg-zinc-900">📅 Daily</option>
+                                        <option value="weekly" class="bg-zinc-900">📆 Weekly</option>
+                                        <option value="monthly" class="bg-zinc-900">🗓️ Monthly</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <Show when={recurrence() !== 'none'}>
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Repeat Until (Optional):</label>
+                                    <input
+                                        type="date"
+                                        value={recurrenceEndDate()}
+                                        onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
                                     />
-                                    {tag().name}
-                                </button>
-                            )}
-                        </Index>
-                        <Show when={allTags().length === 0}>
-                            <a href="/tags" class="text-sm text-gray-500 hover:text-gray-400 transition-colors duration-200">
-                                Create tags in Tags page →
-                            </a>
-                        </Show>
-                    </div>
-                </div>
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence:</label>
-                    <div class="relative">
-                        <select 
-                            value={recurrence()} 
-                            onChange={(e) => setRecurrence(e.currentTarget.value)}
-                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 cursor-pointer appearance-none"
-                            style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
-                        >
-                            <option value="none" class="bg-zinc-900">None</option>
-                            <option value="daily" class="bg-zinc-900">📅 Daily</option>
-                            <option value="weekly" class="bg-zinc-900">📆 Weekly</option>
-                            <option value="monthly" class="bg-zinc-900">🗓️ Monthly</option>
-                        </select>
-                    </div>
-                </div>
-                <Show when={recurrence() !== 'none'}>
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-400 mb-2">Repeat Until (Optional):</label>
-                        <input 
-                            type="date" 
-                            value={recurrenceEndDate()} 
-                            onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)} 
-                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
-                        />
-                    </div>
-                </Show>
-                <button 
-                    type="submit" 
-                    class="w-full bg-white text-black font-semibold py-3.5 rounded-lg hover:bg-gray-200 active:scale-95 transition-all duration-200"
-                >
-                    {editingTask() ? 'Update Task' : 'Create Task'}
-                </button>
-            </form>
+                                </div>
+                            </Show>
+                            <button
+                                type="submit"
+                                class="w-full bg-white text-black font-semibold py-3.5 rounded-lg hover:bg-gray-200 active:scale-95 transition-all duration-200"
+                            >
+                                {editingTask() ? 'Update Task' : 'Create Task'}
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
         </Show>
 
-        <ConfirmModal 
+        <ConfirmModal
             show={confirmDelete().show}
             title="Delete Task"
             message="Are you sure you want to delete this task? This action cannot be undone."

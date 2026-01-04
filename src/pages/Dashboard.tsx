@@ -101,7 +101,7 @@ function Dashboard() {
                     sort: '-created'
                 }),
                 bk.collection('Tags').getFullList({
-                    filter: `user = ${currentUser()?.id}` //TODO: A lot of filtering is being done by user, maybe do this by default
+                    filter: `user = ${currentUser()?.id}`
                 })
             ]);
 
