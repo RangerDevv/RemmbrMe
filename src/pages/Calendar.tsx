@@ -1,5 +1,5 @@
 import { createSignal, onMount, For, Show, createMemo } from 'solid-js';
-import { bk, currentUser } from '../lib/pocketbase';
+import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -182,15 +182,6 @@ function Calendar() {
         return filtered;
     }
     
-    async function toggleTaskCompletion(taskId: string, currentStatus: boolean) {
-        await bk.collection('Todo').update(taskId, {
-            Completed: !currentStatus,
-            CompletedAt: !currentStatus ? new Date().toISOString() : null
-        });
-        await fetchTodos();
-        refreshNotifications();
-    }
-    
     async function fetchTags() {
         try {
             const tags = await bk.collection('Tags').getFullList({
@@ -219,6 +210,7 @@ function Calendar() {
                     Description: '',
                     Completed: false,
                     Priority: 'P2',
+                    user: currentUser()?.id
                 });
                 createdTaskIds.push(taskRecord.id);
             }
@@ -272,6 +264,7 @@ function Calendar() {
                     Description: '',
                     Completed: false,
                     Priority: 'P2',
+                    user: currentUser()?.id
                 });
                 createdTaskIds.push(taskRecord.id);
             }
@@ -383,7 +376,6 @@ function Calendar() {
     async function toggleTaskCompletion(taskId: string, currentStatus: boolean) {
         await bk.collection('Todo').update(taskId, {
             Completed: !currentStatus,
-            CompletedAt: !currentStatus ? new Date().toISOString() : null
         });
         
         // Refresh all data

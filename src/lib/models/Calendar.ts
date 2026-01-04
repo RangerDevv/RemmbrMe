@@ -10,6 +10,9 @@ export interface Calendar {
     RecurrencePattern?: Object;
     RecurrenceEndDate?: Date;
     user: User;
+    Start: Date;
+    End: Date;
+    Color: string;
     created: Date;
     updated: Date;
 }

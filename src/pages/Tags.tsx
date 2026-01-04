@@ -1,5 +1,5 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
-import { bk, currentUser } from '../lib/pocketbase';
+import { bk, currentUser } from '../lib/backend';
 import ConfirmModal from '../components/ConfirmModal';
 
 function Tags() {
