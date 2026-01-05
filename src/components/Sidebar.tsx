@@ -5,6 +5,7 @@ export default function Sidebar() {
     const [showProfileMenu, setShowProfileMenu] = createSignal(false);
     const [mobileMenuOpen, setMobileMenuOpen] = createSignal(false);
 
+    //TODO: Make this update every time that the tab is changed
     const isActive = (path: string) => window.location.pathname === path;
 
     const handleLogout = () => {

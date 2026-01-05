@@ -601,7 +601,6 @@ function Todo() {
                                 <textarea
                                     value={TaskDescription()}
                                     onInput={(e) => setTaskDescription(e.currentTarget.value)}
-                                    required
                                     rows="4"
                                     class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200 resize-none"
                                     placeholder="Describe your task..."
