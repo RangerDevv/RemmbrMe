@@ -135,7 +135,7 @@ function Todo() {
         setTaskCompleted(false);
         setTaskURL('');
         setTaskFile([]);
-        setTaskPriority('P1');
+        setTaskPriority('P2');
         setTaskDeadline('');
         setSelectedTags([]);
         setRecurrence('none');
