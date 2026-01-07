@@ -213,6 +213,8 @@ function Calendar() {
                     user: currentUser().id
                 });
                 createdTaskIds.push(taskRecord.id);
+                fetchEvents();
+                fetchTodos();
             }
         }
 
@@ -267,6 +269,8 @@ function Calendar() {
                     user: currentUser()?.id
                 });
                 createdTaskIds.push(taskRecord.id);
+                fetchEvents();
+                fetchTodos();
             }
         }
 
@@ -380,7 +384,7 @@ function Calendar() {
         
         // Refresh all data
         await fetchTodos();
-        await fetchEvents(); // This will update the events signal with fresh expand data
+        await fetchEvents(); 
         
         // Refresh quickViewEvent if it's open
         if (quickViewEvent()) {
@@ -1073,7 +1077,7 @@ function Calendar() {
                                                                         </div>
                                                                     </Show>
                                                                     <Show when={height > 60 && event.Description}>
-                                                                        <div class="text-[10px] opacity-60 mt-1 line-clamp-2">
+                                                                        <div class="text-[10px] opacity-60 mt-1 line-clamp-2" style="white-space: pre-wrap;">
                                                                             {event.Description}
                                                                         </div>
                                                                     </Show>
@@ -1146,7 +1150,7 @@ function Calendar() {
                 >
                     <h4 class="font-semibold text-white mb-1">{hoveredEvent()!.EventName}</h4>
                     <Show when={hoveredEvent()!.Description}>
-                        <p class="text-sm text-gray-400 mb-2">{hoveredEvent()!.Description}</p>
+                        <p class="text-sm text-gray-400 mb-2" style="white-space: pre-wrap;">{hoveredEvent()!.Description}</p>
                     </Show>
                     <p class="text-xs text-gray-500">
                         {new Date(hoveredEvent()!.Start).toLocaleString()} - {new Date(hoveredEvent()!.End).toLocaleString()}
@@ -1179,7 +1183,7 @@ function Calendar() {
                                 <div>
                                     <h3 class="text-2xl font-bold text-white">{quickViewEvent()!.EventName}</h3>
                                     <Show when={quickViewEvent()!.Description}>
-                                        <p class="text-gray-400 mt-2">{quickViewEvent()!.Description}</p>
+                                        <p class="text-gray-400 mt-2" style="white-space: pre-wrap;">{quickViewEvent()!.Description}</p>
                                     </Show>
                                 </div>
                             </div>
@@ -1847,7 +1851,7 @@ function Calendar() {
                                                             </div>
                                                         </div>
                                                         <Show when={task.Description}>
-                                                            <p class={`text-sm mt-1 ${task.Completed ? 'text-gray-500 line-through' : 'text-gray-400'}`}>
+                                                            <p class={`text-sm mt-1 ${task.Completed ? 'text-gray-500 line-through' : 'text-gray-400'}`} style="white-space: pre-wrap;">
                                                                 {task.Description}
                                                             </p>
                                                         </Show>

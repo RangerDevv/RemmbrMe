@@ -408,7 +408,7 @@ function Todo() {
                                 </div>
                                 <p class={`leading-relaxed transition-all duration-200 ${
                                     item().Completed ? 'text-gray-500 line-through' : 'text-gray-400'
-                                }`}>{item().Description}</p>
+                                }`} style="white-space: pre-wrap;">{item().Description}</p>
                                 <div class="flex items-center gap-2 mt-3 flex-wrap">
                                     <Show when={item().expand?.Tags && item().expand.Tags.length > 0}>
                                         <Index each={item().expand.Tags}>
@@ -489,7 +489,7 @@ function Todo() {
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <p class="text-gray-500 line-through leading-relaxed transition-all duration-200">{item().Description}</p>
+                                                <p class="text-gray-500 line-through leading-relaxed transition-all duration-200" style="white-space: pre-wrap;">{item().Description}</p>
                                                 <Show when={item().expand?.Tags && item().expand.Tags.length > 0}>
                                                     <div class="flex items-center gap-2 mt-3 flex-wrap">
                                                         <Index each={item().expand.Tags}>

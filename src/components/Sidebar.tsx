@@ -1,12 +1,36 @@
-import { createSignal, Show } from 'solid-js';
+import { createSignal, Show, onMount, onCleanup } from 'solid-js';
 import { currentUser, logout } from '../lib/backend.ts';
 
 export default function Sidebar() {
     const [showProfileMenu, setShowProfileMenu] = createSignal(false);
     const [mobileMenuOpen, setMobileMenuOpen] = createSignal(false);
+    const [currentPath, setCurrentPath] = createSignal(window.location.pathname);
 
-    //TODO: Make this update every time that the tab is changed
-    const isActive = (path: string) => window.location.pathname === path;
+    const isActive = (path: string) => currentPath() === path;
+
+    // Update the current path when navigation occurs
+    onMount(() => {
+        const updatePath = () => setCurrentPath(window.location.pathname);
+        
+        // Listen for popstate events (back/forward navigation)
+        window.addEventListener('popstate', updatePath);
+        
+        // Intercept click events on links to update path
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const link = target.closest('a');
+            if (link && link.href && link.href.startsWith(window.location.origin)) {
+                setTimeout(updatePath, 0);
+            }
+        };
+        document.addEventListener('click', handleClick);
+        
+        onCleanup(() => {
+            window.removeEventListener('popstate', updatePath);
+            document.removeEventListener('click', handleClick);
+        });
+    });
+    
 
     const handleLogout = () => {
         logout();
