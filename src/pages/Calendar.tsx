@@ -2,6 +2,7 @@ import { createSignal, onMount, For, Show, createMemo } from 'solid-js';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
+import {Todo} from "../lib/models/Todo.ts";
 
 function Calendar() {
 
@@ -23,7 +24,7 @@ function Calendar() {
     const [endTime, setEndTime] = createSignal('');
     const [location, setLocation] = createSignal({ lat: 0, lon: 0 });
     const [selectedTasks, setSelectedTasks] = createSignal<string[]>([]);
-    const [todoItems, setTodoItems] = createSignal([] as any[]);
+    const [todoItems, setTodoItems] = createSignal<Todo<"read">[]>([]);
     const [eventColor, setEventColor] = createSignal('#3b82f6');
     const [focusMode, setFocusMode] = createSignal(false);
     const [newTasks, setNewTasks] = createSignal<{title: string, completed: boolean}[]>([]);
@@ -240,8 +241,8 @@ function Calendar() {
         
         // Recurring instances are generated virtually in fetchEvents()
         
-        await fetchEvents();
-        await fetchTodos();
+        fetchEvents();
+        fetchTodos();
         refreshNotifications();
         resetForm();
         setShowEventModal(false);
@@ -1468,7 +1469,7 @@ function Calendar() {
                                 <label class="block text-sm font-medium text-gray-400 mb-2">Link Existing Tasks:</label>
                                 <div class="max-h-32 overflow-y-auto space-y-2 bg-black border border-zinc-700 rounded-lg p-2">
                                     <For each={todoItems()}>
-                                        {(todo) => (
+                                        {(todo) => !todo.Completed && (
                                             <label class="flex items-center p-2 hover:bg-zinc-900 rounded-lg transition-colors duration-200 cursor-pointer">
                                                 <input
                                                     type="checkbox"
@@ -1721,7 +1722,7 @@ function Calendar() {
                                 <label class="block text-sm font-medium text-gray-400 mb-2">Link Existing Tasks:</label>
                                 <div class="max-h-32 overflow-y-auto space-y-2 bg-black border border-zinc-700 rounded-lg p-2">
                                     <For each={todoItems()}>
-                                        {(todo) => (
+                                        {(todo) => !todo.Completed && (
                                             <label class="flex items-center p-2 hover:bg-zinc-900 rounded-lg transition-colors duration-200 cursor-pointer">
                                                 <input
                                                     type="checkbox"
