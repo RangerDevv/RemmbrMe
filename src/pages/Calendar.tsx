@@ -213,6 +213,7 @@ function Calendar() {
                     user: currentUser().id
                 });
                 createdTaskIds.push(taskRecord.id);
+                fetchEvents();
             }
         }
 
@@ -267,6 +268,7 @@ function Calendar() {
                     user: currentUser()?.id
                 });
                 createdTaskIds.push(taskRecord.id);
+                fetchEvents();
             }
         }
 
@@ -381,6 +383,7 @@ function Calendar() {
         // Refresh all data
         await fetchTodos();
         await fetchEvents(); // This will update the events signal with fresh expand data
+        await fetchEvents(); 
         
         // Refresh quickViewEvent if it's open
         if (quickViewEvent()) {
