@@ -9,7 +9,7 @@ function Calendar() {
     const [currentDate, setCurrentDate] = createSignal(new Date());
     const [selectedDate, setSelectedDate] = createSignal<Date | null>(null);
     const [showEventModal, setShowEventModal] = createSignal(false);
-    const [viewMode, setViewMode] = createSignal<'month' | 'week'>('month');
+    const [viewMode, setViewMode] = createSignal<'month' | 'week'>('week');
     const [hoveredEvent, setHoveredEvent] = createSignal<any>(null);
     const [quickViewEvent, setQuickViewEvent] = createSignal<any>(null);
     
