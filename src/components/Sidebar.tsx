@@ -1,5 +1,20 @@
 import { createSignal, Show, onMount, onCleanup } from 'solid-js';
 import { currentUser, logout } from '../lib/backend.ts';
+import { 
+    DashboardIcon, 
+    CheckCircleIcon, 
+    CalendarIcon, 
+    ClockIcon, 
+    RobotIcon, 
+    TagIcon, 
+    PlusIcon, 
+    SettingsIcon, 
+    StarIcon, 
+    LogoutIcon,
+    HeartIcon,
+    MenuIcon,
+    XIcon
+} from './Icons';
 
 export default function Sidebar() {
     const [showProfileMenu, setShowProfileMenu] = createSignal(false);
@@ -44,13 +59,11 @@ export default function Sidebar() {
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen())}
                 class="lg:hidden fixed top-4 left-4 z-[60] p-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white"
             >
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {mobileMenuOpen() ? (
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    ) : (
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                    )}
-                </svg>
+                {mobileMenuOpen() ? (
+                    <XIcon class="w-6 h-6" />
+                ) : (
+                    <MenuIcon class="w-6 h-6" />
+                )}
             </button>
 
             {/* Mobile Overlay */}
@@ -117,7 +130,7 @@ export default function Sidebar() {
                                 onClick={() => setShowProfileMenu(false)}
                                 class="w-full px-4 py-3 text-left text-sm text-gray-300 hover:bg-zinc-800 transition-colors flex items-center gap-3 block"
                             >
-                                <span>⚙️</span>
+                                <SettingsIcon class="w-5 h-5" />
                                 <span>Settings</span>
                             </a>
                             <Show when={!currentUser()?.proUser}>
@@ -126,7 +139,7 @@ export default function Sidebar() {
                                     onClick={() => setShowProfileMenu(false)}
                                     class="w-full px-4 py-3 text-left text-sm text-yellow-400 hover:bg-zinc-800 transition-colors flex items-center gap-3 block"
                                 >
-                                    <span>⭐</span>
+                                    <StarIcon class="w-5 h-5" />
                                     <span>Upgrade to Pro</span>
                                 </a>
                             </Show>
@@ -138,7 +151,7 @@ export default function Sidebar() {
                                 }}
                                 class="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-zinc-800 transition-colors flex items-center gap-3"
                             >
-                                <span>🚪</span>
+                                <LogoutIcon class="w-5 h-5" />
                                 <span>Logout</span>
                             </button>
                         </div>
@@ -157,7 +170,7 @@ export default function Sidebar() {
                             : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
                     }`}
                 >
-                    <span class="text-xl">📊</span>
+                    <DashboardIcon class="w-5 h-5" />
                     <span>Dashboard</span>
                     {isActive('/') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
                 </a>
@@ -171,7 +184,7 @@ export default function Sidebar() {
                             : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
                     }`}
                 >
-                    <span class="text-xl">✅</span>
+                    <CheckCircleIcon class="w-5 h-5" />
                     <span>Todo List</span>
                     {isActive('/todo') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
                 </a>
@@ -185,7 +198,7 @@ export default function Sidebar() {
                             : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
                     }`}
                 >
-                    <span class="text-xl">📅</span>
+                    <CalendarIcon class="w-5 h-5" />
                     <span>Calendar</span>
                     {isActive('/calendar') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
                 </a>
@@ -199,7 +212,7 @@ export default function Sidebar() {
                             : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
                     }`}
                 >
-                    <span class="text-xl">⏰</span>
+                    <ClockIcon class="w-5 h-5" />
                     <span>Time Machine</span>
                     {isActive('/timemachine') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
                 </a>
@@ -213,7 +226,7 @@ export default function Sidebar() {
                             : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
                     }`}
                 >
-                    <span class="text-xl">🤖</span>
+                    <RobotIcon class="w-5 h-5" />
                     <span>AI Assistant</span>
                     {isActive('/ai') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
                 </a>
@@ -227,7 +240,7 @@ export default function Sidebar() {
                             : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
                     }`}
                 >
-                    <span class="text-xl">🏷️</span>
+                    <TagIcon class="w-5 h-5" />
                     <span>Tags</span>
                     {isActive('/tags') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
                 </a>
@@ -241,14 +254,14 @@ export default function Sidebar() {
                         href="/todo"
                         class="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-gray-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all text-sm font-medium flex items-center gap-2"
                     >
-                        <span>➕</span>
+                        <PlusIcon class="w-4 h-4" />
                         <span>New Todo</span>
                     </a>
                     <a
                         href="/calendar"
                         class="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-gray-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all text-sm font-medium flex items-center gap-2"
                     >
-                        <span>📆</span>
+                        <CalendarIcon class="w-4 h-4" />
                         <span>New Event</span>
                     </a>
                 </div>
@@ -257,7 +270,7 @@ export default function Sidebar() {
             {/* Footer */}
             <div class="mt-6 px-4 py-3 bg-zinc-900/50 border border-zinc-800 rounded-xl">
                 <p class="text-xs text-gray-500">Version 1.0.0</p>
-                <p class="text-xs text-gray-600 mt-1">Made with ❤️ by RangerDevv</p>
+                <p class="text-xs text-gray-600 mt-1 flex items-center gap-1">Made with <HeartIcon class="w-3 h-3 text-red-500" /> by RangerDevv</p>
             </div>
         </div>
         </>

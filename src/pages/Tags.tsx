@@ -1,6 +1,7 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
 import { bk, currentUser } from '../lib/backend';
 import ConfirmModal from '../components/ConfirmModal';
+import { TagIcon } from '../components/Icons';
 
 function Tags() {
     const [tags, setTags] = createSignal([] as any[]);
@@ -83,7 +84,7 @@ function Tags() {
     return (
         <div class="flex-1 w-full max-w-4xl">
             <div class="mb-8">
-                <h1 class="text-4xl font-bold text-white mb-2">🏷️ Tags</h1>
+                <h1 class="text-4xl font-bold text-white mb-2 flex items-center gap-3"><TagIcon class="w-9 h-9" /> Tags</h1>
                 <p class="text-gray-400">Organize your tasks and events with colorful tags</p>
             </div>
 
@@ -207,7 +208,7 @@ function Tags() {
                         </For>
                         <Show when={tags().length === 0}>
                             <div class="text-center py-12 text-gray-500">
-                                <div class="text-4xl mb-2">🏷️</div>
+                                <TagIcon class="w-12 h-12 mx-auto mb-2 text-gray-500" />
                                 <p>No tags yet. Create your first tag!</p>
                             </div>
                         </Show>

@@ -1,6 +1,7 @@
 import { createSignal, Show, onMount } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { currentUser, updateProfile, logout, bk } from '../lib/backend.ts';
+import { WarningIcon } from '../components/Icons';
 
 export default function Profile() {
     const navigate = useNavigate();
@@ -282,7 +283,7 @@ export default function Profile() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div class="flex items-start gap-4 mb-6">
-                            <div class="text-4xl">⚠️</div>
+                            <WarningIcon class="w-10 h-10 text-red-400 shrink-0" />
                             <div class="flex-1">
                                 <h3 class="text-xl font-bold text-white mb-2">Delete Account?</h3>
                                 <p class="text-gray-300 leading-relaxed">

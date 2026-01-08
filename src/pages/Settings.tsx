@@ -1,6 +1,16 @@
 import { createSignal, onMount, createEffect } from 'solid-js';
 import { A } from '@solidjs/router';
 import ConfirmModal from '../components/ConfirmModal';
+import { 
+    DashboardIcon, 
+    CheckCircleIcon, 
+    BoltIcon, 
+    CalendarIcon, 
+    ClockIcon,
+    WarningIcon,
+    RepeatIcon,
+    TagIcon
+} from '../components/Icons';
 
 interface DashboardSettings {
     showCompletedToday: boolean;
@@ -105,7 +115,7 @@ function Settings() {
             <div class="space-y-6">
                 {/* Dashboard Widgets */}
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                    <h2 class="text-2xl font-bold text-white mb-4">📊 Dashboard Widgets</h2>
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2"><DashboardIcon class="w-6 h-6" /> Dashboard Widgets</h2>
                     <p class="text-sm text-gray-400 mb-6">Choose which widgets to display on your dashboard</p>
 
                     <div class="space-y-4">
@@ -113,7 +123,7 @@ function Settings() {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">✅</span>
+                                    <CheckCircleIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Completed Today</span>
                                 </div>
                                 <input
@@ -126,7 +136,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">📋</span>
+                                    <BoltIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Active Tasks</span>
                                 </div>
                                 <input
@@ -139,7 +149,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">📅</span>
+                                    <CalendarIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Events Today</span>
                                 </div>
                                 <input
@@ -152,7 +162,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">⏰</span>
+                                    <ClockIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Due This Week</span>
                                 </div>
                                 <input
@@ -181,7 +191,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">🚨</span>
+                                    <WarningIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">High Priority</span>
                                 </div>
                                 <input
@@ -194,7 +204,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">📊</span>
+                                    <DashboardIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Avg Tasks/Day</span>
                                 </div>
                                 <input
@@ -207,7 +217,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">🔁</span>
+                                    <RepeatIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Recurring Tasks</span>
                                 </div>
                                 <input
@@ -223,7 +233,7 @@ function Settings() {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">⚠️</span>
+                                    <WarningIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Overdue Alert</span>
                                 </div>
                                 <input
@@ -236,7 +246,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">📈</span>
+                                    <DashboardIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Progress Bar</span>
                                 </div>
                                 <input
@@ -249,7 +259,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">📅</span>
+                                    <CalendarIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Today's Schedule</span>
                                 </div>
                                 <input
@@ -262,7 +272,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">✅</span>
+                                    <CheckCircleIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Priority Tasks</span>
                                 </div>
                                 <input
@@ -275,7 +285,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">🏷️</span>
+                                    <TagIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Top Tags</span>
                                 </div>
                                 <input
@@ -288,7 +298,7 @@ function Settings() {
 
                             <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
                                 <div class="flex items-center gap-3">
-                                    <span class="text-xl">⚡</span>
+                                    <BoltIcon class="w-5 h-5 text-gray-400" />
                                     <span class="text-white">Quick Actions</span>
                                 </div>
                                 <input
@@ -304,7 +314,7 @@ function Settings() {
 
                 {/* Auto-Refresh Settings */}
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                    <h2 class="text-2xl font-bold text-white mb-4">🔄 Auto-Refresh</h2>
+                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2"><RepeatIcon class="w-6 h-6" /> Auto-Refresh</h2>
                     <p class="text-sm text-gray-400 mb-6">Configure automatic dashboard updates</p>
 
                     <div class="space-y-4">

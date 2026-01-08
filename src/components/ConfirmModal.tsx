@@ -1,4 +1,5 @@
 import { Show } from 'solid-js';
+import { TrashIcon, WarningIcon, QuestionIcon } from './Icons';
 
 interface ConfirmModalProps {
     show: boolean;
@@ -22,9 +23,9 @@ export default function ConfirmModal(props: ConfirmModalProps) {
 
     const getIcon = () => {
         switch (props.type) {
-            case 'danger': return '🗑️';
-            case 'warning': return '⚠️';
-            default: return '❓';
+            case 'danger': return <TrashIcon class="w-10 h-10 text-red-400" />;
+            case 'warning': return <WarningIcon class="w-10 h-10 text-yellow-400" />;
+            default: return <QuestionIcon class="w-10 h-10 text-blue-400" />;
         }
     };
 
@@ -47,7 +48,7 @@ export default function ConfirmModal(props: ConfirmModalProps) {
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div class="flex items-start gap-4 mb-6">
-                        <div class="text-4xl">{getIcon()}</div>
+                        <div>{getIcon()}</div>
                         <div class="flex-1">
                             <Show when={props.title}>
                                 <h3 class="text-white text-xl font-semibold mb-2">{props.title}</h3>

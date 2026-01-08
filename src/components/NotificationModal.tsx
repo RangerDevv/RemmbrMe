@@ -1,4 +1,5 @@
 import { Show } from 'solid-js';
+import { WarningIcon, ErrorIcon, SuccessIcon, InfoIcon } from './Icons';
 
 interface NotificationModalProps {
     show: boolean;
@@ -10,10 +11,10 @@ interface NotificationModalProps {
 export default function NotificationModal(props: NotificationModalProps) {
     const getIcon = () => {
         switch (props.type) {
-            case 'warning': return '⚠️';
-            case 'error': return '❌';
-            case 'success': return '✅';
-            default: return 'ℹ️';
+            case 'warning': return <WarningIcon class="w-10 h-10 text-yellow-400" />;
+            case 'error': return <ErrorIcon class="w-10 h-10 text-red-400" />;
+            case 'success': return <SuccessIcon class="w-10 h-10" />;
+            default: return <InfoIcon class="w-10 h-10 text-blue-400" />;
         }
     };
 
@@ -37,7 +38,7 @@ export default function NotificationModal(props: NotificationModalProps) {
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div class="flex items-start gap-4">
-                        <div class="text-4xl">{getIcon()}</div>
+                        <div>{getIcon()}</div>
                         <div class="flex-1">
                             <p class="text-white text-lg leading-relaxed">{props.message}</p>
                         </div>

@@ -1,6 +1,18 @@
 import { createSignal, onMount, For, Show, createEffect } from 'solid-js';
 import { A } from '@solidjs/router';
 import { bk, currentUser } from '../lib/backend.ts';
+import {
+    CheckCircleIcon,
+    CheckIcon,
+    CalendarIcon,
+    DashboardIcon,
+    WarningIcon,
+    RepeatIcon,
+    BoltIcon,
+    TagIcon,
+    ClockIcon,
+    RobotIcon
+} from '../components/Icons';
 
 interface DashboardSettings {
     showCompletedToday: boolean;
@@ -297,7 +309,7 @@ function Dashboard() {
             {/* Header */}
             <div class="mb-8">
                 <div>
-                    <h1 class="text-5xl font-bold text-white mb-2">{greeting} 👋</h1>
+                    <h1 class="text-5xl font-bold text-white mb-2">{greeting}</h1>
                     <p class="text-xl text-gray-400">{new Date().toLocaleDateString('en-US', { 
                         weekday: 'long', 
                         month: 'long', 
@@ -309,7 +321,7 @@ function Dashboard() {
 
             <Show when={isLoading()}>
                 <div class="flex items-center justify-center h-64">
-                    <div class="text-4xl animate-pulse">📊</div>
+                    <DashboardIcon class="w-12 h-12 text-gray-400 animate-pulse" />
                 </div>
             </Show>
 
@@ -319,7 +331,7 @@ function Dashboard() {
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <Show when={settings().showCompletedToday}>
                             <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                                <div class="text-gray-400 text-2xl mb-2">✅</div>
+                                <CheckCircleIcon class="w-7 h-7 text-gray-400 mb-2" />
                                 <div class="text-3xl font-bold text-white mb-1">{stats().completedToday}</div>
                                 <div class="text-sm text-gray-400">Completed Today</div>
                             </div>
@@ -327,7 +339,7 @@ function Dashboard() {
 
                         <Show when={settings().showActiveTasks}>
                             <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                                <div class="text-gray-400 text-2xl mb-2">📋</div>
+                                <BoltIcon class="w-7 h-7 text-gray-400 mb-2" />
                                 <div class="text-3xl font-bold text-white mb-1">{stats().totalTasks}</div>
                                 <div class="text-sm text-gray-400">Active Tasks</div>
                             </div>
@@ -335,7 +347,7 @@ function Dashboard() {
 
                         <Show when={settings().showEventsToday}>
                             <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                                <div class="text-gray-400 text-2xl mb-2">📅</div>
+                                <CalendarIcon class="w-7 h-7 text-gray-400 mb-2" />
                                 <div class="text-3xl font-bold text-white mb-1">{stats().eventsToday}</div>
                                 <div class="text-sm text-gray-400">Events Today</div>
                             </div>
@@ -343,7 +355,7 @@ function Dashboard() {
 
                         <Show when={settings().showUpcomingDeadlines}>
                             <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                                <div class="text-gray-400 text-2xl mb-2">⏰</div>
+                                <ClockIcon class="w-7 h-7 text-gray-400 mb-2" />
                                 <div class="text-3xl font-bold text-white mb-1">{stats().upcomingDeadlines}</div>
                                 <div class="text-sm text-gray-400">Due This Week</div>
                             </div>
@@ -364,7 +376,7 @@ function Dashboard() {
 
                         <Show when={settings().showHighPriority}>
                             <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                                <div class="text-red-400 text-xl mb-1">🚨</div>
+                                <WarningIcon class="w-6 h-6 text-red-400 mb-1" />
                                 <div class="text-2xl font-bold text-white">{stats().highPriorityTasks}</div>
                                 <div class="text-xs text-gray-500">High Priority</div>
                             </div>
@@ -372,7 +384,7 @@ function Dashboard() {
 
                         <Show when={settings().showAvgTasks}>
                             <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                                <div class="text-cyan-400 text-xl mb-1">📊</div>
+                                <DashboardIcon class="w-6 h-6 text-cyan-400 mb-1" />
                                 <div class="text-2xl font-bold text-white">{stats().avgTasksPerDay}</div>
                                 <div class="text-xs text-gray-500">Avg Tasks/Day</div>
                             </div>
@@ -380,7 +392,7 @@ function Dashboard() {
 
                         <Show when={settings().showRecurring}>
                             <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                                <div class="text-purple-400 text-xl mb-1">🔁</div>
+                                <RepeatIcon class="w-6 h-6 text-purple-400 mb-1" />
                                 <div class="text-2xl font-bold text-white">{stats().recurringTasks}</div>
                                 <div class="text-xs text-gray-500">Recurring</div>
                             </div>
@@ -392,7 +404,7 @@ function Dashboard() {
                 <Show when={settings().showOverdueAlert && getOverdueTasks().length > 0}>
                     <div class="mb-6 bg-zinc-900 border border-red-900/50 rounded-2xl p-6">
                         <div class="flex items-start gap-4">
-                            <div class="text-3xl">⚠️</div>
+                            <WarningIcon class="w-8 h-8 text-red-400 shrink-0" />
                             <div class="flex-1">
                                 <h3 class="text-xl font-bold text-red-400 mb-2">
                                     {getOverdueTasks().length} Overdue {getOverdueTasks().length === 1 ? 'Task' : 'Tasks'}
@@ -446,7 +458,7 @@ function Dashboard() {
                         {/* Today's Schedule */}
                         <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                             <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-xl font-bold text-white">📅 Today's Schedule</h3>
+                                <h3 class="text-xl font-bold text-white flex items-center gap-2"><CalendarIcon class="w-5 h-5" /> Today's Schedule</h3>
                                 <A href="/calendar" class="text-sm text-blue-400 hover:text-blue-300">
                                     View Calendar →
                                 </A>
@@ -467,8 +479,8 @@ function Dashboard() {
                                                         <p class="text-sm text-gray-400 mt-1">{event.Description}</p>
                                                     </Show>
                                                     <Show when={!event.AllDay}>
-                                                        <p class="text-sm text-gray-500 mt-2">
-                                                            ⏰ {new Date(event.Start).toLocaleTimeString('en-US', { 
+                                                        <p class="text-sm text-gray-500 mt-2 flex items-center gap-1">
+                                                            <ClockIcon class="w-4 h-4" /> {new Date(event.Start).toLocaleTimeString('en-US', { 
                                                                 hour: 'numeric', 
                                                                 minute: '2-digit' 
                                                             })} - {new Date(event.End).toLocaleTimeString('en-US', { 
@@ -479,8 +491,8 @@ function Dashboard() {
                                                     </Show>
                                                     <Show when={event.expand?.Tasks?.length > 0}>
                                                         <div class="flex items-center gap-2 mt-2">
-                                                            <div class="text-xs text-gray-500">
-                                                                ✓ {event.expand.Tasks.filter((t: any) => t.Completed).length}/{event.expand.Tasks.length} tasks
+                                                            <div class="text-xs text-gray-500 flex items-center gap-1">
+                                                                <CheckIcon class="w-3 h-3" /> {event.expand.Tasks.filter((t: any) => t.Completed).length}/{event.expand.Tasks.length} tasks
                                                             </div>
                                                             <div class="flex-1 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                                                                 <div 
@@ -530,7 +542,7 @@ function Dashboard() {
                     <Show when={settings().showPriorityTasks}>
                         <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-white">📋 Priority Tasks</h3>
+                            <h3 class="text-xl font-bold text-white flex items-center gap-2"><BoltIcon class="w-5 h-5" /> Priority Tasks</h3>
                             <A href="/todo" class="text-sm text-blue-400 hover:text-blue-300">
                                 View All →
                             </A>
@@ -561,13 +573,13 @@ function Dashboard() {
                                                             {task.Priority}
                                                         </span>
                                                         <Show when={task.Deadline}>
-                                                            <span class="text-xs text-gray-500">
-                                                                📅 {new Date(task.Deadline).toLocaleDateString()}
+                                                            <span class="text-xs text-gray-500 flex items-center gap-1">
+                                                                <CalendarIcon class="w-3 h-3" /> {new Date(task.Deadline).toLocaleDateString()}
                                                             </span>
                                                         </Show>
                                                         <Show when={task.Recurrence && task.Recurrence !== 'none'}>
-                                                            <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">
-                                                                🔁 {task.Recurrence}
+                                                            <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                                <RepeatIcon class="w-3 h-3" /> {task.Recurrence}
                                                             </span>
                                                         </Show>
                                                     </div>
@@ -594,7 +606,7 @@ function Dashboard() {
                             </Show>
                             <Show when={getUpcomingTasks().length === 0}>
                                 <div class="text-center py-12 text-gray-500">
-                                    <div class="text-4xl mb-2">✨</div>
+                                    <CheckCircleIcon class="w-12 h-12 mx-auto mb-2 text-emerald-400" />
                                     <p>All caught up!</p>
                                 </div>
                             </Show>
@@ -606,7 +618,7 @@ function Dashboard() {
                     <Show when={settings().showTopTags}>
                         <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-white">🏷️ Top Tags</h3>
+                            <h3 class="text-xl font-bold text-white flex items-center gap-2"><TagIcon class="w-5 h-5" /> Top Tags</h3>
                             <A href="/tags" class="text-sm text-blue-400 hover:text-blue-300">
                                 Manage →
                             </A>
@@ -632,7 +644,7 @@ function Dashboard() {
                             </Show>
                             <Show when={getTopTags().length === 0}>
                                 <div class="text-center py-8 text-gray-500">
-                                    <div class="text-3xl mb-2">🏷️</div>
+                                    <TagIcon class="w-8 h-8 mx-auto mb-2 text-gray-500" />
                                     <p class="text-sm">No tags yet</p>
                                     <A href="/tags" class="text-xs text-blue-400 hover:text-blue-300 mt-2 inline-block">
                                         Create your first tag →
@@ -652,7 +664,7 @@ function Dashboard() {
                             href="/ai" 
                             class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 hover:bg-zinc-800 transition-all duration-200"
                         >
-                            <div class="text-3xl mb-2">🤖</div>
+                            <RobotIcon class="w-8 h-8 text-gray-400 mb-2" />
                             <h4 class="text-xl font-bold text-white mb-1">AI Assistant</h4>
                             <p class="text-sm text-gray-400">Brain dump & get insights</p>
                         </A>
@@ -661,7 +673,7 @@ function Dashboard() {
                             href="/calendar" 
                             class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 hover:bg-zinc-800 transition-all duration-200"
                         >
-                            <div class="text-3xl mb-2">📅</div>
+                            <CalendarIcon class="w-8 h-8 text-gray-400 mb-2" />
                             <h4 class="text-xl font-bold text-white mb-1">Plan Your Day</h4>
                             <p class="text-sm text-gray-400">Schedule new events</p>
                         </A>
@@ -670,7 +682,7 @@ function Dashboard() {
                             href="/timemachine" 
                             class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 hover:bg-zinc-800 transition-all duration-200"
                         >
-                            <div class="text-3xl mb-2">⏰</div>
+                            <ClockIcon class="w-8 h-8 text-gray-400 mb-2" />
                             <h4 class="text-xl font-bold text-white mb-1">Reflect</h4>
                             <p class="text-sm text-gray-400">Review your progress</p>
                         </A>

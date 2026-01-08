@@ -4,6 +4,15 @@ import { generateRecurringTasks } from '../utils/recurrence';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
+import { 
+    SearchIcon, 
+    EditIcon, 
+    TrashIcon, 
+    CalendarIcon, 
+    CheckCircleIcon, 
+    RepeatIcon,
+    ChevronDownIcon
+} from '../components/Icons';
 
 
 function Todo() {
@@ -266,7 +275,7 @@ function Todo() {
             {/* Header with Stats */}
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-4xl font-bold text-white mb-2">📋 Todo List</h2>
+                    <h2 class="text-4xl font-bold text-white mb-2">Todo List</h2>
                     <p class="text-gray-400">{getTaskStats().completed} of {getTaskStats().total} tasks completed ({getTaskStats().percentage}%)</p>
                 </div>
                 <div class="flex gap-4">
@@ -280,13 +289,14 @@ function Todo() {
             {/* Search and Filters */}
             <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 lg:p-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 lg:gap-6">
-                    <div class="md:col-span-2">
+                    <div class="md:col-span-2 relative">
+                        <SearchIcon class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                         <input
                             type="text"
                             value={searchQuery()}
                             onInput={(e) => setSearchQuery(e.currentTarget.value)}
-                            placeholder="🔍 Search tasks..."
-                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                            placeholder="Search tasks..."
+                            class="w-full bg-black border border-zinc-700 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                         />
                     </div>
                     <div class="relative">
@@ -297,9 +307,9 @@ function Todo() {
                             style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
                         >
                             <option value="all" class="bg-zinc-900">All Priorities</option>
-                            <option value="P1" class="bg-zinc-900">🔴 P1 - High</option>
-                            <option value="P2" class="bg-zinc-900">🟡 P2 - Medium</option>
-                            <option value="P3" class="bg-zinc-900">🟢 P3 - Low</option>
+                            <option value="P1" class="bg-zinc-900">● P1 - High</option>
+                            <option value="P2" class="bg-zinc-900">● P2 - Medium</option>
+                            <option value="P3" class="bg-zinc-900">● P3 - Low</option>
                         </select>
                     </div>
                     <div class="relative">
@@ -311,7 +321,7 @@ function Todo() {
                         >
                             <option value="all" class="bg-zinc-900">All Status</option>
                             <option value="active" class="bg-zinc-900">⚡ Active</option>
-                            <option value="completed" class="bg-zinc-900">✅ Completed</option>
+                            <option value="completed" class="bg-zinc-900">✓ Completed</option>
                         </select>
                     </div>
                 </div>
@@ -395,14 +405,14 @@ function Todo() {
                                             class="px-2 py-1 text-blue-400 hover:text-blue-300 transition-colors duration-200"
                                             title="Edit"
                                         >
-                                            ✏️
+                                            <EditIcon class="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => deleteTask(item().id)}
                                             class="px-2 py-1 text-red-400 hover:text-red-300 transition-colors duration-200"
                                             title="Delete"
                                         >
-                                            🗑️
+                                            <TrashIcon class="w-4 h-4" />
                                         </button>
                                     </div>
                                 </div>
@@ -428,13 +438,13 @@ function Todo() {
                                     </Show>
                                     <Show when={item().Recurrence && item().Recurrence !== 'none'}>
                                         <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                                            🔁 {item().Recurrence}
+                                            <RepeatIcon class="w-3 h-3" /> {item().Recurrence}
                                         </span>
                                     </Show>
                                 </div>
                                 {item().Deadline && (
-                                    <p class="text-sm text-gray-500 mt-2">
-                                        📅 {new Date(item().Deadline).toLocaleDateString()}
+                                    <p class="text-sm text-gray-500 mt-2 flex items-center gap-1.5">
+                                        <CalendarIcon class="w-4 h-4" /> {new Date(item().Deadline).toLocaleDateString()}
                                     </p>
                                 )}
                             </div>
@@ -452,11 +462,11 @@ function Todo() {
                         class="flex items-center justify-between w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-900/80 transition-all duration-200 mb-4"
                     >
                         <div class="flex items-center gap-3">
-                            <span class="text-xl">✅</span>
+                            <CheckCircleIcon class="w-5 h-5 text-green-400" />
                             <h3 class="text-lg font-semibold text-white">Completed Tasks</h3>
                             <span class="text-gray-400 text-sm">({getCompletedTodos().length})</span>
                         </div>
-                        <span class="text-gray-400 text-xl transform transition-transform duration-200" style={{ transform: showCompletedSection() ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                        <ChevronDownIcon class={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showCompletedSection() ? 'rotate-180' : ''}`} />
                     </button>
                     
                     <Show when={showCompletedSection()}>
@@ -485,7 +495,7 @@ function Todo() {
                                                             class="px-2 py-1 text-red-400 hover:text-red-300 transition-colors duration-200 opacity-0 group-hover:opacity-100"
                                                             title="Delete"
                                                         >
-                                                            🗑️
+                                                            <TrashIcon class="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -645,9 +655,9 @@ function Todo() {
                                         class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 cursor-pointer appearance-none"
                                         style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
                                     >
-                                        <option value="P1" class="bg-zinc-900 text-white py-2">🔴 P1 - High Priority</option>
-                                        <option value="P2" class="bg-zinc-900 text-white py-2">🟡 P2 - Medium Priority</option>
-                                        <option value="P3" class="bg-zinc-900 text-white py-2">🟢 P3 - Low Priority</option>
+                                        <option value="P1" class="bg-zinc-900 text-white py-2">● P1 - High Priority</option>
+                                        <option value="P2" class="bg-zinc-900 text-white py-2">● P2 - Medium Priority</option>
+                                        <option value="P3" class="bg-zinc-900 text-white py-2">● P3 - Low Priority</option>
                                     </select>
                                 </div>
                             </div>
@@ -708,9 +718,9 @@ function Todo() {
                                         style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
                                     >
                                         <option value="none" class="bg-zinc-900">None</option>
-                                        <option value="daily" class="bg-zinc-900">📅 Daily</option>
-                                        <option value="weekly" class="bg-zinc-900">📆 Weekly</option>
-                                        <option value="monthly" class="bg-zinc-900">🗓️ Monthly</option>
+                                        <option value="daily" class="bg-zinc-900">Daily</option>
+                                        <option value="weekly" class="bg-zinc-900">Weekly</option>
+                                        <option value="monthly" class="bg-zinc-900">Monthly</option>
                                     </select>
                                 </div>
                             </div>

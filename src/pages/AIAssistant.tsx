@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createSignal, Show, For } from 'solid-js';
 import {bk, currentUser} from '../lib/backend.ts';
 import NotificationModal from '../components/NotificationModal';
+import { RobotIcon } from '../components/Icons';
 
 function AIAssistant() {
     const [apiKey, setApiKey] = createSignal(localStorage.getItem('gemini_api_key') || '');
@@ -412,7 +413,7 @@ Return ONLY the JSON array, no markdown.`;
     return (
         <div class="flex-1 w-full max-w-6xl mx-auto">
             <div class="mb-8">
-                <h1 class="text-4xl font-bold text-white mb-2">🤖 AI Assistant</h1>
+                <h1 class="text-4xl font-bold text-white mb-2 flex items-center gap-3"><RobotIcon class="w-9 h-9" /> AI Assistant</h1>
                 <p class="text-gray-400">Powered by Google Gemini - Organize your thoughts and get personalized feedback</p>
             </div>
 

@@ -1,6 +1,7 @@
 import { createSignal, Show } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { login } from '../lib/backend.ts';
+import { InfoIcon } from '../components/Icons';
 
 export default function Login() {
     const navigate = useNavigate();
@@ -99,8 +100,8 @@ export default function Login() {
 
                 {/* Demo Credentials */}
                 <div class="mt-6 p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl">
-                    <p class="text-xs text-gray-500 text-center">
-                        💡 Demo: test@example.com / 12345678
+                    <p class="text-xs text-gray-500 text-center flex items-center justify-center gap-1.5">
+                        <InfoIcon class="w-4 h-4" /> Demo: test@example.com / 12345678
                     </p>
                 </div>
             </div>

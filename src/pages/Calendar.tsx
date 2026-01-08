@@ -3,6 +3,14 @@ import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
 import {Todo} from "../lib/models/Todo.ts";
+import { 
+    CalendarIcon, 
+    RepeatIcon, 
+    CalendarWeekIcon, 
+    CalendarMonthIcon,
+    XIcon,
+    BoltIcon
+} from '../components/Icons';
 
 function Calendar() {
 
@@ -581,7 +589,7 @@ function Calendar() {
     return (
         <div class="flex-1 w-full">
             <div class="mb-6 flex items-center justify-between">
-                <h1 class="text-4xl font-bold text-white">📅 Calendar</h1>
+                <h1 class="text-4xl font-bold text-white flex items-center gap-3"><CalendarIcon class="w-9 h-9" /> Calendar</h1>
                 <div class="flex gap-2">
                     <button
                         onClick={async () => {
@@ -591,13 +599,13 @@ function Calendar() {
                         class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-gray-400 hover:text-white hover:border-zinc-700 transition-all duration-200 text-sm"
                         title="Refresh tasks and events"
                     >
-                        🔄
+                        <RepeatIcon class="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => setViewMode(viewMode() === 'month' ? 'week' : 'month')}
-                        class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-gray-400 hover:text-white hover:border-zinc-700 transition-all duration-200 text-sm"
+                        class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-gray-400 hover:text-white hover:border-zinc-700 transition-all duration-200 text-sm flex items-center gap-1.5"
                     >
-                        {viewMode() === 'month' ? '📆 Week' : '🗓️ Month'}
+                        {viewMode() === 'month' ? <><CalendarWeekIcon class="w-4 h-4" /> Week</> : <><CalendarMonthIcon class="w-4 h-4" /> Month</>}
                     </button>
                     <button
                         onClick={() => {
@@ -669,13 +677,13 @@ function Calendar() {
                     <div class="flex items-center gap-2">
                         <button
                             onClick={() => setFocusMode(!focusMode())}
-                            class={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                            class={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border flex items-center gap-1.5 ${
                                 focusMode() 
                                     ? 'bg-purple-600 text-white border-purple-600' 
                                     : 'bg-black text-gray-400 border-zinc-800 hover:text-white hover:border-zinc-700'
                             }`}
                         >
-                            {focusMode() ? '🎯 Focus' : '👁️ All'}
+                            {focusMode() ? <><BoltIcon class="w-4 h-4" /> Focus</> : 'All'}
                         </button>
                     </div>
                 </div>
@@ -685,7 +693,7 @@ function Calendar() {
             <Show when={isLoading()}>
                 <div class="flex items-center justify-center h-64 bg-zinc-900 border border-zinc-800 rounded-2xl">
                     <div class="text-center">
-                        <div class="text-4xl mb-3 animate-pulse">📅</div>
+                        <CalendarIcon class="w-12 h-12 text-gray-400 mx-auto mb-3 animate-pulse" />
                         <div class="text-gray-400">Loading events...</div>
                     </div>
                 </div>
@@ -812,7 +820,7 @@ function Calendar() {
                                     onClick={() => setSelectedDate(null)}
                                     class="text-gray-400 hover:text-white transition-colors duration-200"
                                 >
-                                    ✕
+                                    <XIcon class="w-5 h-5" />
                                 </button>
                             </div>
                             <div class="space-y-2 max-h-[600px] overflow-y-auto">

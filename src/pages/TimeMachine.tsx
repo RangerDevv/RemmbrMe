@@ -1,6 +1,7 @@
 import { createSignal, onMount, For, Show } from 'solid-js';
 import { bk, currentUser } from '../lib/backend.ts';
 import NotificationModal from '../components/NotificationModal';
+import { ClockIcon, DashboardIcon, CalendarIcon, WarningIcon } from '../components/Icons';
 
 function TimeMachine() {
     const [events, setEvents] = createSignal([] as any[]);
@@ -185,7 +186,7 @@ function TimeMachine() {
         <div class="flex-1 w-full">
             <div class="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 class="text-4xl font-bold text-white mb-1">⏰ Time Machine</h1>
+                    <h1 class="text-4xl font-bold text-white mb-1 flex items-center gap-3"><ClockIcon class="w-9 h-9" /> Time Machine</h1>
                     <p class="text-gray-400">Monthly reflection and insights</p>
                 </div>
             </div>
@@ -220,19 +221,19 @@ function TimeMachine() {
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                    <div class="text-gray-400 text-3xl mb-2">📊</div>
+                    <DashboardIcon class="w-8 h-8 text-gray-400 mb-2" />
                     <div class="text-3xl font-bold text-white mb-1">{getProductivityScore()}%</div>
                     <div class="text-sm text-gray-400">Tasks Completed This Month</div>
                 </div>
 
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                    <div class="text-gray-400 text-3xl mb-2">📆</div>
+                    <CalendarIcon class="w-8 h-8 text-gray-400 mb-2" />
                     <div class="text-3xl font-bold text-white mb-1">{getStreakDays()} days</div>
                     <div class="text-sm text-gray-400">Active Days This Month</div>
                 </div>
 
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                    <div class="text-gray-400 text-3xl mb-2">🎯</div>
+                    <div class="w-8 h-8 text-gray-400 mb-2 flex items-center justify-center text-2xl">🎯</div>
                     <div class="text-3xl font-bold text-white mb-1">{getMonthEvents().length}</div>
                     <div class="text-sm text-gray-400">Events This Month</div>
                 </div>
@@ -449,7 +450,7 @@ function TimeMachine() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div class="flex items-start gap-4 mb-6">
-                            <div class="text-4xl">⚠️</div>
+                            <WarningIcon class="w-10 h-10 text-red-400 shrink-0" />
                             <div class="flex-1">
                                 <h3 class="text-xl font-bold text-white mb-2">Delete Note?</h3>
                                 <p class="text-gray-300 leading-relaxed">
