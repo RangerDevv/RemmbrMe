@@ -17,9 +17,15 @@ import {
 
 function Todo() {
 
-    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadline:string, tags:string[], recur:string, recurEnd:string) {
-        // Convert datetime-local format to ISO string
-        const deadlineISO = deadline ? new Date(deadline).toISOString() : undefined;
+    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string) {
+        // Combine date and time into ISO string
+        let deadlineISO = undefined;
+        if (deadlineDate && deadlineDate.trim()) {
+            // If time is provided, use it; otherwise default to 00:00
+            const timeStr = deadlineTime && deadlineTime.trim() ? deadlineTime : '00:00';
+            const date = new Date(`${deadlineDate}T${timeStr}`);
+            deadlineISO = date.toISOString();
+        }
         
         const data = {
             Title: name,
@@ -42,9 +48,15 @@ function Todo() {
         setTimeout(() => refreshNotifications(), 100);
     }
 
-    async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadline:string, tags:string[], recur:string, recurEnd:string) {
-        // Convert datetime-local format to ISO string
-        const deadlineISO = deadline ? new Date(deadline).toISOString() : undefined;
+    async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string) {
+        // Combine date and time into ISO string
+        let deadlineISO = undefined;
+        if (deadlineDate && deadlineDate.trim()) {
+            // If time is provided, use it; otherwise default to 00:00
+            const timeStr = deadlineTime && deadlineTime.trim() ? deadlineTime : '00:00';
+            const date = new Date(`${deadlineDate}T${timeStr}`);
+            deadlineISO = date.toISOString();
+        }
         
         const data = {
             Title: name,
@@ -147,7 +159,8 @@ function Todo() {
     const [TaskURL, setTaskURL] = createSignal('');
     const [TaskFile, setTaskFile] = createSignal<UploadFile[]>([]);
     const [TaskPriority, setTaskPriority] = createSignal('P2');
-    const [TaskDeadline, setTaskDeadline] = createSignal('');
+    const [TaskDeadlineDate, setTaskDeadlineDate] = createSignal('');
+    const [TaskDeadlineTime, setTaskDeadlineTime] = createSignal('');
     const [selectedTags, setSelectedTags] = createSignal<string[]>([]);
     const [recurrence, setRecurrence] = createSignal('none');
     const [recurrenceEndDate, setRecurrenceEndDate] = createSignal('');
@@ -189,7 +202,8 @@ function Todo() {
         setTaskURL('');
         setTaskFile([]);
         setTaskPriority('P2');
-        setTaskDeadline('');
+        setTaskDeadlineDate('');
+        setTaskDeadlineTime('');
         setSelectedTags([]);
         setRecurrence('none');
         setRecurrenceEndDate('');
@@ -203,7 +217,7 @@ function Todo() {
         setTaskURL(task.URL || '');
         setTaskPriority(task.Priority || 'P1');
         
-        // Convert ISO date to datetime-local format (YYYY-MM-DDTHH:MM)
+        // Convert ISO date to separate date and time fields
         if (task.Deadline) {
             const date = new Date(task.Deadline);
             const year = date.getFullYear();
@@ -211,9 +225,11 @@ function Todo() {
             const day = String(date.getDate()).padStart(2, '0');
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
-            setTaskDeadline(`${year}-${month}-${day}T${hours}:${minutes}`);
+            setTaskDeadlineDate(`${year}-${month}-${day}`);
+            setTaskDeadlineTime(`${hours}:${minutes}`);
         } else {
-            setTaskDeadline('');
+            setTaskDeadlineDate('');
+            setTaskDeadlineTime('');
         }
         
         setSelectedTags(task.expand?.Tags?.map((t: any) => t.id) || []);
@@ -488,7 +504,14 @@ function Todo() {
                                 </div>
                                 {item().Deadline && (
                                     <p class="text-sm text-gray-500 mt-2 flex items-center gap-1.5">
-                                        <CalendarIcon class="w-4 h-4" /> {new Date(item().Deadline).toLocaleDateString()}
+                                        <CalendarIcon class="w-4 h-4" /> 
+                                        {(() => {
+                                            const deadline = new Date(item().Deadline);
+                                            const hasTime = deadline.getHours() !== 0 || deadline.getMinutes() !== 0;
+                                            return hasTime 
+                                                ? deadline.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+                                                : deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                        })()}
                                     </p>
                                 )}
                             </div>
@@ -616,7 +639,8 @@ function Todo() {
                                     TaskURL(),
                                     TaskFile().map(f => f.file),
                                     TaskPriority(),
-                                    TaskDeadline(),
+                                    TaskDeadlineDate(),
+                                    TaskDeadlineTime(),
                                     selectedTags(),
                                     recurrence(),
                                     recurrenceEndDate()
@@ -629,7 +653,8 @@ function Todo() {
                                     TaskURL(),
                                     TaskFile().map(f => f.file),
                                     TaskPriority(),
-                                    TaskDeadline(),
+                                    TaskDeadlineDate(),
+                                    TaskDeadlineTime(),
                                     selectedTags(),
                                     recurrence(),
                                     recurrenceEndDate()
@@ -707,13 +732,27 @@ function Todo() {
                             </div>
                             <div class="mb-5">
                                 <label class="block text-sm font-medium text-gray-400 mb-2">Due By (Optional):</label>
-                                <input
-                                    type="datetime-local"
-                                    value={TaskDeadline()}
-                                    onInput={(e) => setTaskDeadline(e.currentTarget.value)}
-                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
-                                />
-                                <p class="text-xs text-gray-500 mt-1">Select a date and optionally a time. If no time is specified, it's due anytime that day.</p>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Date</label>
+                                        <input
+                                            type="date"
+                                            value={TaskDeadlineDate()}
+                                            onInput={(e) => setTaskDeadlineDate(e.currentTarget.value)}
+                                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Time (optional, defaults to 00:00)</label>
+                                        <input
+                                            type="time"
+                                            value={TaskDeadlineTime()}
+                                            onInput={(e) => setTaskDeadlineTime(e.currentTarget.value)}
+                                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
+                                        />
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Select a date and optionally a time. If no time is specified, it defaults to 00:00 (midnight).</p>
                             </div>
                             <div class="mb-5">
                                 <label class="block text-sm font-medium text-gray-400 mb-2">Tags:</label>
