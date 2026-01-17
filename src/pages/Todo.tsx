@@ -285,6 +285,79 @@ function Todo() {
         return filtered;
     }
 
+    function getOverdueTasks() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        return getFilteredTodos().filter(t => {
+            if (!t.Deadline || t.Completed) return false;
+            const deadline = new Date(t.Deadline);
+            return deadline < today;
+        });
+    }
+
+    function getTodayTasks() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        return getFilteredTodos().filter(t => {
+            if (t.Completed) return false;
+            if (!t.Deadline) return false;
+            const deadline = new Date(t.Deadline);
+            return deadline >= today && deadline < tomorrow;
+        });
+    }
+
+    function getTomorrowTasks() {
+        const tomorrow = new Date();
+        tomorrow.setHours(0, 0, 0, 0);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dayAfter = new Date(tomorrow);
+        dayAfter.setDate(dayAfter.getDate() + 1);
+
+        return getFilteredTodos().filter(t => {
+            if (t.Completed) return false;
+            if (!t.Deadline) return false;
+            const deadline = new Date(t.Deadline);
+            return deadline >= tomorrow && deadline < dayAfter;
+        });
+    }
+
+    function getThisWeekTasks() {
+        const dayAfterTomorrow = new Date();
+        dayAfterTomorrow.setHours(0, 0, 0, 0);
+        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+        const weekEnd = new Date();
+        weekEnd.setHours(0, 0, 0, 0);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+
+        return getFilteredTodos().filter(t => {
+            if (t.Completed) return false;
+            if (!t.Deadline) return false;
+            const deadline = new Date(t.Deadline);
+            return deadline >= dayAfterTomorrow && deadline < weekEnd;
+        });
+    }
+
+    function getLaterTasks() {
+        const weekEnd = new Date();
+        weekEnd.setHours(0, 0, 0, 0);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+
+        return getFilteredTodos().filter(t => {
+            if (t.Completed) return false;
+            if (!t.Deadline) return false;
+            const deadline = new Date(t.Deadline);
+            return deadline >= weekEnd;
+        });
+    }
+
+    function getNoDeadlineTasks() {
+        return getFilteredTodos().filter(t => !t.Completed && !t.Deadline);
+    }
+
     function getTaskStats() {
         const total = todoItems().length;
         const completed = todoItems().filter(t => t.Completed).length;
@@ -329,6 +402,97 @@ function Todo() {
         setTouchStart(0);
         setTouchEnd(0);
     }
+
+    const TaskItem = (props: { task: any }) => {
+        const item = () => props.task;
+        return (
+            <div 
+                class={`group relative bg-zinc-900 border border-zinc-800 rounded-xl p-5 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/80 ${
+                    swipingTask() === item().id ? 'scale-95' : ''
+                }`}
+                onTouchStart={handleTouchStart}
+                onTouchMove={(e) => handleTouchMove(e, item().id)}
+                onTouchEnd={() => handleTouchEnd(item())}
+            >
+                <div class="flex items-start gap-3 mb-2">
+                    <input 
+                        type="checkbox" 
+                        checked={item().Completed} 
+                        onChange={() => toggleComplete(item().id, item().Completed)}
+                        class="w-5 h-5 mt-1 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0 bg-black cursor-pointer transition-all duration-200"
+                    />
+                    <div class="flex-1">
+                        <div class="flex items-start justify-between">
+                            <h3 class={`text-xl font-semibold transition-all duration-200 ${
+                                item().Completed ? 'text-gray-500 line-through' : 'text-white'
+                            }`}>{item().Title}</h3>
+                            <div class="flex items-center gap-2">
+                                <span class={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                                    item().Priority === 'P1' ? 'bg-red-500/15 text-red-400 border border-red-500/20' :
+                                    item().Priority === 'P2' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
+                                    'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                }`}>
+                                    {item().Priority}
+                                </span>
+                                <button
+                                    onClick={() => startEditing(item())}
+                                    class="px-2 py-1 text-blue-400 hover:text-blue-300 transition-colors duration-200"
+                                    title="Edit"
+                                >
+                                    <EditIcon class="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => deleteTask(item().id)}
+                                    class="px-2 py-1 text-red-400 hover:text-red-300 transition-colors duration-200"
+                                    title="Delete"
+                                >
+                                    <TrashIcon class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                        <p class={`leading-relaxed transition-all duration-200 ${
+                            item().Completed ? 'text-gray-500 line-through' : 'text-gray-400'
+                        }`} style="white-space: pre-wrap;">{item().Description}</p>
+                        <div class="flex items-center gap-2 mt-3 flex-wrap">
+                            <Show when={item().expand?.Tags && item().expand.Tags.length > 0}>
+                                <Index each={item().expand.Tags}>
+                                    {(tag) => (
+                                        <span
+                                            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium text-white"
+                                            style={{ 'background-color': `${tag().color}40`, 'border': `1px solid ${tag().color}60` }}
+                                        >
+                                            <div
+                                                class="w-1.5 h-1.5 rounded-full"
+                                                style={{ 'background-color': tag().color }}
+                                            />
+                                            {tag().name}
+                                        </span>
+                                    )}
+                                </Index>
+                            </Show>
+                            <Show when={item().Recurrence && item().Recurrence !== 'none'}>
+                                <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                                    <RepeatIcon class="w-3 h-3" /> {item().Recurrence}
+                                </span>
+                            </Show>
+                        </div>
+                        {item().Deadline && (
+                            <p class="text-sm text-gray-500 mt-2 flex items-center gap-1.5">
+                                <CalendarIcon class="w-4 h-4" /> 
+                                {(() => {
+                                    const deadline = new Date(item().Deadline);
+                                    const hasTime = deadline.getHours() !== 0 || deadline.getMinutes() !== 0;
+                                    return hasTime 
+                                        ? deadline.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+                                        : deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                })()}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div class="flex flex-col gap-6 w-full">
@@ -429,96 +593,125 @@ function Todo() {
                     <span>New Task</span>
                 </button>
             </div>
-            <div class="space-y-3">
-            <Index each={getFilteredTodos()}>
-                {(item) => (
-                    <div 
-                        class={`group relative bg-zinc-900 border border-zinc-800 rounded-xl p-5 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/80 ${
-                            swipingTask() === item().id ? 'scale-95' : ''
-                        }`}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={(e) => handleTouchMove(e, item().id)}
-                        onTouchEnd={() => handleTouchEnd(item())}
-                    >
-                        <div class="flex items-start gap-3 mb-2">
-                            <input 
-                                type="checkbox" 
-                                checked={item().Completed} 
-                                onChange={() => toggleComplete(item().id, item().Completed)}
-                                class="w-5 h-5 mt-1 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0 bg-black cursor-pointer transition-all duration-200"
-                            />
-                            <div class="flex-1">
-                                <div class="flex items-start justify-between">
-                                    <h3 class={`text-xl font-semibold transition-all duration-200 ${
-                                        item().Completed ? 'text-gray-500 line-through' : 'text-white'
-                                    }`}>{item().Title}</h3>
-                                    <div class="flex items-center gap-2">
-                                        <span class={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                                            item().Priority === 'P1' ? 'bg-red-500/15 text-red-400 border border-red-500/20' :
-                                            item().Priority === 'P2' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
-                                            'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                                        }`}>
-                                            {item().Priority}
-                                        </span>
-                                        <button
-                                            onClick={() => startEditing(item())}
-                                            class="px-2 py-1 text-blue-400 hover:text-blue-300 transition-colors duration-200"
-                                            title="Edit"
-                                        >
-                                            <EditIcon class="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => deleteTask(item().id)}
-                                            class="px-2 py-1 text-red-400 hover:text-red-300 transition-colors duration-200"
-                                            title="Delete"
-                                        >
-                                            <TrashIcon class="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                                <p class={`leading-relaxed transition-all duration-200 ${
-                                    item().Completed ? 'text-gray-500 line-through' : 'text-gray-400'
-                                }`} style="white-space: pre-wrap;">{item().Description}</p>
-                                <div class="flex items-center gap-2 mt-3 flex-wrap">
-                                    <Show when={item().expand?.Tags && item().expand.Tags.length > 0}>
-                                        <Index each={item().expand.Tags}>
-                                            {(tag) => (
-                                                <span
-                                                    class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium text-white"
-                                                    style={{ 'background-color': `${tag().color}40`, 'border': `1px solid ${tag().color}60` }}
-                                                >
-                                                    <div
-                                                        class="w-1.5 h-1.5 rounded-full"
-                                                        style={{ 'background-color': tag().color }}
-                                                    />
-                                                    {tag().name}
-                                                </span>
-                                            )}
-                                        </Index>
-                                    </Show>
-                                    <Show when={item().Recurrence && item().Recurrence !== 'none'}>
-                                        <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                                            <RepeatIcon class="w-3 h-3" /> {item().Recurrence}
-                                        </span>
-                                    </Show>
-                                </div>
-                                {item().Deadline && (
-                                    <p class="text-sm text-gray-500 mt-2 flex items-center gap-1.5">
-                                        <CalendarIcon class="w-4 h-4" /> 
-                                        {(() => {
-                                            const deadline = new Date(item().Deadline);
-                                            const hasTime = deadline.getHours() !== 0 || deadline.getMinutes() !== 0;
-                                            return hasTime 
-                                                ? deadline.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-                                                : deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                                        })()}
-                                    </p>
-                                )}
+
+            {/* Show organized sections only for active tasks */}
+            <Show when={filterStatus() === 'active'}>
+                <div class="space-y-6">
+                    {/* Overdue Tasks */}
+                    <Show when={getOverdueTasks().length > 0}>
+                        <div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                                <h4 class="text-lg font-semibold text-red-400">Overdue</h4>
+                                <span class="text-gray-500 text-sm">({getOverdueTasks().length})</span>
+                            </div>
+                            <div class="space-y-3">
+                                <Index each={getOverdueTasks()}>
+                                    {(item) => <TaskItem task={item()} />}
+                                </Index>
                             </div>
                         </div>
-                    </div>
-                )}
-            </Index>
+                    </Show>
+
+                    {/* Today's Tasks */}
+                    <Show when={getTodayTasks().length > 0}>
+                        <div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <h4 class="text-lg font-semibold text-blue-400">Today</h4>
+                                <span class="text-gray-500 text-sm">({getTodayTasks().length})</span>
+                            </div>
+                            <div class="space-y-3">
+                                <Index each={getTodayTasks()}>
+                                    {(item) => <TaskItem task={item()} />}
+                                </Index>
+                            </div>
+                        </div>
+                    </Show>
+
+                    {/* Tomorrow's Tasks */}
+                    <Show when={getTomorrowTasks().length > 0}>
+                        <div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                                <h4 class="text-lg font-semibold text-amber-400">Tomorrow</h4>
+                                <span class="text-gray-500 text-sm">({getTomorrowTasks().length})</span>
+                            </div>
+                            <div class="space-y-3">
+                                <Index each={getTomorrowTasks()}>
+                                    {(item) => <TaskItem task={item()} />}
+                                </Index>
+                            </div>
+                        </div>
+                    </Show>
+
+                    {/* This Week */}
+                    <Show when={getThisWeekTasks().length > 0}>
+                        <div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                                <h4 class="text-lg font-semibold text-purple-400">This Week</h4>
+                                <span class="text-gray-500 text-sm">({getThisWeekTasks().length})</span>
+                            </div>
+                            <div class="space-y-3">
+                                <Index each={getThisWeekTasks()}>
+                                    {(item) => <TaskItem task={item()} />}
+                                </Index>
+                            </div>
+                        </div>
+                    </Show>
+
+                    {/* Later */}
+                    <Show when={getLaterTasks().length > 0}>
+                        <div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-2 h-2 rounded-full bg-cyan-500"></div>
+                                <h4 class="text-lg font-semibold text-cyan-400">Later</h4>
+                                <span class="text-gray-500 text-sm">({getLaterTasks().length})</span>
+                            </div>
+                            <div class="space-y-3">
+                                <Index each={getLaterTasks()}>
+                                    {(item) => <TaskItem task={item()} />}
+                                </Index>
+                            </div>
+                        </div>
+                    </Show>
+
+                    {/* No Deadline */}
+                    <Show when={getNoDeadlineTasks().length > 0}>
+                        <div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-2 h-2 rounded-full bg-gray-500"></div>
+                                <h4 class="text-lg font-semibold text-gray-400">No Deadline</h4>
+                                <span class="text-gray-500 text-sm">({getNoDeadlineTasks().length})</span>
+                            </div>
+                            <div class="space-y-3">
+                                <Index each={getNoDeadlineTasks()}>
+                                    {(item) => <TaskItem task={item()} />}
+                                </Index>
+                            </div>
+                        </div>
+                    </Show>
+
+                    {/* Empty state */}
+                    <Show when={getFilteredTodos().filter(t => !t.Completed).length === 0}>
+                        <div class="text-center py-12 text-gray-500">
+                            <CheckCircleIcon class="w-16 h-16 mx-auto mb-4 text-emerald-400" />
+                            <p class="text-xl">All caught up!</p>
+                            <p class="text-sm mt-2">No active tasks</p>
+                        </div>
+                    </Show>
+                </div>
+            </Show>
+
+            {/* Show flat list for completed or all tasks filter */}
+            <Show when={filterStatus() !== 'active'}>
+                <div class="space-y-3">
+                    <Index each={getFilteredTodos()}>
+                        {(item) => <TaskItem task={item()} />}
+                    </Index>
+                </div>
+            </Show>
             </div>
             
             {/* Completed Tasks Section */}
@@ -594,11 +787,9 @@ function Todo() {
                     </Show>
                 </div>
             </Show>
-        </div>
 
-        {/* Create/Edit Modal */}
-
-        <Show when={showModal()}>
+            {/* Create/Edit Modal */}
+            <Show when={showModal()}>
             <div
                 class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 onClick={() => {
