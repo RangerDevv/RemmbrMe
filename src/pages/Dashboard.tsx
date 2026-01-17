@@ -214,7 +214,48 @@ function Dashboard() {
     }
 
     async function quickCompleteTask(taskId: string) {
-        await bk.collection('Todo').update(taskId, { Completed: true });
+        // Find the task to check if it's recurring
+        const task = todos().find(t => t.id === taskId);
+        
+        if (task && task.Recurrence && task.Recurrence !== 'none' && task.Deadline) {
+            // Handle recurring task - reschedule to next occurrence
+            const currentDeadline = new Date(task.Deadline);
+            let nextDeadline = new Date(currentDeadline);
+            
+            // Calculate next occurrence
+            switch (task.Recurrence) {
+                case 'daily':
+                    nextDeadline.setDate(nextDeadline.getDate() + 1);
+                    break;
+                case 'weekly':
+                    nextDeadline.setDate(nextDeadline.getDate() + 7);
+                    break;
+                case 'monthly':
+                    nextDeadline.setMonth(nextDeadline.getMonth() + 1);
+                    break;
+            }
+            
+            // Check if next deadline exceeds recurrence end date
+            if (task.RecurrenceEndDate) {
+                const endDate = new Date(task.RecurrenceEndDate);
+                if (nextDeadline > endDate) {
+                    // If past end date, just mark as complete
+                    await bk.collection('Todo').update(taskId, { Completed: true });
+                    fetchDashboardData();
+                    return;
+                }
+            }
+            
+            // Update to next deadline and keep uncompleted
+            await bk.collection('Todo').update(taskId, {
+                Deadline: nextDeadline.toISOString(),
+                Completed: false
+            });
+        } else {
+            // Normal task - just mark as complete
+            await bk.collection('Todo').update(taskId, { Completed: true });
+        }
+        
         fetchDashboardData();
     }
 
