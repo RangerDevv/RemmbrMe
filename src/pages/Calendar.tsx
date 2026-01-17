@@ -1097,7 +1097,7 @@ function Calendar() {
                                                     </For>
                                                     
                                                     {/* Render Tasks */}
-                                                    <For each={dayTasks}>
+                                                    <For each={dayTasks()}>
                                                         {(task) => {
                                                             const deadline = new Date(task.Deadline);
                                                             const taskHour = deadline.getHours();
