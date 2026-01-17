@@ -85,7 +85,8 @@ function Dashboard() {
         highPriorityTasks: 0,
         completionRate: 0,
         avgTasksPerDay: 0,
-        recurringTasks: 0
+        recurringTasks: 0,
+        freeTimePercent: 100
     });
 
     let greeting = "";
@@ -168,6 +169,23 @@ function Dashboard() {
             }).length;
             const avgTasksPerDay = Math.round(recentCompletedTasks / 7);
 
+            // Calculate free time percentage for today
+            const todayEvents = eventRecords.filter(e => {
+                const eventDate = new Date(e.Start);
+                return eventDate >= today && eventDate < tomorrow;
+            });
+
+            let totalScheduledMinutes = 0;
+            todayEvents.forEach(event => {
+                const start = new Date(event.Start);
+                const end = new Date(event.End);
+                const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
+                totalScheduledMinutes += durationMinutes;
+            });
+
+            const totalMinutesInDay = 24 * 60;
+            const freeTimePercent = Math.round(((totalMinutesInDay - totalScheduledMinutes) / totalMinutesInDay) * 100);
+
             setStats({
                 completedToday,
                 totalTasks: todoRecords.filter(t => !t.Completed).length,
@@ -176,7 +194,8 @@ function Dashboard() {
                 highPriorityTasks,
                 completionRate,
                 avgTasksPerDay,
-                recurringTasks
+                recurringTasks,
+                freeTimePercent: Math.max(0, Math.min(100, freeTimePercent))
             });
 
             // Calculate streak
@@ -446,7 +465,7 @@ function Dashboard() {
 
                 {/* Extended Stats */}
                 <Show when={settings().showStreak || settings().showHighPriority || settings().showAvgTasks || settings().showRecurring}>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                         <Show when={settings().showStreak}>
                             <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
                                 <div class="text-red-400 text-xl mb-1">🔥</div>
@@ -478,6 +497,12 @@ function Dashboard() {
                                 <div class="text-xs text-gray-500">Recurring</div>
                             </div>
                         </Show>
+
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+                            <div class="text-emerald-400 text-xl mb-1">⏰</div>
+                            <div class="text-2xl font-bold text-white">{stats().freeTimePercent}%</div>
+                            <div class="text-xs text-gray-500">Free Time Today</div>
+                        </div>
                     </div>
                 </Show>
 
