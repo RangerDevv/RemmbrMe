@@ -103,17 +103,17 @@ function Dashboard() {
         try {
             const [eventRecords, todoRecords, tagRecords] = await Promise.all([
                 bk.collection('Calendar').getFullList({
-                    filter: `user = ${currentUser()?.id}`,
+                    filter: `user = "${currentUser()?.id}"`,
                     expand: 'Tasks,Tags',
                     sort: 'Start'
                 }),
                 bk.collection('Todo').getFullList({
-                    filter: `user = ${currentUser()?.id}`,
+                    filter: `user = "${currentUser()?.id}"`,
                     expand: 'Tags',
                     sort: '-created'
                 }),
                 bk.collection('Tags').getFullList({
-                    filter: `user = ${currentUser()?.id}`
+                    filter: `user = "${currentUser()?.id}"`
                 })
             ]);
 
