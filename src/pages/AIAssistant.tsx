@@ -18,6 +18,27 @@ function AIAssistant() {
     const [smartSuggestions, setSmartSuggestions] = createSignal<string[]>([]);
     const [notification, setNotification] = createSignal({ show: false, message: '', type: 'info' as 'info' | 'warning' | 'error' | 'success' });
 
+    // Simple markdown to HTML parser
+    function parseMarkdown(text: string): string {
+        return text
+            // Headers
+            .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-white mt-4 mb-2">$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold text-white mt-5 mb-3">$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-white mt-6 mb-4">$1</h1>')
+            // Bold
+            .replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
+            // Italic
+            .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
+            // Bullet points
+            .replace(/^\* (.+)$/gim, '<li class="ml-4">$1</li>')
+            .replace(/^- (.+)$/gim, '<li class="ml-4">$1</li>')
+            // Wrap consecutive list items in ul
+            .replace(/(<li class="ml-4">.*<\/li>\n?)+/gs, '<ul class="list-disc list-inside space-y-1 my-2">$&</ul>')
+            // Line breaks
+            .replace(/\n\n/g, '<br/><br/>')
+            .replace(/\n/g, '<br/>');
+    }
+
     function saveApiKey() {
         localStorage.setItem('gemini_api_key', apiKey());
         setShowApiKeyInput(false);
@@ -79,7 +100,13 @@ Return a JSON object with this EXACT structure:
 }
 
 SCHEDULING INTELLIGENCE RULES:
-1. **Parse mentioned times**: If user says "3pm", "5 o'clock", "morning", "afternoon", use those times
+1. **Parse mentioned times** (CRITICAL):
+   - Explicit times with AM/PM: "4pm", "4 PM", "4:30pm" → use exactly as stated
+   - Time ranges: "4pm to 5pm", "4-5pm", "from 4pm to 5pm" → start=4pm, end=5pm
+   - "4:30 to 5:45" → use those exact times
+   - "between 3 and 5" → typically means 3 PM to 5 PM unless morning context
+   - 12-hour format: "3:30pm" = 15:30, "9am" = 09:00
+   - 24-hour format: "15:00" = 3 PM, "09:00" = 9 AM
    
 2. **SMART AM/PM INFERENCE** (CRITICAL - prevents scheduling errors):
    - If user just says a number (e.g., "3" or "5") without AM/PM, intelligently infer:
@@ -585,9 +612,10 @@ Return ONLY the JSON array, no markdown.`;
                                 <div class="text-gray-400 animate-pulse">{processingStatus()}</div>
                             </Show>
                             <Show when={!isProcessing() && feedbackText()}>
-                                <div class="text-gray-300 whitespace-pre-wrap leading-relaxed prose prose-invert max-w-none">
-                                    {feedbackText()}
-                                </div>
+                                <div 
+                                    class="text-gray-300 leading-relaxed"
+                                    innerHTML={parseMarkdown(feedbackText())}
+                                />
                             </Show>
                         </div>
                     </Show>
@@ -627,9 +655,10 @@ Return ONLY the JSON array, no markdown.`;
                                 <div class="text-gray-400 animate-pulse">{processingStatus()}</div>
                             </Show>
                             <Show when={!isProcessing() && dailyBriefing()}>
-                                <div class="text-gray-300 whitespace-pre-wrap leading-relaxed">
-                                    {dailyBriefing()}
-                                </div>
+                                <div 
+                                    class="text-gray-300 leading-relaxed"
+                                    innerHTML={parseMarkdown(dailyBriefing())}
+                                />
                             </Show>
                         </div>
                     </Show>
