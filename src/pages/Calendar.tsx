@@ -247,11 +247,10 @@ function Calendar() {
 
         await bk.collection('Calendar').create(data);
         
-        // Recurring instances are generated virtually in fetchEvents()
         
         fetchEvents();
         fetchTodos();
-        refreshNotifications();
+        setTimeout(() => refreshNotifications(), 100);
         resetForm();
         setShowEventModal(false);
     }
@@ -278,8 +277,8 @@ function Calendar() {
                     user: currentUser()?.id
                 });
                 createdTaskIds.push(taskRecord.id);
-                fetchEvents();
-                fetchTodos();
+                await fetchEvents();
+                await fetchTodos();
             }
         }
 
@@ -311,8 +310,10 @@ function Calendar() {
         });
         setQuickViewEvent(updatedEvent);
         
-        refreshNotifications();
+        setTimeout(() => refreshNotifications(), 100);
         resetForm();
+        await fetchEvents();
+        await fetchTodos();
         setShowEditEventModal(false);
         setEditingEvent(null);
     }
@@ -328,7 +329,7 @@ function Calendar() {
             setQuickViewEvent(null);
             await fetchEvents();
             await fetchTodos();
-            refreshNotifications();
+            setTimeout(() => refreshNotifications(), 100);
         }
         setConfirmDelete({ show: false, eventId: '' });
     }
@@ -583,7 +584,6 @@ function Calendar() {
         await fetchTodos();
         await fetchTags();
         setIsLoading(false);
-        console.log('Events after mount:', events().length);
     });
 
     return (
@@ -978,13 +978,14 @@ function Calendar() {
                                         </div>
                                         <For each={getWeekDays()}>
                                             {(day) => {
-                                                const dayEvents = getEventsWithBreaks(day);
-                                                const dayTasks = getTasksForDate(day);
+                                                // Use createMemo to make this reactive to events() changes
+                                                const dayEvents = createMemo(() => getEventsWithBreaks(day));
+                                                const dayTasks = createMemo(() => getTasksForDate(day));
                                                 
                                                 return (
                                                     <div class="relative border-r border-zinc-800 min-h-[60px] hover:bg-zinc-900/50 transition-colors duration-200">
                                                         {/* Render Events */}
-                                                        <For each={dayEvents}>
+                                                        <For each={dayEvents()}>
                                                             {(event) => {
                                                                 const eventStart = new Date(event.Start);
                                                                 const eventEnd = new Date(event.End);
