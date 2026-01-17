@@ -271,9 +271,39 @@ function Dashboard() {
         }).sort((a, b) => new Date(a.Start).getTime() - new Date(b.Start).getTime());
     }
 
-    function getUpcomingTasks() {
+    function getTodayTasks() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
         return todos()
-            .filter(t => !t.Completed)
+            .filter(t => {
+                if (t.Completed) return false;
+                if (!t.Deadline) return false;
+                const deadline = new Date(t.Deadline);
+                return deadline >= today && deadline < tomorrow;
+            })
+            .sort((a, b) => {
+                const priorityOrder = { P1: 0, P2: 1, P3: 2 };
+                const aPriority = priorityOrder[a.Priority as keyof typeof priorityOrder] ?? 3;
+                const bPriority = priorityOrder[b.Priority as keyof typeof priorityOrder] ?? 3;
+                return aPriority - bPriority;
+            });
+    }
+
+    function getUpcomingTasks() {
+        const tomorrow = new Date();
+        tomorrow.setHours(0, 0, 0, 0);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        return todos()
+            .filter(t => {
+                if (t.Completed) return false;
+                if (!t.Deadline) return false;
+                const deadline = new Date(t.Deadline);
+                return deadline >= tomorrow;
+            })
             .sort((a, b) => {
                 // Sort by priority first (P1 > P2 > P3)
                 const priorityOrder = { P1: 0, P2: 1, P3: 2 };
@@ -282,12 +312,22 @@ function Dashboard() {
                 if (aPriority !== bPriority) return aPriority - bPriority;
                 
                 // Then by deadline
-                if (a.Deadline && !b.Deadline) return -1;
-                if (!a.Deadline && b.Deadline) return 1;
                 if (a.Deadline && b.Deadline) {
                     return new Date(a.Deadline).getTime() - new Date(b.Deadline).getTime();
                 }
                 return 0;
+            })
+            .slice(0, 10);
+    }
+
+    function getNoDeadlineTasks() {
+        return todos()
+            .filter(t => !t.Completed && !t.Deadline)
+            .sort((a, b) => {
+                const priorityOrder = { P1: 0, P2: 1, P3: 2 };
+                const aPriority = priorityOrder[a.Priority as keyof typeof priorityOrder] ?? 3;
+                const bPriority = priorityOrder[b.Priority as keyof typeof priorityOrder] ?? 3;
+                return aPriority - bPriority;
             })
             .slice(0, 5);
     }
@@ -578,19 +618,99 @@ function Dashboard() {
                 </Show>
 
                 <Show when={settings().showPriorityTasks || settings().showTopTags}>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    {/* Upcoming Tasks */}
+                    <div class="grid grid-cols-1 gap-6 mb-8">
+                    {/* Tasks Section */}
                     <Show when={settings().showPriorityTasks}>
-                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-white flex items-center gap-2"><BoltIcon class="w-5 h-5" /> Priority Tasks</h3>
-                            <A href="/todo" class="text-sm text-blue-400 hover:text-blue-300">
-                                View All →
-                            </A>
-                        </div>
-                        <div class="space-y-3 max-h-96 overflow-y-auto">
-                            <Show when={getUpcomingTasks().length > 0}>
-                                <For each={getUpcomingTasks()}>
+                        <div class="space-y-6">
+                            {/* Today's Tasks */}
+                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                                        <CheckCircleIcon class="w-5 h-5 text-blue-400" /> Today's Tasks
+                                    </h3>
+                                    <A href="/todo" class="text-sm text-blue-400 hover:text-blue-300">
+                                        View All →
+                                    </A>
+                                </div>
+                                <div class="space-y-3 max-h-96 overflow-y-auto">
+                                    <Show when={getTodayTasks().length > 0}>
+                                        <For each={getTodayTasks()}>
+                                            {(task) => (
+                                                <div class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg hover:border-blue-500/50 transition-all duration-200">
+                                                    <div class="flex items-start justify-between gap-3">
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="flex items-center gap-2 mb-1">
+                                                                <button
+                                                                    onClick={() => quickCompleteTask(task.id)}
+                                                                    class="w-5 h-5 rounded border-2 border-blue-400 hover:border-emerald-500 hover:bg-emerald-500/20 transition-all duration-200 shrink-0"
+                                                                ></button>
+                                                                <h4 class="font-semibold text-white truncate">{task.Title}</h4>
+                                                            </div>
+                                                            <Show when={task.Description}>
+                                                                <p class="text-xs text-gray-400 mb-2 line-clamp-2">{task.Description}</p>
+                                                            </Show>
+                                                            <div class="flex items-center gap-2 flex-wrap">
+                                                                <span class={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                                    task.Priority === 'P1' ? 'bg-red-500/15 text-red-400 border border-red-500/20' :
+                                                                    task.Priority === 'P2' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
+                                                                    'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                                                }`}>
+                                                                    {task.Priority}
+                                                                </span>
+                                                                <Show when={task.Deadline}>
+                                                                    <span class="text-xs text-blue-400 flex items-center gap-1">
+                                                                        <CalendarIcon class="w-3 h-3" /> Today
+                                                                    </span>
+                                                                </Show>
+                                                                <Show when={task.Recurrence && task.Recurrence !== 'none'}>
+                                                                    <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                                        <RepeatIcon class="w-3 h-3" /> {task.Recurrence}
+                                                                    </span>
+                                                                </Show>
+                                                            </div>
+                                                            <Show when={task.expand?.Tags && task.expand.Tags.length > 0}>
+                                                                <div class="flex flex-wrap gap-1 mt-2">
+                                                                    <For each={task.expand.Tags}>
+                                                                        {(tag: any) => (
+                                                                            <span
+                                                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-white"
+                                                                                style={{ 'background-color': `${tag.color}40` }}
+                                                                            >
+                                                                                <div class="w-1 h-1 rounded-full" style={{ 'background-color': tag.color }}></div>
+                                                                                {tag.name}
+                                                                            </span>
+                                                                        )}
+                                                                    </For>
+                                                                </div>
+                                                            </Show>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </For>
+                                    </Show>
+                                    <Show when={getTodayTasks().length === 0}>
+                                        <div class="text-center py-8 text-gray-500">
+                                            <div class="text-4xl mb-2">☀️</div>
+                                            <p>No tasks due today</p>
+                                        </div>
+                                    </Show>
+                                </div>
+                            </div>
+
+                            {/* Upcoming Tasks */}
+                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                                        <BoltIcon class="w-5 h-5 text-amber-400" /> Upcoming Tasks
+                                    </h3>
+                                    <A href="/todo" class="text-sm text-blue-400 hover:text-blue-300">
+                                        View All →
+                                    </A>
+                                </div>
+                                <div class="space-y-3 max-h-96 overflow-y-auto">
+                                    <Show when={getUpcomingTasks().length > 0}>
+                                        <For each={getUpcomingTasks()}>
                                     {(task) => (
                                         <div class="p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-all duration-200">
                                             <div class="flex items-start justify-between gap-3">
@@ -613,11 +733,11 @@ function Dashboard() {
                                                         }`}>
                                                             {task.Priority}
                                                         </span>
-                                                        <Show when={task.Deadline}>
-                                                            <span class="text-xs text-gray-500 flex items-center gap-1">
-                                                                <CalendarIcon class="w-3 h-3" /> {new Date(task.Deadline).toLocaleDateString()}
-                                                            </span>
-                                                        </Show>
+                                                                <Show when={task.Deadline}>
+                                                                    <span class="text-xs text-gray-500 flex items-center gap-1">
+                                                                        <CalendarIcon class="w-3 h-3" /> {new Date(task.Deadline).toLocaleDateString()}
+                                                                    </span>
+                                                                </Show>
                                                         <Show when={task.Recurrence && task.Recurrence !== 'none'}>
                                                             <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full flex items-center gap-1">
                                                                 <RepeatIcon class="w-3 h-3" /> {task.Recurrence}
@@ -644,15 +764,81 @@ function Dashboard() {
                                         </div>
                                     )}
                                 </For>
-                            </Show>
-                            <Show when={getUpcomingTasks().length === 0}>
-                                <div class="text-center py-12 text-gray-500">
-                                    <CheckCircleIcon class="w-12 h-12 mx-auto mb-2 text-emerald-400" />
-                                    <p>All caught up!</p>
+                                    </Show>
+                                    <Show when={getUpcomingTasks().length === 0}>
+                                        <div class="text-center py-8 text-gray-500">
+                                            <div class="text-4xl mb-2">✨</div>
+                                            <p>No upcoming tasks</p>
+                                        </div>
+                                    </Show>
+                                </div>
+                            </div>
+
+                            {/* Tasks Without Deadline */}
+                            <Show when={getNoDeadlineTasks().length > 0}>
+                                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                                            <BoltIcon class="w-5 h-5 text-gray-400" /> No Deadline
+                                        </h3>
+                                        <A href="/todo" class="text-sm text-blue-400 hover:text-blue-300">
+                                            View All →
+                                        </A>
+                                    </div>
+                                    <div class="space-y-3 max-h-96 overflow-y-auto">
+                                        <For each={getNoDeadlineTasks()}>
+                                            {(task) => (
+                                                <div class="p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-all duration-200">
+                                                    <div class="flex items-start justify-between gap-3">
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="flex items-center gap-2 mb-1">
+                                                                <button
+                                                                    onClick={() => quickCompleteTask(task.id)}
+                                                                    class="w-5 h-5 rounded border-2 border-zinc-600 hover:border-emerald-500 hover:bg-emerald-500/20 transition-all duration-200 shrink-0"
+                                                                ></button>
+                                                                <h4 class="font-semibold text-white truncate">{task.Title}</h4>
+                                                            </div>
+                                                            <Show when={task.Description}>
+                                                                <p class="text-xs text-gray-500 mb-2 line-clamp-2">{task.Description}</p>
+                                                            </Show>
+                                                            <div class="flex items-center gap-2 flex-wrap">
+                                                                <span class={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                                    task.Priority === 'P1' ? 'bg-red-500/15 text-red-400 border border-red-500/20' :
+                                                                    task.Priority === 'P2' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
+                                                                    'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                                                }`}>
+                                                                    {task.Priority}
+                                                                </span>
+                                                                <Show when={task.Recurrence && task.Recurrence !== 'none'}>
+                                                                    <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                                        <RepeatIcon class="w-3 h-3" /> {task.Recurrence}
+                                                                    </span>
+                                                                </Show>
+                                                            </div>
+                                                            <Show when={task.expand?.Tags && task.expand.Tags.length > 0}>
+                                                                <div class="flex flex-wrap gap-1 mt-2">
+                                                                    <For each={task.expand.Tags}>
+                                                                        {(tag: any) => (
+                                                                            <span
+                                                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-white"
+                                                                                style={{ 'background-color': `${tag.color}40` }}
+                                                                            >
+                                                                                <div class="w-1 h-1 rounded-full" style={{ 'background-color': tag.color }}></div>
+                                                                                {tag.name}
+                                                                            </span>
+                                                                        )}
+                                                                    </For>
+                                                                </div>
+                                                            </Show>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </For>
+                                    </div>
                                 </div>
                             </Show>
                         </div>
-                    </div>
                     </Show>
 
                     {/* Top Tags */}
