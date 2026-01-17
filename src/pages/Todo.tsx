@@ -38,14 +38,6 @@ function Todo() {
         const record = await bk.collection('Todo').create(data);
         console.log('Task created:', record);
         
-        // Generate recurring instances if recurrence is set
-        if (recur !== 'none' && recur) {
-            await generateRecurringTasks(record.id, record, {
-                frequency: recur as 'daily' | 'weekly' | 'monthly',
-                endDate: recurEnd ? new Date(recurEnd) : undefined
-            });
-        }
-        
         fetchTodos();
         setTimeout(() => refreshNotifications(), 100);
     }
@@ -90,6 +82,58 @@ function Todo() {
     }
 
     async function toggleComplete(id: string, currentStatus: boolean) {
+        // If marking as complete and task has recurrence, reschedule to next occurrence
+        if (!currentStatus) {
+            const task = todoItems().find(t => t.id === id);
+            console.log('Toggling complete for task:', task);
+            if (task && task.Recurrence && task.Recurrence !== 'none' && task.Deadline) {
+                console.log('Task has recurrence:', task.Recurrence, 'Deadline:', task.Deadline);
+                const currentDeadline = new Date(task.Deadline);
+                let nextDeadline = new Date(currentDeadline);
+                
+                // Calculate next occurrence
+                switch (task.Recurrence) {
+                    case 'daily':
+                        nextDeadline.setDate(nextDeadline.getDate() + 1);
+                        break;
+                    case 'weekly':
+                        nextDeadline.setDate(nextDeadline.getDate() + 7);
+                        break;
+                    case 'monthly':
+                        nextDeadline.setMonth(nextDeadline.getMonth() + 1);
+                        break;
+                }
+                
+                console.log('Next deadline calculated:', nextDeadline.toISOString());
+                
+                // Check if next deadline exceeds recurrence end date
+                if (task.RecurrenceEndDate) {
+                    const endDate = new Date(task.RecurrenceEndDate);
+                    if (nextDeadline > endDate) {
+                        // If past end date, just mark as complete
+                        await bk.collection('Todo').update(id, {
+                            Completed: true
+                        });
+                        fetchTodos();
+                        setTimeout(() => refreshNotifications(), 100);
+                        return;
+                    }
+                }
+                
+                // Update to next deadline and keep uncompleted
+                console.log('Updating task with new deadline:', nextDeadline.toISOString());
+                await bk.collection('Todo').update(id, {
+                    Deadline: nextDeadline.toISOString(),
+                    Completed: false
+                });
+                console.log('Task updated successfully');
+                fetchTodos();
+                setTimeout(() => refreshNotifications(), 100);
+                return;
+            }
+        }
+        
+        // Normal toggle for non-recurring or marking as incomplete
         await bk.collection('Todo').update(id, {
             Completed: !currentStatus
         });
