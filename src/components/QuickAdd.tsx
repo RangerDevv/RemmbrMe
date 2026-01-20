@@ -358,10 +358,10 @@ function QuickAdd() {
                 setShowModal(false);
                 setQuickInput('');
                 
-                // Refresh the page to show new item
-                setTimeout(() => {
-                    window.location.reload();
-                }, 300);
+                // Dispatch custom event to notify other components
+                window.dispatchEvent(new CustomEvent('itemCreated', { 
+                    detail: { type: finalType, title: parsed.title } 
+                }));
             }, 1500);
 
         } catch (error) {
