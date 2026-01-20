@@ -62,6 +62,7 @@ function QuickAdd() {
         const timePatterns = [
             /(\d{1,2}):(\d{2})\s*(am|pm)?/i,
             /(\d{1,2})\s*(am|pm)/i,
+            /\b(\d{1,2})\b/i, // Just a number like "2" or "11"
             /(morning|afternoon|evening|noon|night)/i
         ];
 
@@ -73,23 +74,34 @@ function QuickAdd() {
             if (match) {
                 hasTimeIndicator = true;
                 if (match[1] && match[2]) {
+                    // Format: "2:30" or "2:30pm"
                     let hours = parseInt(match[1]);
                     const minutes = parseInt(match[2]);
                     const period = match[3]?.toLowerCase();
                     
                     if (period === 'pm' && hours < 12) hours += 12;
-                    if (period === 'am' && hours === 12) hours = 0;
+                    else if (period === 'am' && hours === 12) hours = 0;
+                    else if (!period && hours < 12) hours += 12; // Default to PM if no period specified
                     
                     time = { hours, minutes };
-                } else if (match[1]) {
+                } else if (match[1] && match[2]) {
+                    // Format: "2pm" or "2am"
                     let hours = parseInt(match[1]);
                     const period = match[2]?.toLowerCase();
                     
                     if (period === 'pm' && hours < 12) hours += 12;
-                    if (period === 'am' && hours === 12) hours = 0;
+                    else if (period === 'am' && hours === 12) hours = 0;
+                    else if (!period && hours < 12) hours += 12; // Default to PM
                     
                     time = { hours, minutes: 0 };
+                } else if (match[1] && /^\d{1,2}$/.test(match[1])) {
+                    // Format: just "2" or "11"
+                    let hours = parseInt(match[1]);
+                    // Always assume PM for single digit or double digit hours < 12
+                    if (hours < 12) hours += 12;
+                    time = { hours, minutes: 0 };
                 } else if (match[1]) {
+                    // Word-based time
                     const timeWord = match[1].toLowerCase();
                     time = {
                         hours: timeWord === 'morning' ? 9 : 
@@ -131,13 +143,42 @@ function QuickAdd() {
             date = getNextWeekday(today, 0);
         }
 
-        // Duration detection
+        // Duration detection - handle "2:00 to 3:00", "2-3", "2 to 3", or explicit duration
         let duration = 60; // default 1 hour
-        const durationMatch = input.match(/(\d+)\s*(hour|hr|minute|min)/i);
-        if (durationMatch) {
-            const amount = parseInt(durationMatch[1]);
-            const unit = durationMatch[2].toLowerCase();
-            duration = unit.startsWith('hour') || unit === 'hr' ? amount * 60 : amount;
+        
+        // Check for time range formats like "2:00 to 3:00", "2 to 3", "2-3"
+        const rangeMatch = input.match(/(\d{1,2})(?::(\d{2}))?\s*(?:to|-)\s*(\d{1,2})(?::(\d{2}))?/i);
+        if (rangeMatch) {
+            let startHour = parseInt(rangeMatch[1]);
+            const startMin = rangeMatch[2] ? parseInt(rangeMatch[2]) : 0;
+            let endHour = parseInt(rangeMatch[3]);
+            const endMin = rangeMatch[4] ? parseInt(rangeMatch[4]) : 0;
+            
+            // Assume PM for both if < 12
+            if (startHour < 12) startHour += 12;
+            if (endHour < 12) endHour += 12;
+            
+            // Calculate duration
+            const startMinutes = startHour * 60 + startMin;
+            const endMinutes = endHour * 60 + endMin;
+            duration = endMinutes - startMinutes;
+            
+            // If duration is negative, assume end time is next day or wrong calculation
+            if (duration <= 0) duration = 60;
+            
+            // Use the start time as the main time
+            if (!time) {
+                time = { hours: startHour, minutes: startMin };
+                hasTimeIndicator = true;
+            }
+        } else {
+            // Check for explicit duration like "2 hours" or "30 minutes"
+            const durationMatch = input.match(/(\d+)\s*(hour|hr|minute|min)/i);
+            if (durationMatch) {
+                const amount = parseInt(durationMatch[1]);
+                const unit = durationMatch[2].toLowerCase();
+                duration = unit.startsWith('hour') || unit === 'hr' ? amount * 60 : amount;
+            }
         }
 
         // Tag detection
@@ -151,22 +192,59 @@ function QuickAdd() {
         const eventKeywords = [
             'meeting', 'call', 'appointment', 'lunch', 'dinner', 'breakfast',
             'conference', 'interview', 'presentation', 'workshop', 'class',
-            'meet', 'catch up', 'hangout', 'party', 'event'
+            'meet', 'catch up', 'hangout', 'party', 'event', 'session',
+            'training', 'seminar', 'webinar'
+        ];
+        
+        // Task indicators
+        const taskKeywords = [
+            'buy', 'get', 'pick up', 'finish', 'complete', 'submit', 'send',
+            'review', 'check', 'read', 'write', 'prepare', 'plan', 'organize',
+            'clean', 'fix', 'update', 'install', 'download', 'upload', 'call back',
+            'email', 'text', 'message', 'remind', 'book', 'schedule', 'pay',
+            'renew', 'cancel', 'return', 'deliver'
         ];
         
         const hasEventKeyword = eventKeywords.some(keyword => 
             lowerInput.includes(keyword)
         );
+        
+        const hasTaskKeyword = taskKeywords.some(keyword => 
+            lowerInput.includes(keyword)
+        );
 
         // Determine type and confidence
         let type: 'task' | 'event' = 'task';
-        let confidence = 0.5;
+        let confidence = 0.6;
 
-        if (hasTimeIndicator || hasEventKeyword || date) {
+        // If has explicit task keyword, it's definitely a task
+        if (hasTaskKeyword) {
+            type = 'task';
+            confidence = 0.85;
+            if (date || time) confidence = 0.9; // Task with deadline
+        }
+        // If has event keyword, it's likely an event
+        else if (hasEventKeyword) {
             type = 'event';
-            confidence = 0.7;
+            confidence = 0.85;
             if (hasTimeIndicator && date) confidence = 0.95;
-            if (hasTimeIndicator && hasEventKeyword) confidence = 0.9;
+        }
+        // If has time AND date, check for event phrasing (with, at, @)
+        else if (hasTimeIndicator && date) {
+            // If phrase includes "with", "at", "@" it's likely a meeting/event
+            if (/\bwith\b|\bat\b|@/i.test(input)) {
+                type = 'event';
+                confidence = 0.85;
+            } else {
+                // Otherwise default to task with deadline
+                type = 'task';
+                confidence = 0.75;
+            }
+        }
+        // Just has date or time but no clear indicators - default to task with deadline
+        else if (date || hasTimeIndicator) {
+            type = 'task';
+            confidence = 0.7;
         }
 
         // Clean title (remove parsed elements)
@@ -366,11 +444,12 @@ function QuickAdd() {
                             }}>
                                 <div class="relative mb-4">
                                     <textarea
-                                        ref={(el) => el && el.focus()}
+                                        ref={(el) => el && setTimeout(() => el.focus(), 100)}
                                         value={quickInput()}
                                         onInput={(e) => setQuickInput(e.currentTarget.value)}
                                         placeholder="Try: 'Meeting with John tomorrow at 3pm' or 'Buy groceries #urgent'"
                                         rows="2"
+                                        autofocus
                                         class="w-full bg-zinc-950 border-2 border-zinc-700 rounded-xl px-5 py-4 text-white text-lg placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none transition-all"
                                     ></textarea>
                                 </div>
