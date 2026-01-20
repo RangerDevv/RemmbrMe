@@ -19,6 +19,8 @@ function QuickAdd() {
     const [parsedData, setParsedData] = createSignal<ParsedData | null>(null);
     const [showSuccess, setShowSuccess] = createSignal(false);
     const [successMessage, setSuccessMessage] = createSignal('');
+    const [overrideType, setOverrideType] = createSignal<'task' | 'event' | null>(null);
+    const [errorMessage, setErrorMessage] = createSignal('');
 
     // Keyboard shortcut: Ctrl/Cmd + K
     onMount(() => {
@@ -40,6 +42,7 @@ function QuickAdd() {
         const input = quickInput().trim();
         if (!input) {
             setParsedData(null);
+            setOverrideType(null);
             return;
         }
 
@@ -286,7 +289,10 @@ function QuickAdd() {
             const parsed = parsedData();
             if (!parsed) return;
 
-            if (parsed.type === 'event') {
+            // Use override type if set, otherwise use parsed type
+            const finalType = overrideType() || parsed.type;
+
+            if (finalType === 'event') {
                 const start = new Date();
                 
                 if (parsed.date) {
@@ -346,6 +352,7 @@ function QuickAdd() {
 
             // Show success animation
             setShowSuccess(true);
+            setOverrideType(null);
             setTimeout(() => {
                 setShowSuccess(false);
                 setShowModal(false);
@@ -359,7 +366,13 @@ function QuickAdd() {
 
         } catch (error) {
             console.error('Error creating quick item:', error);
-            alert('Failed to create item. Please try again.');
+            const errorMsg = error instanceof Error ? error.message : 'Failed to create item. Please try again.';
+            setErrorMessage(errorMsg);
+            
+            // Clear error after 5 seconds
+            setTimeout(() => {
+                setErrorMessage('');
+            }, 5000);
         } finally {
             setIsProcessing(false);
         }
@@ -458,14 +471,14 @@ function QuickAdd() {
                                 <Show when={parsedData()}>
                                     <div class="mb-6 bg-zinc-950/50 border border-zinc-800 rounded-xl p-4">
                                         <div class="flex items-start gap-3">
-                                            <Show when={parsedData()!.type === 'event'}>
+                                            <Show when={(overrideType() || parsedData()!.type) === 'event'}>
                                                 <div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                                                     <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                     </svg>
                                                 </div>
                                             </Show>
-                                            <Show when={parsedData()!.type === 'task'}>
+                                            <Show when={(overrideType() || parsedData()!.type) === 'task'}>
                                                 <div class="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                                                     <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -473,9 +486,9 @@ function QuickAdd() {
                                                 </div>
                                             </Show>
                                             <div class="flex-1 min-w-0">
-                                                <div class="flex items-center gap-2 mb-1">
+                                                <div class="flex items-center gap-2 mb-1 flex-wrap">
                                                     <span class="text-sm font-semibold text-gray-400">
-                                                        Creating {parsedData()!.type}
+                                                        Creating {overrideType() || parsedData()!.type}
                                                     </span>
                                                     <span class={`px-2 py-0.5 rounded-full text-xs font-medium ${
                                                         parsedData()!.priority === 'P1' ? 'bg-red-500/20 text-red-400' :
@@ -485,9 +498,11 @@ function QuickAdd() {
                                                         {parsedData()!.priority}
                                                     </span>
                                                     <div class="flex-1 h-px bg-zinc-800"></div>
-                                                    <span class="text-xs text-gray-600">
-                                                        {Math.round(parsedData()!.confidence * 100)}% confident
-                                                    </span>
+                                                    <Show when={!overrideType()}>
+                                                        <span class="text-xs text-gray-600">
+                                                            {Math.round(parsedData()!.confidence * 100)}% confident
+                                                        </span>
+                                                    </Show>
                                                 </div>
                                                 <h3 class="text-white font-medium mb-1 truncate">{parsedData()!.title}</h3>
                                                 <Show when={formatPreview()}>
@@ -505,6 +520,59 @@ function QuickAdd() {
                                                                 #{tag}
                                                             </span>
                                                         ))}
+                                                    </div>
+                                                </Show>
+                                                
+                                                {/* Type override buttons */}
+                                                <div class="flex gap-2 mt-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setOverrideType((overrideType() || parsedData()!.type) === 'task' ? null : 'task')}
+                                                        class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                                            (overrideType() || parsedData()!.type) === 'task'
+                                                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                                : 'bg-zinc-800/50 text-gray-500 border border-zinc-700 hover:bg-zinc-800 hover:text-gray-400'
+                                                        }`}
+                                                    >
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                        </svg>
+                                                        Task
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setOverrideType((overrideType() || parsedData()!.type) === 'event' ? null : 'event')}
+                                                        class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                                            (overrideType() || parsedData()!.type) === 'event'
+                                                                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                                                : 'bg-zinc-800/50 text-gray-500 border border-zinc-700 hover:bg-zinc-800 hover:text-gray-400'
+                                                        }`}
+                                                    >
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                        Event
+                                                    </button>
+                                                </div>
+                                                
+                                                {/* Error Message */}
+                                                <Show when={errorMessage()}>
+                                                    <div class="mt-3 bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-start gap-3">
+                                                        <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <div class="flex-1">
+                                                            <p class="text-red-400 text-sm font-medium">Error</p>
+                                                            <p class="text-red-300 text-sm mt-1">{errorMessage()}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => setErrorMessage('')}
+                                                            class="text-red-400 hover:text-red-300 transition-colors"
+                                                        >
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
                                                     </div>
                                                 </Show>
                                             </div>
@@ -531,7 +599,7 @@ function QuickAdd() {
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                                 </svg>
-                                                Create {parsedData()?.type || 'item'}
+                                                Create {overrideType() || parsedData()?.type || 'item'}
                                             </>
                                         )}
                                     </button>
