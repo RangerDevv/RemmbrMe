@@ -342,9 +342,9 @@ function Calendar() {
         
         const startDateTime = new Date(event.Start);
         const endDateTime = new Date(event.End);
-        
-        setStartDate(startDateTime.toISOString().split('T')[0]);
-        setEndDate(endDateTime.toISOString().split('T')[0]);
+
+        setStartDate(startDateTime.toLocaleString("sv-SE").split(' ')[0]);
+        setEndDate(endDateTime.toLocaleString("sv-SE").split(' ')[0]);
 
         if (!event.AllDay) {
             setStartTime(startDateTime.toTimeString().slice(0, 5));
