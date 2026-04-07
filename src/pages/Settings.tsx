@@ -256,67 +256,6 @@ function Settings() {
                     </div>
                 </div>
 
-                {/* Dashboard Widgets */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
-                    <h2 class="text-base font-bold mb-3 flex items-center gap-2" style={{ "color": "var(--color-text)" }}>
-                        <DashboardIcon class="w-4 h-4" /> Dashboard Widgets
-                    </h2>
-
-                    <p class="text-xs mb-3" style={{ "color": "var(--color-text-muted)" }}>Stats Cards</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-                        <ToggleRow icon={CheckCircleIcon} label="Completed Today" checked={settings().showCompletedToday} onChange={(v) => updateSetting('showCompletedToday', v)} />
-                        <ToggleRow icon={BoltIcon} label="Active Tasks" checked={settings().showActiveTasks} onChange={(v) => updateSetting('showActiveTasks', v)} />
-                        <ToggleRow icon={CalendarIcon} label="Events Today" checked={settings().showEventsToday} onChange={(v) => updateSetting('showEventsToday', v)} />
-                        <ToggleRow icon={ClockIcon} label="Due This Week" checked={settings().showUpcomingDeadlines} onChange={(v) => updateSetting('showUpcomingDeadlines', v)} />
-                    </div>
-
-                    <p class="text-xs mb-3" style={{ "color": "var(--color-text-muted)" }}>Extended Stats</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-                        <ToggleRow icon={WarningIcon} label="Day Streak" checked={settings().showStreak} onChange={(v) => updateSetting('showStreak', v)} />
-                        <ToggleRow icon={WarningIcon} label="High Priority" checked={settings().showHighPriority} onChange={(v) => updateSetting('showHighPriority', v)} />
-                        <ToggleRow icon={DashboardIcon} label="Avg Tasks/Day" checked={settings().showAvgTasks} onChange={(v) => updateSetting('showAvgTasks', v)} />
-                        <ToggleRow icon={RepeatIcon} label="Recurring Tasks" checked={settings().showRecurring} onChange={(v) => updateSetting('showRecurring', v)} />
-                    </div>
-
-                    <p class="text-xs mb-3" style={{ "color": "var(--color-text-muted)" }}>Sections</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <ToggleRow icon={WarningIcon} label="Overdue Alert" checked={settings().showOverdueAlert} onChange={(v) => updateSetting('showOverdueAlert', v)} />
-                        <ToggleRow icon={DashboardIcon} label="Progress Bar" checked={settings().showProgressBar} onChange={(v) => updateSetting('showProgressBar', v)} />
-                        <ToggleRow icon={CalendarIcon} label="Today's Schedule" checked={settings().showTodaySchedule} onChange={(v) => updateSetting('showTodaySchedule', v)} />
-                        <ToggleRow icon={CheckCircleIcon} label="Priority Tasks" checked={settings().showPriorityTasks} onChange={(v) => updateSetting('showPriorityTasks', v)} />
-                        <ToggleRow icon={TagIcon} label="Top Tags" checked={settings().showTopTags} onChange={(v) => updateSetting('showTopTags', v)} />
-                        <ToggleRow icon={BoltIcon} label="Quick Actions" checked={settings().showQuickActions} onChange={(v) => updateSetting('showQuickActions', v)} />
-                    </div>
-                </div>
-
-                {/* Auto-Refresh */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
-                    <h2 class="text-base font-bold mb-3 flex items-center gap-2" style={{ "color": "var(--color-text)" }}>
-                        <RepeatIcon class="w-4 h-4" /> Auto-Refresh
-                    </h2>
-                    <div class="space-y-3">
-                        <ToggleRow icon={RepeatIcon} label="Enable Auto-Refresh" checked={settings().autoRefresh} onChange={(v) => updateSetting('autoRefresh', v)} />
-                        <div class="p-2.5 rounded-lg" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
-                            <label class="block text-sm font-medium mb-1.5" style={{ "color": "var(--color-text)" }}>Interval</label>
-                            <div class="flex items-center gap-3">
-                                <input
-                                    type="range"
-                                    min="1"
-                                    max="30"
-                                    value={settings().refreshInterval}
-                                    onInput={(e) => updateSetting('refreshInterval', parseInt(e.currentTarget.value))}
-                                    class="flex-1"
-                                    disabled={!settings().autoRefresh}
-                                    style={{ "accent-color": "var(--color-accent)" }}
-                                />
-                                <span class="text-sm font-semibold min-w-[60px] text-right" style={{ "color": "var(--color-text)" }}>
-                                    {settings().refreshInterval}m
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Actions */}
                 <div class="flex justify-between items-center">
                     <button

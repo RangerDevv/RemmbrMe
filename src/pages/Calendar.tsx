@@ -1,4 +1,4 @@
-import { createSignal, onMount, For, Show, createMemo } from 'solid-js';
+import { createSignal, onMount, onCleanup, For, Show, createMemo } from 'solid-js';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
@@ -584,6 +584,14 @@ function Calendar() {
         await fetchTodos();
         await fetchTags();
         setIsLoading(false);
+
+        // Listen for items created via QuickAdd
+        const handleItemCreated = async () => {
+            await fetchEvents();
+            await fetchTodos();
+        };
+        window.addEventListener('itemCreated', handleItemCreated);
+        onCleanup(() => window.removeEventListener('itemCreated', handleItemCreated));
     });
 
     return (
