@@ -30,24 +30,25 @@ export default function NotificationModal(props: NotificationModalProps) {
     return (
         <Show when={props.show}>
             <div 
-                class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4 animate-fadeIn"
+                class="fixed inset-0 glass-overlay flex items-center justify-center z-[100] p-4 animate-fadeIn"
                 onClick={props.onClose}
             >
                 <div 
-                    class={`bg-zinc-900 border ${getColor()} rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scaleIn`}
+                    class={`glass-modal ${getColor()} rounded-2xl p-6 max-w-md w-full animate-scaleIn`}
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div class="flex items-start gap-4">
                         <div>{getIcon()}</div>
                         <div class="flex-1">
-                            <p class="text-white text-lg leading-relaxed">{props.message}</p>
+                            <p class="text-lg leading-relaxed" style={{ "color": "var(--color-text)" }}>{props.message}</p>
                         </div>
                     </div>
 
                     <div class="flex justify-end mt-6">
                         <button
                             onClick={props.onClose}
-                            class="px-6 py-2.5 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 transition-all duration-200"
+                            class="px-6 py-2.5 font-semibold rounded-lg transition-all duration-200"
+                            style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                         >
                             OK
                         </button>

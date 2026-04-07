@@ -92,12 +92,11 @@ export default function Sidebar() {
             {/* Mobile Menu Button */}
             <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen())}
-                class="lg:hidden fixed top-3 left-3 z-[60] p-2.5 rounded-xl transition-all duration-200 active:scale-95"
+                class={`lg:hidden fixed top-3 left-3 z-[60] p-2.5 rounded-xl transition-all duration-200 active:scale-95 ${mobileMenuOpen() ? '' : 'glass'}`}
                 style={{
-                    "background-color": mobileMenuOpen() ? "transparent" : "var(--color-surface)",
-                    "border": mobileMenuOpen() ? "none" : "1px solid var(--color-border)",
+                    "background-color": mobileMenuOpen() ? "transparent" : undefined,
+                    "border": mobileMenuOpen() ? "none" : undefined,
                     "color": "var(--color-text)",
-                    "box-shadow": mobileMenuOpen() ? "none" : "0 2px 8px rgba(0,0,0,0.15)"
                 }}
             >
                 {mobileMenuOpen() ? <XIcon class="w-5 h-5" /> : <MenuIcon class="w-5 h-5" />}
@@ -106,8 +105,7 @@ export default function Sidebar() {
             {/* Mobile Overlay */}
             <Show when={mobileMenuOpen()}>
                 <div 
-                    class="lg:hidden fixed inset-0 z-[50] transition-opacity duration-300"
-                    style={{ "background-color": "rgba(0,0,0,0.5)" }}
+                    class="lg:hidden fixed inset-0 z-[50] transition-opacity duration-300 glass-overlay"
                     onClick={() => setMobileMenuOpen(false)}
                 />
             </Show>
@@ -123,8 +121,11 @@ export default function Sidebar() {
                 overflow-y-auto overscroll-contain
             `}
             style={{
-                "background-color": "var(--color-bg-secondary)",
-                "border-right": "1px solid var(--color-border)"
+                "background": "var(--color-bg-secondary)",
+                "border-right": "1px solid var(--color-border)",
+                "backdrop-filter": "blur(32px) saturate(1.3)",
+                "-webkit-backdrop-filter": "blur(32px) saturate(1.3)",
+                "box-shadow": "inset -0.5px 0 0 0 rgba(255,255,255,0.04), 4px 0 24px rgba(0,0,0,0.1)"
             }}
             >
                 {/* User Profile */}

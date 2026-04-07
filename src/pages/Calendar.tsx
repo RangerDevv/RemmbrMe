@@ -635,7 +635,7 @@ function Calendar() {
             </div>
 
             {/* Calendar Header */}
-            <div class="rounded-xl p-4 mb-4" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+            <div class="glass rounded-xl p-4 mb-4">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
                     <div class="flex items-center gap-2">
                         <button
@@ -708,7 +708,7 @@ function Calendar() {
 
             {/* Calendar Views */}
             <Show when={isLoading()}>
-                <div class="flex items-center justify-center h-64 rounded-xl" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass flex items-center justify-center h-64 rounded-xl">
                     <div class="text-center">
                         <CalendarIcon class="w-10 h-10 mx-auto mb-3 animate-pulse" style={{ "color": "var(--color-text-muted)" }} />
                         <div style={{ "color": "var(--color-text-muted)" }}>Loading events...</div>
@@ -720,7 +720,7 @@ function Calendar() {
                 <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
                     {/* Month Grid */}
                     <div class="flex-1 overflow-x-auto">
-                        <div class="rounded-xl overflow-hidden" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                        <div class="glass rounded-xl overflow-hidden">
                             {/* Day headers */}
                             <div class="grid grid-cols-7" style={{ "border-bottom": "1px solid var(--color-border)", "background-color": "var(--color-bg-tertiary)" }}>
                                 <For each={['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']}>
@@ -830,7 +830,7 @@ function Calendar() {
 
                     {/* Sidebar for selected date */}
                     <Show when={selectedDate()}>
-                        <div class="w-full lg:w-80 rounded-xl p-4 lg:p-5 h-fit lg:sticky lg:top-6" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                        <div class="glass w-full lg:w-80 rounded-xl p-4 lg:p-5 h-fit lg:sticky lg:top-6">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>
                                     {selectedDate()!.toLocaleDateString('en-US', { 
@@ -938,7 +938,7 @@ function Calendar() {
 
             {/* Week View */}
             <Show when={viewMode() === 'week'}>
-                <div class="rounded-xl overflow-hidden" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl overflow-hidden">
                     {/* Week header */}
                     <div class="overflow-x-auto">
                         <div class="grid grid-cols-8 min-w-[800px]" style={{ "border-bottom": "1px solid var(--color-border)", "background-color": "var(--color-bg-tertiary)" }}>
@@ -1180,13 +1180,11 @@ function Calendar() {
             {/* Hover Tooltip */}
             <Show when={hoveredEvent() && !quickViewEvent()}>
                 <div 
-                    class="fixed z-50 rounded-lg p-3 shadow-xl pointer-events-none"
+                    class="fixed z-50 rounded-lg p-3 shadow-xl pointer-events-none glass"
                     style={{
                         top: '50%',
                         left: '50%',
                         transform: 'translate(-50%, -50%)',
-                        "background-color": "var(--color-surface)",
-                        "border": "1px solid var(--color-border)"
                     }}
                 >
                     <h4 class="font-semibold mb-1" style={{ "color": "var(--color-text)" }}>{hoveredEvent()!.EventName}</h4>
@@ -1213,8 +1211,8 @@ function Calendar() {
 
             {/* Quick View Modal */}
             <Show when={quickViewEvent()}>
-                <div class="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-50" onClick={() => setQuickViewEvent(null)}>
-                    <div class="rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-md max-h-[85vh] overflow-y-auto" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => setQuickViewEvent(null)}>
+                    <div class="glass-modal rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-md max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-start gap-3">
                                 <div 
@@ -1318,8 +1316,8 @@ function Calendar() {
 
             {/* Edit Event Modal */}
             <Show when={showEditEventModal()}>
-                <div class="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-50" onClick={() => setShowEditEventModal(false)}>
-                    <div class="rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-lg max-h-[85vh] overflow-y-auto" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => setShowEditEventModal(false)}>
+                    <div class="glass-modal rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <div class="flex items-center justify-between mb-5">
                             <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>Edit Event</h2>
                             <button
@@ -1572,8 +1570,8 @@ function Calendar() {
 
             {/* Event Creation Modal */}
             <Show when={showEventModal()}>
-                <div class="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-50" onClick={() => setShowEventModal(false)}>
-                    <div class="rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-lg max-h-[85vh] overflow-y-auto" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => setShowEventModal(false)}>
+                    <div class="glass-modal rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <div class="flex items-center justify-between mb-5">
                             <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>Create Event</h2>
                             <button
@@ -1826,7 +1824,7 @@ function Calendar() {
             {/* Tasks Modal */}
             <Show when={showTasksModal() && selectedDateTasks()}>
                 <div
-                    class="fixed inset-0 bg-black/50 z-50 flex items-end lg:items-center justify-center"
+                    class="fixed inset-0 glass-overlay z-50 flex items-end lg:items-center justify-center"
                     onClick={() => {
                         setShowTasksModal(false);
                         setSelectedDateTasks(null);
@@ -1834,10 +1832,10 @@ function Calendar() {
                 >
                     <div
                         class="rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] overflow-hidden"
-                        style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
+                        class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background-color": "var(--color-surface)", "border-bottom": "1px solid var(--color-border)" }}>
+                        <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
                             <h2 class="text-base lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>
                                 Tasks Due: {selectedDateTasks()!.toLocaleDateString('en-US', { 
                                     month: 'short', 

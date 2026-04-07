@@ -407,11 +407,10 @@ function Todo() {
         const item = () => props.task;
         return (
             <div 
-                class={`group relative rounded-xl p-4 transition-all duration-300 shadow-sm ${
+                class={`group relative glass rounded-xl p-4 transition-all duration-300 ${
                     swipingTask() === item().id ? 'scale-95' : ''
                 }`}
                 style={{
-                    "background-color": "var(--color-surface)",
                     "border": "1px solid var(--color-border)"
                 }}
                 onTouchStart={handleTouchStart}
@@ -511,14 +510,14 @@ function Todo() {
                     </p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <div class="glass flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm">
                         <span style={{ "color": "var(--color-text-secondary)" }}>{getTaskStats().completed}/{getTaskStats().total}</span>
                     </div>
                 </div>
             </div>
 
             {/* Search and Filters */}
-            <div class="rounded-lg p-4" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+            <div class="glass rounded-lg p-4">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="md:col-span-2 relative">
                         <SearchIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ "color": "var(--color-text-muted)" }} />
@@ -725,8 +724,7 @@ function Todo() {
                 <div class="mt-8">
                     <button
                         onClick={() => setShowCompletedSection(!showCompletedSection())}
-                        class="flex items-center justify-between w-full p-3 rounded-xl transition-all duration-200 mb-3"
-                        style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
+                        class="glass flex items-center justify-between w-full p-3 rounded-xl transition-all duration-200 mb-3"
                     >
                         <div class="flex items-center gap-2">
                             <CheckCircleIcon class="w-4 h-4" style={{ "color": "var(--color-accent)" }} />
@@ -740,7 +738,7 @@ function Todo() {
                         <div class="space-y-3">
                             <Index each={getCompletedTodos()}>
                                 {(item) => (
-                                    <div class="group relative rounded-xl p-4 transition-all duration-200" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)", "opacity": 0.7 }}>
+                                    <div class="group relative glass rounded-xl p-4 transition-all duration-200" style={{ "opacity": 0.7 }}>
                                         <div class="flex items-start gap-3 mb-2">
                                             <input 
                                                 type="checkbox" 
@@ -798,7 +796,7 @@ function Todo() {
             {/* Create/Edit Modal */}
             <Show when={showModal()}>
             <div
-                class="fixed inset-0 bg-black/50 z-50 flex items-end lg:items-center justify-center"
+                class="fixed inset-0 glass-overlay z-50 flex items-end lg:items-center justify-center"
                 onClick={() => {
                     setShowModal(false);
                     setEditingTask(null);
@@ -806,11 +804,10 @@ function Todo() {
                 }}
             >
                 <div
-                    class="rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto"
-                    style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
+                    class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background-color": "var(--color-surface)", "border-bottom": "1px solid var(--color-border)" }}>
+                    <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
                         <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>{editingTask() ? 'Edit Task' : 'New Task'}</h2>
                         <button
                             onClick={() => {

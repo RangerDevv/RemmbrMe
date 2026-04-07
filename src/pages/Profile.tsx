@@ -139,16 +139,16 @@ export default function Profile() {
 
             {/* Profile Tab */}
             <Show when={activeTab() === 'profile'}>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8">
+                <div class="glass rounded-2xl p-8">
                     <div class="flex items-center gap-4 mb-8">
-                        <div class="w-20 h-20 bg-zinc-700 rounded-full flex items-center justify-center text-white text-3xl font-bold">
+                        <div class="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold" style={{ "background-color": "var(--color-accent-muted)", "color": "var(--color-accent)" }}>
                             {currentUser()?.name?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div>
-                            <h2 class="text-xl font-bold text-white">{currentUser()?.name}</h2>
-                            <p class="text-gray-400">{currentUser()?.email}</p>
+                            <h2 class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>{currentUser()?.name}</h2>
+                            <p style={{ "color": "var(--color-text-muted)" }}>{currentUser()?.email}</p>
                             <Show when={currentUser()?.proUser}>
-                                <span class="inline-block mt-2 px-3 py-1 bg-zinc-800 border border-zinc-700 rounded-lg text-xs text-gray-400 font-semibold">
+                                <span class="inline-block mt-2 px-3 py-1 rounded-lg text-xs font-semibold" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)", "color": "var(--color-text-muted)" }}>
                                     PRO USER
                                 </span>
                             </Show>
@@ -157,7 +157,7 @@ export default function Profile() {
 
                     <form onSubmit={handleUpdateProfile} class="space-y-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                            <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>
                                 Display Name
                             </label>
                             <input
@@ -165,12 +165,13 @@ export default function Profile() {
                                 value={name()}
                                 onInput={(e) => setName(e.currentTarget.value)}
                                 required
-                                class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                class="w-full px-4 py-3 rounded-xl transition-all focus:outline-none"
+                                style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)", "color": "var(--color-text)" }}
                             />
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                            <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>
                                 Email Address
                             </label>
                             <input
@@ -178,14 +179,16 @@ export default function Profile() {
                                 value={email()}
                                 onInput={(e) => setEmail(e.currentTarget.value)}
                                 required
-                                class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                class="w-full px-4 py-3 rounded-xl transition-all focus:outline-none"
+                                style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)", "color": "var(--color-text)" }}
                             />
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading()}
-                            class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="px-6 py-3 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                         >
                             {loading() ? 'Saving...' : 'Save Changes'}
                         </button>
@@ -197,12 +200,12 @@ export default function Profile() {
             <Show when={activeTab() === 'security'}>
                 <div class="space-y-6">
                     {/* Change Password */}
-                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8">
-                        <h3 class="text-xl font-bold text-white mb-6">Change Password</h3>
+                    <div class="glass rounded-2xl p-8">
+                        <h3 class="text-xl font-bold mb-6" style={{ "color": "var(--color-text)" }}>Change Password</h3>
                         
                         <form onSubmit={handleChangePassword} class="space-y-6">
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>
                                     Current Password
                                 </label>
                                 <input
@@ -210,13 +213,14 @@ export default function Profile() {
                                     value={currentPassword()}
                                     onInput={(e) => setCurrentPassword(e.currentTarget.value)}
                                     required
-                                    class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                    class="w-full px-4 py-3 rounded-xl transition-all focus:outline-none"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)", "color": "var(--color-text)" }}
                                     placeholder="••••••••"
                                 />
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>
                                     New Password
                                 </label>
                                 <input
@@ -225,13 +229,14 @@ export default function Profile() {
                                     onInput={(e) => setNewPassword(e.currentTarget.value)}
                                     required
                                     minLength={8}
-                                    class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                    class="w-full px-4 py-3 rounded-xl transition-all focus:outline-none"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)", "color": "var(--color-text)" }}
                                     placeholder="••••••••"
                                 />
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>
                                     Confirm New Password
                                 </label>
                                 <input
@@ -240,7 +245,8 @@ export default function Profile() {
                                     onInput={(e) => setConfirmPassword(e.currentTarget.value)}
                                     required
                                     minLength={8}
-                                    class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                    class="w-full px-4 py-3 rounded-xl transition-all focus:outline-none"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)", "color": "var(--color-text)" }}
                                     placeholder="••••••••"
                                 />
                             </div>
@@ -248,7 +254,8 @@ export default function Profile() {
                             <button
                                 type="submit"
                                 disabled={loading()}
-                                class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="px-6 py-3 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                             >
                                 {loading() ? 'Changing...' : 'Change Password'}
                             </button>
@@ -275,18 +282,18 @@ export default function Profile() {
             {/* Delete Confirmation Modal */}
             <Show when={deleteConfirm()}>
                 <div 
-                    class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4 animate-fadeIn"
+                    class="fixed inset-0 glass-overlay flex items-center justify-center z-[100] p-4 animate-fadeIn"
                     onClick={() => setDeleteConfirm(false)}
                 >
                     <div 
-                        class="bg-zinc-900 border border-red-600/30 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scaleIn"
+                        class="glass-modal rounded-2xl p-6 max-w-md w-full animate-scaleIn" style={{ "border-color": "var(--color-danger)" }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div class="flex items-start gap-4 mb-6">
                             <WarningIcon class="w-10 h-10 text-red-400 shrink-0" />
                             <div class="flex-1">
-                                <h3 class="text-xl font-bold text-white mb-2">Delete Account?</h3>
-                                <p class="text-gray-300 leading-relaxed">
+                                <h3 class="text-xl font-bold mb-2" style={{ "color": "var(--color-text)" }}>Delete Account?</h3>
+                                <p class="leading-relaxed" style={{ "color": "var(--color-text-secondary)" }}>
                                     Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.
                                 </p>
                             </div>
@@ -295,7 +302,8 @@ export default function Profile() {
                         <div class="flex gap-3">
                             <button
                                 onClick={() => setDeleteConfirm(false)}
-                                class="flex-1 px-6 py-2.5 bg-zinc-800 text-white font-semibold rounded-lg hover:bg-zinc-700 transition-all duration-200"
+                                class="flex-1 px-6 py-2.5 font-semibold rounded-lg transition-all duration-200"
+                                style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                             >
                                 Cancel
                             </button>

@@ -166,7 +166,7 @@ function Settings() {
 
             <div class="space-y-4">
                 {/* Profile Section */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl p-5">
                     <h2 class="text-base font-bold mb-3 flex items-center gap-2" style={{ "color": "var(--color-text)" }}>
                         <SettingsIcon class="w-4 h-4" /> Profile
                     </h2>
@@ -184,7 +184,7 @@ function Settings() {
                 </div>
 
                 {/* Theme Section */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl p-5">
                     <h2 class="text-base font-bold mb-3" style={{ "color": "var(--color-text)" }}>Theme</h2>
                     <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
                         <For each={themes}>
@@ -207,7 +207,7 @@ function Settings() {
                 </div>
 
                 {/* Storage / Backup Section */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl p-5">
                     <h2 class="text-base font-bold mb-3" style={{ "color": "var(--color-text)" }}>Data & Backup</h2>
                     <div class="space-y-3">
                         <div class="flex gap-2">

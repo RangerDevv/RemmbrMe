@@ -90,7 +90,7 @@ function Tags() {
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Create/Edit Form */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl p-5">
                     <h2 class="text-lg font-bold mb-4" style={{ "color": "var(--color-text)" }}>
                         {editingTag() ? 'Edit Tag' : 'Create New Tag'}
                     </h2>
@@ -175,7 +175,7 @@ function Tags() {
                 </div>
 
                 {/* Tags List */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl p-5">
                     <h2 class="text-lg font-bold mb-4" style={{ "color": "var(--color-text)" }}>Your Tags ({tags().length})</h2>
 
                     <div class="space-y-2 max-h-[500px] overflow-y-auto">

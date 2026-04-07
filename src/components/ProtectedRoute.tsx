@@ -17,7 +17,7 @@ export default function ProtectedRoute(props: ProtectedRouteProps) {
     });
 
     return (
-        <Show when={isAuthenticated()} fallback={<div class="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>}>
+        <Show when={isAuthenticated()} fallback={<div class="min-h-screen flex items-center justify-center" style={{ "background-color": "var(--color-bg)", "color": "var(--color-text)" }}>Loading...</div>}>
             <props.component />
         </Show>
     );

@@ -40,12 +40,11 @@ export default function ConfirmModal(props: ConfirmModalProps) {
     return (
         <Show when={props.show}>
             <div 
-                class="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-[100] animate-fadeIn"
+                class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-[100] animate-fadeIn"
                 onClick={props.onCancel}
             >
                 <div 
-                    class={`rounded-t-2xl lg:rounded-2xl p-5 lg:p-6 w-full lg:max-w-md shadow-2xl animate-scaleIn ${getColor()}`}
-                    style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
+                    class={`glass-modal rounded-t-2xl lg:rounded-2xl p-5 lg:p-6 w-full lg:max-w-md animate-scaleIn ${getColor()}`}
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div class="flex items-start gap-4 mb-5">

@@ -459,12 +459,12 @@ function QuickAdd() {
             {/* Quick Add Modal */}
             <Show when={showModal()}>
                 <div 
-                    class="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-50 animate-fade-in"
+                    class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50 animate-fade-in"
                     onClick={() => setShowModal(false)}
                 >
                     <Show when={!showSuccess()}>
                         <div 
-                            class="rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl animate-slide-up" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
+                            class="glass-modal rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-2xl max-h-[85vh] overflow-y-auto animate-slide-up"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div class="flex items-center justify-between mb-5">
@@ -569,8 +569,9 @@ function QuickAdd() {
                                                         class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                                             (overrideType() || parsedData()!.type) === 'task'
                                                                 ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                                : 'bg-zinc-800/50 text-gray-500 border border-zinc-700'
+                                                                : 'border opacity-60'
                                                         }`}
+                                                        style={{ "background-color": (overrideType() || parsedData()!.type) === 'task' ? undefined : 'var(--color-bg-tertiary)', "color": (overrideType() || parsedData()!.type) === 'task' ? undefined : 'var(--color-text-muted)', "border-color": (overrideType() || parsedData()!.type) === 'task' ? undefined : 'var(--color-border)' }}
                                                     >
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -583,8 +584,9 @@ function QuickAdd() {
                                                         class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                                             (overrideType() || parsedData()!.type) === 'event'
                                                                 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                                                : 'bg-zinc-800/50 text-gray-500 border border-zinc-700'
+                                                                : 'border opacity-60'
                                                         }`}
+                                                        style={{ "background-color": (overrideType() || parsedData()!.type) === 'event' ? undefined : 'var(--color-bg-tertiary)', "color": (overrideType() || parsedData()!.type) === 'event' ? undefined : 'var(--color-text-muted)', "border-color": (overrideType() || parsedData()!.type) === 'event' ? undefined : 'var(--color-border)' }}
                                                     >
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -664,7 +666,7 @@ function QuickAdd() {
 
                     {/* Success Animation */}
                     <Show when={showSuccess()}>
-                        <div class="rounded-xl p-10 max-w-md w-full shadow-2xl animate-scale-in text-center" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                        <div class="glass-modal rounded-xl p-10 max-w-md w-full animate-scale-in text-center">
                             <div class="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-in">
                                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />

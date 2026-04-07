@@ -224,7 +224,7 @@ function Dashboard() {
                     {/* Left column: Calendar + Events */}
                     <div class="lg:col-span-2 space-y-5 lg:space-y-6">
                         {/* Mini Calendar */}
-                        <div class="rounded-xl p-4 lg:p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                        <div class="glass rounded-xl p-4 lg:p-5">
                             <div class="flex items-center justify-between mb-3">
                                 <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>{calTitle()}</h3>
                                 <div class="flex items-center gap-0.5">
@@ -333,7 +333,7 @@ function Dashboard() {
                                 <Show when={getTodayEvents().length > 0}>
                                     <For each={getTodayEvents()}>
                                         {(event) => (
-                                            <div class="flex items-start gap-3 p-3 rounded-xl transition-colors card-hover" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                            <div class="glass flex items-start gap-3 p-3 rounded-xl transition-colors card-hover">
                                                 <div class="w-1 self-stretch rounded-full shrink-0 mt-0.5" style={{ "background-color": event.Color || 'var(--color-accent)' }}></div>
                                                 <div class="flex-1 min-w-0">
                                                     <div class="text-sm font-medium truncate" style={{ "color": "var(--color-text)" }}>{event.EventName}</div>
@@ -354,7 +354,7 @@ function Dashboard() {
                                     </For>
                                 </Show>
                                 <Show when={getTodayEvents().length === 0}>
-                                    <div class="py-8 text-center rounded-xl" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                    <div class="glass py-8 text-center rounded-xl">
                                         <p class="text-sm" style={{ "color": "var(--color-text-muted)" }}>No events today</p>
                                         <p class="text-xs mt-1" style={{ "color": "var(--color-text-muted)", "opacity": "0.6" }}>Enjoy your free time</p>
                                     </div>
@@ -371,7 +371,7 @@ function Dashboard() {
                                         {(event) => {
                                             const eventDate = new Date(event.Start);
                                             return (
-                                                <div class="flex items-center gap-3 py-2.5 px-3 rounded-xl card-hover" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                                <div class="glass flex items-center gap-3 py-2.5 px-3 rounded-xl card-hover">
                                                     <div class="w-1 h-8 rounded-full shrink-0" style={{ "background-color": event.Color || 'var(--color-accent)' }}></div>
                                                     <div class="flex-1 min-w-0">
                                                         <div class="text-sm font-medium truncate" style={{ "color": "var(--color-text)" }}>{event.EventName}</div>
@@ -404,7 +404,7 @@ function Dashboard() {
                                 <div class="space-y-1.5">
                                     <For each={getOverdueTasks().slice(0, 5)}>
                                         {(task) => (
-                                            <div class="flex items-center gap-2.5 py-2.5 px-3 rounded-xl group card-hover" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                            <div class="glass flex items-center gap-2.5 py-2.5 px-3 rounded-xl group card-hover">
                                                 <button
                                                     onClick={() => quickCompleteTask(task.id)}
                                                     class="w-[18px] h-[18px] rounded-full shrink-0 transition-colors hover:opacity-70"
@@ -437,7 +437,7 @@ function Dashboard() {
                                 <Show when={getActiveTasks().length > 0}>
                                     <For each={getActiveTasks()}>
                                         {(task) => (
-                                            <div class="flex items-center gap-2.5 py-2.5 px-3 rounded-xl group card-hover" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                            <div class="glass flex items-center gap-2.5 py-2.5 px-3 rounded-xl group card-hover">
                                                 <button
                                                     onClick={() => quickCompleteTask(task.id)}
                                                     class="w-[18px] h-[18px] rounded-full shrink-0 transition-colors hover:opacity-70"
@@ -463,7 +463,7 @@ function Dashboard() {
                                     </For>
                                 </Show>
                                 <Show when={getActiveTasks().length === 0}>
-                                    <div class="py-8 text-center rounded-xl" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                    <div class="glass py-8 text-center rounded-xl">
                                         <p class="text-sm" style={{ "color": "var(--color-text-muted)" }}>All caught up!</p>
                                     </div>
                                 </Show>

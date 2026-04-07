@@ -446,7 +446,7 @@ Return ONLY the JSON array, no markdown.`;
 
             {/* API Key Setup */}
             <Show when={showApiKeyInput()}>
-                <div class="rounded-xl p-5 mb-4" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl p-5 mb-4">
                     <h2 class="text-lg font-bold mb-3" style={{ "color": "var(--color-text)" }}>🔑 API Key Setup</h2>
                     <p class="text-sm mb-4" style={{ "color": "var(--color-text-secondary)" }}>
                         Get your free API key from <a href="https://aistudio.google.com/apikey" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Google AI Studio</a>
@@ -488,7 +488,7 @@ Return ONLY the JSON array, no markdown.`;
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Ramble Feature */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl p-5">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>💭 Brain Dump</h2>
                         <button
@@ -582,7 +582,7 @@ Return ONLY the JSON array, no markdown.`;
                 </div>
 
                 {/* Feedback Feature */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl p-5">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>💡 Get Feedback</h2>
                         <button
@@ -625,7 +625,7 @@ Return ONLY the JSON array, no markdown.`;
             {/* Daily Briefing & Smart Suggestions */}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Daily Briefing */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl p-5">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>☀️ Daily Briefing</h2>
                         <button
@@ -665,7 +665,7 @@ Return ONLY the JSON array, no markdown.`;
                 </div>
 
                 {/* Smart Suggestions */}
-                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="glass rounded-xl p-5">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>🧠 Smart Suggestions</h2>
                         <button
@@ -709,7 +709,7 @@ Return ONLY the JSON array, no markdown.`;
             </div>
 
             {/* Info Section */}
-            <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+            <div class="glass rounded-xl p-5">
                 <h3 class="text-base font-bold mb-3" style={{ "color": "var(--color-text)" }}>ℹ️ AI Features</h3>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm" style={{ "color": "var(--color-text-secondary)" }}>
                     <div>
