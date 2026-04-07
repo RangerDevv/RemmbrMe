@@ -879,8 +879,8 @@ function Calendar() {
                                                         <div class="mt-2 space-y-1">
                                                             <For each={event.expand.Tasks}>
                                                                 {(task: any) => (
-                                                                    <div class="text-xs flex items-center gap-1" style={{ "color": "var(--color-text-secondary)" }}>
-                                                                        <span class={task.Completed ? 'text-green-400' : ''} style={{ "color": task.Completed ? undefined : "var(--color-text-muted)" }}>
+                                                                    <div class="text-xs text-gray-400 flex items-center gap-1">
+                                                                        <span class={task.Completed ? 'text-green-400' : 'text-gray-500'}>
                                                                             {task.Completed ? '✓' : '○'}
                                                                         </span>
                                                                         <span class={task.Completed ? 'line-through opacity-60' : ''}>
@@ -900,10 +900,10 @@ function Calendar() {
                                                                             type="checkbox"
                                                                             checked={task.Completed}
                                                                             onChange={() => toggleTaskCompletion(task.id, task.Completed)}
-                                                                            class="w-3 h-3 rounded"
+                                                                            class="w-3 h-3 rounded border-zinc-700 bg-black"
                                                                             onClick={(e) => e.stopPropagation()}
                                                                         />
-                                                                        <span class={task.Completed ? 'line-through' : ''} style={{ "color": task.Completed ? "var(--color-text-muted)" : "var(--color-text-secondary)" }}>
+                                                                        <span class={task.Completed ? 'line-through text-gray-500' : 'text-gray-400'}>
                                                                             {task.Title}
                                                                         </span>
                                                                     </label>
@@ -1274,7 +1274,7 @@ function Calendar() {
                                                     type="checkbox"
                                                     checked={task.Completed}
                                                     onChange={() => toggleTaskCompletion(task.id, task.Completed)}
-                                                    class="w-4 h-4 rounded"
+                                                    class="w-4 h-4 rounded border-zinc-700 bg-black"
                                                 />
                                                 <span class={`flex-1 ${task.Completed ? 'line-through' : ''}`} style={{ "color": task.Completed ? "var(--color-text-muted)" : "var(--color-text)" }}>
                                                     {task.Title}
@@ -1317,7 +1317,7 @@ function Calendar() {
                                     setShowEditEventModal(false);
                                     resetForm();
                                 }}
-                                class="transition-colors duration-200 text-2xl" style={{ "color": "var(--color-text-muted)" }}
+                                class="text-gray-400 hover:text-white transition-colors duration-200 text-2xl"
                             >
                                 ×
                             </button>
@@ -1328,33 +1328,33 @@ function Calendar() {
                             updateEvent();
                         }}>
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Event Name:</label>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Event Name:</label>
                                 <input
                                     type="text"
                                     value={eventName()}
                                     onInput={(e) => setEventName(e.currentTarget.value)}
                                     required
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                 />
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Description:</label>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Description:</label>
                                 <textarea
                                     value={description()}
                                     onInput={(e) => setDescription(e.currentTarget.value)}
                                     rows="3"
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200 resize-none" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200 resize-none"
                                 ></textarea>
                             </div>
 
                             <div class="mb-4">
-                                <label class="flex items-center text-sm font-medium" style={{ "color": "var(--color-text-secondary)" }}>
+                                <label class="flex items-center text-sm font-medium text-gray-400">
                                     <input
                                         type="checkbox"
                                         checked={allDay()}
                                         onChange={(e) => setAllDay(e.currentTarget.checked)}
-                                        class="mr-2 w-4 h-4 rounded"
+                                        class="mr-2 w-4 h-4 rounded border-zinc-700 bg-black text-purple-500 focus:ring-0 focus:ring-offset-0"
                                     />
                                     All Day Event
                                 </label>
@@ -1362,23 +1362,23 @@ function Calendar() {
 
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Start Date:</label>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Start Date:</label>
                                     <input
                                         type="date"
                                         value={startDate()}
                                         onInput={(e) => setStartDate(e.currentTarget.value)}
                                         required
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                     />
                                 </div>
                                 <Show when={!allDay()}>
                                     <div>
-                                        <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Start Time:</label>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">Start Time:</label>
                                         <input
                                             type="time"
                                             value={startTime()}
                                             onInput={(e) => setStartTime(e.currentTarget.value)}
-                                            class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                         />
                                     </div>
                                 </Show>
@@ -1386,23 +1386,23 @@ function Calendar() {
 
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>End Date:</label>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">End Date:</label>
                                     <input
                                         type="date"
                                         value={endDate()}
                                         onInput={(e) => setEndDate(e.currentTarget.value)}
                                         required
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                     />
                                 </div>
                                 <Show when={!allDay()}>
                                     <div>
-                                        <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>End Time:</label>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">End Time:</label>
                                         <input
                                             type="time"
                                             value={endTime()}
                                             onInput={(e) => setEndTime(e.currentTarget.value)}
-                                            class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                         />
                                     </div>
                                 </Show>
@@ -1410,29 +1410,29 @@ function Calendar() {
 
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Latitude:</label>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Latitude:</label>
                                     <input
                                         type="number"
                                         step="any"
                                         value={locationLat()}
                                         onInput={(e) => setLocationLat(parseFloat(e.currentTarget.value) || 0)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                     />
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Longitude:</label>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Longitude:</label>
                                     <input
                                         type="number"
                                         step="any"
                                         value={locationLon()}
                                         onInput={(e) => setLocationLon(parseFloat(e.currentTarget.value) || 0)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                     />
                                 </div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Event Color:</label>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Event Color:</label>
                                 <div class="flex gap-2 flex-wrap">
                                     <For each={colorPresets}>
                                         {(color) => (
@@ -1442,7 +1442,7 @@ function Calendar() {
                                                 class={`w-10 h-10 rounded-lg transition-all duration-200 border-2 ${
                                                     eventColor() === color.value 
                                                         ? 'border-white scale-110' 
-                                                        : 'border-transparent'
+                                                        : 'border-transparent hover:border-zinc-600'
                                                 }`}
                                                 style={{ 'background-color': color.value }}
                                             />
@@ -1452,13 +1452,13 @@ function Calendar() {
                                         type="color"
                                         value={eventColor()}
                                         onInput={(e) => setEventColor(e.currentTarget.value)}
-                                        class="w-10 h-10 rounded-lg cursor-pointer" style={{ "border": "2px solid var(--color-border)" }}
+                                        class="w-10 h-10 rounded-lg cursor-pointer border-2 border-zinc-700"
                                     />
                                 </div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Quick Add Tasks:</label>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Quick Add Tasks:</label>
                                 <div class="space-y-2">
                                     <For each={quickAddTasks()}>
                                         {(task, index) => (
@@ -1473,7 +1473,7 @@ function Calendar() {
                                                     }}
                                                     // TODO: Find out why the input for this doesnt work
                                                     placeholder="Enter task title..."
-                                                    class="flex-1 rounded-lg px-4 py-2 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                                    class="flex-1 bg-black border border-zinc-700 rounded-lg px-4 py-2 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                                 />
                                                 <button
                                                     type="button"
@@ -1491,7 +1491,7 @@ function Calendar() {
                                     <button
                                         type="button"
                                         onClick={() => setQuickAddTasks([...quickAddTasks(), ''])}
-                                        class="w-full border border-dashed rounded-lg px-4 py-2 transition-all duration-200" style={{ "color": "var(--color-text-secondary)", "border-color": "var(--color-border)" }}
+                                        class="w-full border border-dashed border-zinc-700 rounded-lg px-4 py-2 text-gray-400 hover:border-zinc-500 hover:text-white transition-all duration-200"
                                     >
                                         + Add Task
                                     </button>
@@ -1499,11 +1499,11 @@ function Calendar() {
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Link Existing Tasks:</label>
-                                <div class="max-h-32 overflow-y-auto space-y-2 rounded-lg p-2" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Link Existing Tasks:</label>
+                                <div class="max-h-32 overflow-y-auto space-y-2 bg-black border border-zinc-700 rounded-lg p-2">
                                     <For each={todoItems()}>
                                         {(todo) => !todo.Completed && (
-                                            <label class="flex items-center p-2 rounded-lg transition-colors duration-200 cursor-pointer">
+                                            <label class="flex items-center p-2 hover:bg-zinc-900 rounded-lg transition-colors duration-200 cursor-pointer">
                                                 <input
                                                     type="checkbox"
                                                     checked={linkedTaskIds().includes(todo.id)}
@@ -1514,9 +1514,9 @@ function Calendar() {
                                                             setLinkedTaskIds(linkedTaskIds().filter((id: any) => id !== todo.id));
                                                         }
                                                     }}
-                                                    class="mr-2 w-4 h-4 rounded"
+                                                    class="mr-2 w-4 h-4 rounded border-zinc-700 bg-black text-purple-500 focus:ring-0 focus:ring-offset-0"
                                                 />
-                                                <span class="text-sm" style={{ "color": "var(--color-text)" }}>{todo.Title}</span>
+                                                <span class="text-white text-sm">{todo.Title}</span>
                                             </label>
                                         )}
                                     </For>
@@ -1524,11 +1524,11 @@ function Calendar() {
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Recurrence:</label>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence:</label>
                                 <select
                                     value={recurrence()}
                                     onInput={(e) => setRecurrence(e.currentTarget.value)}
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                 >
                                     <option value="none">No Recurrence</option>
                                     <option value="daily">Daily</option>
@@ -1539,19 +1539,19 @@ function Calendar() {
 
                             <Show when={recurrence() !== 'none'}>
                                 <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Recurrence End Date (Optional):</label>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence End Date (Optional):</label>
                                     <input
                                         type="date"
                                         value={recurrenceEndDate()}
                                         onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                     />
                                 </div>
                             </Show>
 
                             <button
                                 type="submit"
-                                class="w-full font-semibold py-3 rounded-lg active:scale-95 transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
+                                class="w-full bg-white text-black font-semibold py-3 rounded-lg hover:bg-gray-200 active:scale-95 transition-all duration-200"
                             >
                                 Save Changes
                             </button>
@@ -1563,15 +1563,15 @@ function Calendar() {
             {/* Event Creation Modal */}
             <Show when={showEventModal()}>
                 <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowEventModal(false)}>
-                    <div class="rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>Create Event</h2>
+                            <h2 class="text-2xl font-bold text-white">Create Event</h2>
                             <button
                                 onClick={() => {
                                     setShowEventModal(false);
                                     resetForm();
                                 }}
-                                class="transition-colors duration-200 text-2xl" style={{ "color": "var(--color-text-muted)" }}
+                                class="text-gray-400 hover:text-white transition-colors duration-200 text-2xl"
                             >
                                 ×
                             </button>
@@ -1582,33 +1582,33 @@ function Calendar() {
                             createEvent();
                         }}>
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Event Name:</label>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Event Name:</label>
                                 <input
                                     type="text"
                                     value={eventName()}
                                     onInput={(e) => setEventName(e.currentTarget.value)}
                                     required
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                 />
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Description:</label>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Description:</label>
                                 <textarea
                                     value={description()}
                                     onInput={(e) => setDescription(e.currentTarget.value)}
                                     rows="3"
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200 resize-none" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200 resize-none"
                                 ></textarea>
                             </div>
 
                             <div class="mb-4">
-                                <label class="flex items-center text-sm font-medium" style={{ "color": "var(--color-text-secondary)" }}>
+                                <label class="flex items-center text-sm font-medium text-gray-400">
                                     <input
                                         type="checkbox"
                                         checked={allDay()}
                                         onChange={(e) => setAllDay(e.currentTarget.checked)}
-                                        class="mr-2 w-4 h-4 rounded"
+                                        class="mr-2 w-4 h-4 rounded border-zinc-700 bg-black text-purple-500 focus:ring-0 focus:ring-offset-0"
                                     />
                                     All Day Event
                                 </label>
@@ -1616,23 +1616,23 @@ function Calendar() {
 
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Start Date:</label>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Start Date:</label>
                                     <input
                                         type="date"
                                         value={startDate()}
                                         onInput={(e) => setStartDate(e.currentTarget.value)}
                                         required
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                     />
                                 </div>
                                 <Show when={!allDay()}>
                                     <div>
-                                        <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Start Time:</label>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">Start Time:</label>
                                         <input
                                             type="time"
                                             value={startTime()}
                                             onInput={(e) => setStartTime(e.currentTarget.value)}
-                                            class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                         />
                                     </div>
                                 </Show>
@@ -1640,23 +1640,23 @@ function Calendar() {
 
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>End Date:</label>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">End Date:</label>
                                     <input
                                         type="date"
                                         value={endDate()}
                                         onInput={(e) => setEndDate(e.currentTarget.value)}
                                         required
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                     />
                                 </div>
                                 <Show when={!allDay()}>
                                     <div>
-                                        <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>End Time:</label>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">End Time:</label>
                                         <input
                                             type="time"
                                             value={endTime()}
                                             onInput={(e) => setEndTime(e.currentTarget.value)}
-                                            class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                         />
                                     </div>
                                 </Show>
@@ -1664,29 +1664,29 @@ function Calendar() {
 
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Latitude:</label>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Latitude:</label>
                                     <input
                                         type="number"
                                         step="any"
                                         value={locationLat()}
                                         onInput={(e) => setLocationLat(parseFloat(e.currentTarget.value) || 0)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                     />
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Longitude:</label>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Longitude:</label>
                                     <input
                                         type="number"
                                         step="any"
                                         value={locationLon()}
                                         onInput={(e) => setLocationLon(parseFloat(e.currentTarget.value) || 0)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                     />
                                 </div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Event Color:</label>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Event Color:</label>
                                 <div class="flex gap-2 flex-wrap">
                                     <For each={colorPresets}>
                                         {(color) => (
@@ -1696,7 +1696,7 @@ function Calendar() {
                                                 class={`w-10 h-10 rounded-lg transition-all duration-200 border-2 ${
                                                     eventColor() === color.value 
                                                         ? 'border-white scale-110' 
-                                                        : 'border-transparent'
+                                                        : 'border-transparent hover:border-zinc-600'
                                                 }`}
                                                 style={{ 'background-color': color.value }}
                                             />
@@ -1706,13 +1706,13 @@ function Calendar() {
                                         type="color"
                                         value={eventColor()}
                                         onInput={(e) => setEventColor(e.currentTarget.value)}
-                                        class="w-10 h-10 rounded-lg cursor-pointer" style={{ "border": "2px solid var(--color-border)" }}
+                                        class="w-10 h-10 rounded-lg cursor-pointer border-2 border-zinc-700"
                                     />
                                 </div>
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Quick Add Tasks:</label>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Quick Add Tasks:</label>
                                 <div class="space-y-2">
                                     <For each={quickAddTasks()}>
                                         {(task, index) => (
@@ -1726,7 +1726,7 @@ function Calendar() {
                                                         setQuickAddTasks(updated);
                                                     }}
                                                     placeholder="Enter task title..."
-                                                    class="flex-1 rounded-lg px-4 py-2 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                                    class="flex-1 bg-black border border-zinc-700 rounded-lg px-4 py-2 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                                 />
                                                 <button
                                                     type="button"
@@ -1744,7 +1744,7 @@ function Calendar() {
                                     <button
                                         type="button"
                                         onClick={() => setQuickAddTasks([...quickAddTasks(), ''])}
-                                        class="w-full border border-dashed rounded-lg px-4 py-2 transition-all duration-200" style={{ "color": "var(--color-text-secondary)", "border-color": "var(--color-border)" }}
+                                        class="w-full border border-dashed border-zinc-700 rounded-lg px-4 py-2 text-gray-400 hover:border-zinc-500 hover:text-white transition-all duration-200"
                                     >
                                         + Add Task
                                     </button>
@@ -1752,11 +1752,11 @@ function Calendar() {
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Link Existing Tasks:</label>
-                                <div class="max-h-32 overflow-y-auto space-y-2 rounded-lg p-2" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Link Existing Tasks:</label>
+                                <div class="max-h-32 overflow-y-auto space-y-2 bg-black border border-zinc-700 rounded-lg p-2">
                                     <For each={todoItems()}>
                                         {(todo) => !todo.Completed && (
-                                            <label class="flex items-center p-2 rounded-lg transition-colors duration-200 cursor-pointer">
+                                            <label class="flex items-center p-2 hover:bg-zinc-900 rounded-lg transition-colors duration-200 cursor-pointer">
                                                 <input
                                                     type="checkbox"
                                                     checked={linkedTaskIds().includes(todo.id)}
@@ -1767,9 +1767,9 @@ function Calendar() {
                                                             setLinkedTaskIds(linkedTaskIds().filter((id: any) => id !== todo.id));
                                                         }
                                                     }}
-                                                    class="mr-2 w-4 h-4 rounded"
+                                                    class="mr-2 w-4 h-4 rounded border-zinc-700 bg-black text-purple-500 focus:ring-0 focus:ring-offset-0"
                                                 />
-                                                <span class="text-sm" style={{ "color": "var(--color-text)" }}>{todo.Title}</span>
+                                                <span class="text-white text-sm">{todo.Title}</span>
                                             </label>
                                         )}
                                     </For>
@@ -1777,11 +1777,11 @@ function Calendar() {
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Recurrence:</label>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence:</label>
                                 <select
                                     value={recurrence()}
                                     onInput={(e) => setRecurrence(e.currentTarget.value)}
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                 >
                                     <option value="none">No Recurrence</option>
                                     <option value="daily">Daily</option>
@@ -1792,19 +1792,19 @@ function Calendar() {
 
                             <Show when={recurrence() !== 'none'}>
                                 <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Recurrence End Date (Optional):</label>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence End Date (Optional):</label>
                                     <input
                                         type="date"
                                         value={recurrenceEndDate()}
                                         onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
                                     />
                                 </div>
                             </Show>
 
                             <button
                                 type="submit"
-                                class="w-full font-semibold py-3 rounded-lg active:scale-95 transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
+                                class="w-full bg-white text-black font-semibold py-3 rounded-lg hover:bg-gray-200 active:scale-95 transition-all duration-200"
                             >
                                 Create Event
                             </button>
@@ -1823,12 +1823,11 @@ function Calendar() {
                     }}
                 >
                     <div
-                        class="rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
-                        style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
+                        class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div class="sticky top-0 p-5 flex items-center justify-between" style={{ "background-color": "var(--color-surface)", "border-bottom": "1px solid var(--color-border)" }}>
-                            <h2 class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>
+                        <div class="sticky top-0 bg-zinc-900 border-b border-zinc-800 p-6 flex items-center justify-between">
+                            <h2 class="text-2xl font-bold text-white">
                                 Tasks Due: {selectedDateTasks()!.toLocaleDateString('en-US', { 
                                     weekday: 'long',
                                     month: 'long', 
@@ -1841,15 +1840,14 @@ function Calendar() {
                                     setShowTasksModal(false);
                                     setSelectedDateTasks(null);
                                 }}
-                                class="transition-colors duration-200 text-2xl w-8 h-8 flex items-center justify-center"
-                                style={{ "color": "var(--color-text-muted)" }}
+                                class="text-gray-400 hover:text-white transition-colors duration-200 text-2xl w-8 h-8 flex items-center justify-center"
                             >
                                 ×
                             </button>
                         </div>
-                        <div class="p-5 overflow-y-auto max-h-[calc(80vh-100px)]">
+                        <div class="p-6 overflow-y-auto max-h-[calc(80vh-100px)]">
                             <Show when={getTasksForDate(selectedDateTasks()!).length === 0}>
-                                <div class="text-center py-8" style={{ "color": "var(--color-text-muted)" }}>
+                                <div class="text-center py-8 text-gray-400">
                                     No tasks due on this date
                                 </div>
                             </Show>
@@ -1861,17 +1859,19 @@ function Calendar() {
                                         const hasTime = deadline.getHours() !== 0 || deadline.getMinutes() !== 0;
                                         
                                         return (
-                                            <div class="rounded-xl p-4 transition-all duration-200" style={{ "background-color": "var(--color-bg-secondary)", "border": "1px solid var(--color-border)" }}>
+                                            <div class="bg-black border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-all duration-200">
                                                 <div class="flex items-start gap-3">
                                                     <input
                                                         type="checkbox"
                                                         checked={task.Completed}
                                                         onChange={() => toggleTaskCompletion(task.id, task.Completed)}
-                                                        class="w-5 h-5 mt-1 rounded cursor-pointer transition-all duration-200"
+                                                        class="w-5 h-5 mt-1 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0 bg-black cursor-pointer transition-all duration-200"
                                                     />
                                                     <div class="flex-1">
                                                         <div class="flex items-start justify-between">
-                                                            <h3 class={`text-base font-semibold transition-all duration-200 ${task.Completed ? 'line-through' : ''}`} style={{ "color": task.Completed ? "var(--color-text-muted)" : "var(--color-text)" }}>
+                                                            <h3 class={`text-lg font-semibold transition-all duration-200 ${
+                                                                task.Completed ? 'text-gray-500 line-through' : 'text-white'
+                                                            }`}>
                                                                 {task.Title}
                                                             </h3>
                                                             <div class="flex items-center gap-2">
@@ -1885,11 +1885,11 @@ function Calendar() {
                                                             </div>
                                                         </div>
                                                         <Show when={task.Description}>
-                                                            <p class={`text-sm mt-1 ${task.Completed ? 'line-through' : ''}`} style={{ "color": task.Completed ? "var(--color-text-muted)" : "var(--color-text-secondary)", "white-space": "pre-wrap" }}>
+                                                            <p class={`text-sm mt-1 ${task.Completed ? 'text-gray-500 line-through' : 'text-gray-400'}`} style="white-space: pre-wrap;">
                                                                 {task.Description}
                                                             </p>
                                                         </Show>
-                                                        <div class="flex items-center gap-2 mt-2 text-xs" style={{ "color": "var(--color-text-muted)" }}>
+                                                        <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
                                                             <Show when={hasTime}>
                                                                 <span>⏰ {deadline.toLocaleTimeString('en-US', { 
                                                                     hour: 'numeric', 

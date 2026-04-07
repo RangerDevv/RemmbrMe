@@ -21,41 +21,67 @@ export async function generateRecurringTasks(
     const endDate = options.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // Default 1 year
     const maxInstances = options.count || 100;
 
+    // Use a separate date to avoid mutation issues
     let currentDate = new Date(startDate);
     let instanceCount = 0;
 
+    // Delete existing future instances first to avoid duplicates
+    try {
+        await deleteFutureInstances(parentTaskId, 'Todo');
+    } catch (_e) {
+        // Ignore if no existing instances
+    }
+
     while (currentDate <= endDate && instanceCount < maxInstances) {
-        // Move to next occurrence
+        // Create a new Date for the next occurrence to avoid mutation bugs
+        const nextDate = new Date(currentDate);
         switch (options.frequency) {
             case 'daily':
-                currentDate.setDate(currentDate.getDate() + 1);
+                nextDate.setDate(nextDate.getDate() + 1);
                 break;
             case 'weekly':
-                currentDate.setDate(currentDate.getDate() + 7);
+                nextDate.setDate(nextDate.getDate() + 7);
                 break;
-            case 'monthly':
-                currentDate.setMonth(currentDate.getMonth() + 1);
+            case 'monthly': {
+                // Handle month rollover correctly (e.g., Jan 31 -> Feb 28)
+                const targetMonth = nextDate.getMonth() + 1;
+                const targetYear = nextDate.getFullYear() + Math.floor(targetMonth / 12);
+                const actualMonth = targetMonth % 12;
+                const originalDay = startDate.getDate();
+                const daysInTargetMonth = new Date(targetYear, actualMonth + 1, 0).getDate();
+                nextDate.setFullYear(targetYear, actualMonth, Math.min(originalDay, daysInTargetMonth));
                 break;
+            }
         }
+        currentDate = nextDate;
 
         if (currentDate > endDate) break;
 
+        // Preserve the original time from the deadline
+        const deadlineDate = new Date(currentDate);
+        if (parentTask.Deadline) {
+            const origTime = new Date(parentTask.Deadline);
+            deadlineDate.setHours(origTime.getHours(), origTime.getMinutes(), origTime.getSeconds(), 0);
+        }
+
+        const userId = currentUser()?.id;
+
         // Create instance
-        const instance = {
+        const instance: Record<string, any> = {
             Title: parentTask.Title,
             Description: parentTask.Description,
             Completed: false,
             Priority: parentTask.Priority,
-            Deadline: currentDate.toISOString().split('T')[0],
-            Tags: parentTask.Tags,
+            Deadline: deadlineDate.toISOString(),
+            Tags: parentTask.Tags || [],
             Recurrence: options.frequency as "none"|"daily"|"weekly"|"monthly",
             ParentTaskId: parentTaskId,
-            URL: parentTask.URL,
-            user: currentUser().id
+            URL: parentTask.URL || '',
         };
+        if (userId) instance.user = userId;
 
         try {
-            const created = await bk.collection('Todo').create(instance);
+            const created = await bk.collection('Todo').create(instance as any);
             instances.push(created);
             instanceCount++;
         } catch (error) {
@@ -83,45 +109,62 @@ export async function generateRecurringEvents(
     const endDate = options.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
     const maxInstances = options.count || 100;
 
+    // Delete existing future instances first to avoid duplicates
+    try {
+        await deleteFutureInstances(parentEventId, 'Calendar');
+    } catch (_e) {
+        // Ignore if no existing instances
+    }
+
     let currentStart = new Date(startDate);
     let instanceCount = 0;
 
     while (currentStart <= endDate && instanceCount < maxInstances) {
-        // Move to next occurrence
+        // Create a new Date for the next occurrence
+        const nextStart = new Date(currentStart);
         switch (options.frequency) {
             case 'daily':
-                currentStart.setDate(currentStart.getDate() + 1);
+                nextStart.setDate(nextStart.getDate() + 1);
                 break;
             case 'weekly':
-                currentStart.setDate(currentStart.getDate() + 7);
+                nextStart.setDate(nextStart.getDate() + 7);
                 break;
-            case 'monthly':
-                currentStart.setMonth(currentStart.getMonth() + 1);
+            case 'monthly': {
+                // Handle month rollover correctly
+                const targetMonth = nextStart.getMonth() + 1;
+                const targetYear = nextStart.getFullYear() + Math.floor(targetMonth / 12);
+                const actualMonth = targetMonth % 12;
+                const originalDay = startDate.getDate();
+                const daysInTargetMonth = new Date(targetYear, actualMonth + 1, 0).getDate();
+                nextStart.setFullYear(targetYear, actualMonth, Math.min(originalDay, daysInTargetMonth));
                 break;
+            }
         }
+        currentStart = nextStart;
 
         if (currentStart > endDate) break;
 
         const currentEnd = new Date(currentStart.getTime() + duration);
+        const userId = currentUser()?.id;
 
         // Create instance
-        const instance = {
+        const instance: Record<string, any> = {
             EventName: parentEvent.EventName,
-            Description: parentEvent.Description,
-            AllDay: parentEvent.AllDay,
+            Description: parentEvent.Description || '',
+            AllDay: parentEvent.AllDay || false,
             Start: currentStart.toISOString(),
             End: currentEnd.toISOString(),
-            Location: parentEvent.Location,
-            Color: parentEvent.Color,
-            Tags: parentEvent.Tags,
+            Location: parentEvent.Location || { lat: 0, lon: 0 },
+            Color: parentEvent.Color || '#3b82f6',
+            Tags: parentEvent.Tags || [],
             Recurrence: options.frequency as "none"|"daily"|"weekly"|"monthly",
             ParentEventId: parentEventId,
             Tasks: [], // Don't duplicate tasks for recurring events
-            user: currentUser().id
         };
+        if (userId) instance.user = userId;
 
         try {
-            const created = await bk.collection('Calendar').create(instance);
+            const created = await bk.collection('Calendar').create(instance as any);
             instances.push(created);
             instanceCount++;
         } catch (error) {
@@ -137,12 +180,16 @@ export async function generateRecurringEvents(
  */
 export async function deleteFutureInstances(parentId: string, collection: 'Todo' | 'Calendar') {
     const fieldName = collection === 'Todo' ? 'ParentTaskId' : 'ParentEventId';
-    const instances = await bk.collection(collection).getFullList({
-        filter: `${fieldName} = "${parentId}"`
-    });
+    try {
+        const instances = await bk.collection(collection).getFullList({
+            filter: `${fieldName} = "${parentId}"`
+        });
 
-    for (const instance of instances) {
-        await bk.collection(collection).delete(instance.id);
+        for (const instance of instances) {
+            await bk.collection(collection).delete(instance.id);
+        }
+    } catch (error) {
+        console.error(`Error deleting future instances for ${parentId}:`, error);
     }
 }
 
@@ -155,11 +202,15 @@ export async function updateFutureInstances(
     updates: any
 ) {
     const fieldName = collection === 'Todo' ? 'ParentTaskId' : 'ParentEventId';
-    const instances = await bk.collection(collection).getFullList({
-        filter: `${fieldName} = "${parentId}"`
-    });
+    try {
+        const instances = await bk.collection(collection).getFullList({
+            filter: `${fieldName} = "${parentId}"`
+        });
 
-    for (const instance of instances) {
-        await bk.collection(collection).update(instance.id, updates);
+        for (const instance of instances) {
+            await bk.collection(collection).update(instance.id, updates);
+        }
+    } catch (error) {
+        console.error(`Error updating future instances for ${parentId}:`, error);
     }
 }

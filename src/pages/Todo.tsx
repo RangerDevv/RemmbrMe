@@ -407,9 +407,13 @@ function Todo() {
         const item = () => props.task;
         return (
             <div 
-                class={`group relative bg-zinc-900 border border-zinc-800 rounded-xl p-5 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/80 ${
+                class={`group relative rounded-xl p-4 transition-all duration-300 shadow-sm ${
                     swipingTask() === item().id ? 'scale-95' : ''
                 }`}
+                style={{
+                    "background-color": "var(--color-surface)",
+                    "border": "1px solid var(--color-border)"
+                }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={(e) => handleTouchMove(e, item().id)}
                 onTouchEnd={() => handleTouchEnd(item())}
@@ -419,13 +423,13 @@ function Todo() {
                         type="checkbox" 
                         checked={item().Completed} 
                         onChange={() => toggleComplete(item().id, item().Completed)}
-                        class="w-5 h-5 mt-1 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0 bg-black cursor-pointer transition-all duration-200"
+                        class="w-[18px] h-[18px] mt-1 cursor-pointer"
                     />
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
-                            <h3 class={`text-xl font-semibold transition-all duration-200 ${
-                                item().Completed ? 'text-gray-500 line-through' : 'text-white'
-                            }`}>{item().Title}</h3>
+                            <h3 class={`text-base font-semibold transition-all duration-200 ${
+                                item().Completed ? 'line-through' : ''
+                            }`} style={{ "color": item().Completed ? "var(--color-text-muted)" : "var(--color-text)" }}>{item().Title}</h3>
                             <div class="flex items-center gap-2">
                                 <span class={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
                                     item().Priority === 'P1' ? 'bg-red-500/15 text-red-400 border border-red-500/20' :
@@ -450,9 +454,11 @@ function Todo() {
                                 </button>
                             </div>
                         </div>
-                        <p class={`leading-relaxed transition-all duration-200 ${
-                            item().Completed ? 'text-gray-500 line-through' : 'text-gray-400'
-                        }`} style="white-space: pre-wrap;">{item().Description}</p>
+                        <Show when={item().Description}>
+                            <p class={`text-sm leading-relaxed mt-1 transition-all duration-200 ${
+                                item().Completed ? 'line-through' : ''
+                            }`} style={{ "white-space": "pre-wrap", "color": item().Completed ? "var(--color-text-muted)" : "var(--color-text-secondary)" }}>{item().Description}</p>
+                        </Show>
                         <div class="flex items-center gap-2 mt-3 flex-wrap">
                             <Show when={item().expand?.Tags && item().expand.Tags.length > 0}>
                                 <Index each={item().expand.Tags}>
@@ -495,85 +501,84 @@ function Todo() {
     };
 
     return (
-        <div class="flex flex-col gap-6 w-full">
-            {/* Header with Stats */}
+        <div class="flex flex-col gap-4 w-full">
+            {/* Header */}
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-4xl font-bold text-white mb-2">Todo List</h2>
-                    <p class="text-gray-400">{getTaskStats().completed} of {getTaskStats().total} tasks completed ({getTaskStats().percentage}%)</p>
+                    <h2 class="text-2xl font-bold" style={{ "color": "var(--color-text)" }}>My Day</h2>
+                    <p class="text-sm mt-1" style={{ "color": "var(--color-text-muted)" }}>
+                        {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </p>
                 </div>
-                <div class="flex gap-4">
-                    <div class="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">
-                        <div class="text-2xl font-bold text-red-400">{getTaskStats().p1}</div>
-                        <div class="text-xs text-gray-400">High Priority</div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                        <span style={{ "color": "var(--color-text-secondary)" }}>{getTaskStats().completed}/{getTaskStats().total}</span>
                     </div>
                 </div>
             </div>
 
             {/* Search and Filters */}
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 lg:p-6">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 lg:gap-6">
+            <div class="rounded-lg p-4" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="md:col-span-2 relative">
-                        <SearchIcon class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                        <SearchIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ "color": "var(--color-text-muted)" }} />
                         <input
                             type="text"
                             value={searchQuery()}
                             onInput={(e) => setSearchQuery(e.currentTarget.value)}
                             placeholder="Search tasks..."
-                            class="w-full bg-black border border-zinc-700 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                            class="w-full rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none transition-all duration-200"
+                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                         />
                     </div>
                     <div class="relative">
                         <select
                             value={filterPriority()}
                             onChange={(e) => setFilterPriority(e.currentTarget.value)}
-                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 cursor-pointer appearance-none"
-                            style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
+                            class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer appearance-none focus:outline-none transition-all duration-200"
+                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                         >
-                            <option value="all" class="bg-zinc-900">All Priorities</option>
-                            <option value="P1" class="bg-zinc-900">● P1 - High</option>
-                            <option value="P2" class="bg-zinc-900">● P2 - Medium</option>
-                            <option value="P3" class="bg-zinc-900">● P3 - Low</option>
+                            <option value="all">All Priorities</option>
+                            <option value="P1">P1 - High</option>
+                            <option value="P2">P2 - Medium</option>
+                            <option value="P3">P3 - Low</option>
                         </select>
                     </div>
                     <div class="relative">
                         <select
                             value={filterStatus()}
                             onChange={(e) => setFilterStatus(e.currentTarget.value)}
-                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 cursor-pointer appearance-none"
-                            style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
+                            class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer appearance-none focus:outline-none transition-all duration-200"
+                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                         >
-                            <option value="all" class="bg-zinc-900">All Status</option>
-                            <option value="active" class="bg-zinc-900">⚡ Active</option>
-                            <option value="completed" class="bg-zinc-900">✓ Completed</option>
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
                         </select>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 mt-3 text-sm text-gray-400">
-                    <span>Sort by:</span>
+                <div class="flex items-center gap-1.5 mt-3 text-xs">
+                    <span style={{ "color": "var(--color-text-muted)" }}>Sort:</span>
                     <button
                         onClick={() => setSortBy('priority')}
-                        class={`px-3 py-1 rounded-lg transition-all duration-200 ${
-                            sortBy() === 'priority' ? 'bg-blue-600 text-white' : 'hover:bg-zinc-800'
-                        }`}
+                        class="px-2.5 py-1 rounded-md transition-all duration-200"
+                        style={{ "background-color": sortBy() === 'priority' ? "var(--color-accent)" : "transparent", "color": sortBy() === 'priority' ? "var(--color-accent-text)" : "var(--color-text-secondary)" }}
                     >
                         Priority
                     </button>
                     <button
                         onClick={() => setSortBy('deadline')}
-                        class={`px-3 py-1 rounded-lg transition-all duration-200 ${
-                            sortBy() === 'deadline' ? 'bg-blue-600 text-white' : 'hover:bg-zinc-800'
-                        }`}
+                        class="px-2.5 py-1 rounded-md transition-all duration-200"
+                        style={{ "background-color": sortBy() === 'deadline' ? "var(--color-accent)" : "transparent", "color": sortBy() === 'deadline' ? "var(--color-accent-text)" : "var(--color-text-secondary)" }}
                     >
                         Deadline
                     </button>
                     <button
                         onClick={() => setSortBy('created')}
-                        class={`px-3 py-1 rounded-lg transition-all duration-200 ${
-                            sortBy() === 'created' ? 'bg-blue-600 text-white' : 'hover:bg-zinc-800'
-                        }`}
+                        class="px-2.5 py-1 rounded-md transition-all duration-200"
+                        style={{ "background-color": sortBy() === 'created' ? "var(--color-accent)" : "transparent", "color": sortBy() === 'created' ? "var(--color-accent-text)" : "var(--color-text-secondary)" }}
                     >
-                        Created Date
+                        Created
                     </button>
                 </div>
             </div>
@@ -581,15 +586,16 @@ function Todo() {
             {/* list todo items */}
             <div class="w-full">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-semibold text-white">
-                    {filterStatus() === 'active' ? 'Active Tasks' : filterStatus() === 'completed' ? 'Completed Tasks' : 'All Tasks'} 
-                    <span class="text-gray-400 ml-2">({getFilteredTodos().length})</span>
+                <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text-secondary)" }}>
+                    {filterStatus() === 'active' ? 'Active' : filterStatus() === 'completed' ? 'Completed' : 'All'} 
+                    <span style={{ "color": "var(--color-text-muted)" }}>({getFilteredTodos().length})</span>
                 </h3>
                 <button
                     onClick={() => setShowModal(true)}
-                    class="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 text-white font-semibold rounded-lg hover:bg-zinc-800 hover:border-zinc-700 transition-all duration-200"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300"
+                    style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                 >
-                    <span class="text-lg">+</span>
+                    <span>+</span>
                     <span>New Task</span>
                 </button>
             </div>
@@ -602,8 +608,8 @@ function Todo() {
                         <div>
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-2 h-2 rounded-full bg-red-500"></div>
-                                <h4 class="text-lg font-semibold text-red-400">Overdue</h4>
-                                <span class="text-gray-500 text-sm">({getOverdueTasks().length})</span>
+                                <h4 class="text-sm font-semibold text-red-400">Overdue</h4>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getOverdueTasks().length})</span>
                             </div>
                             <div class="space-y-3">
                                 <Index each={getOverdueTasks()}>
@@ -617,9 +623,9 @@ function Todo() {
                     <Show when={getTodayTasks().length > 0}>
                         <div>
                             <div class="flex items-center gap-2 mb-3">
-                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                                <h4 class="text-lg font-semibold text-blue-400">Today</h4>
-                                <span class="text-gray-500 text-sm">({getTodayTasks().length})</span>
+                                <div class="w-2 h-2 rounded-full" style={{ "background-color": "var(--color-accent)" }}></div>
+                                <h4 class="text-sm font-semibold" style={{ "color": "var(--color-accent)" }}>Today</h4>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getTodayTasks().length})</span>
                             </div>
                             <div class="space-y-3">
                                 <Index each={getTodayTasks()}>
@@ -634,8 +640,8 @@ function Todo() {
                         <div>
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-2 h-2 rounded-full bg-amber-500"></div>
-                                <h4 class="text-lg font-semibold text-amber-400">Tomorrow</h4>
-                                <span class="text-gray-500 text-sm">({getTomorrowTasks().length})</span>
+                                <h4 class="text-sm font-semibold text-amber-400">Tomorrow</h4>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getTomorrowTasks().length})</span>
                             </div>
                             <div class="space-y-3">
                                 <Index each={getTomorrowTasks()}>
@@ -650,8 +656,8 @@ function Todo() {
                         <div>
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-2 h-2 rounded-full bg-purple-500"></div>
-                                <h4 class="text-lg font-semibold text-purple-400">This Week</h4>
-                                <span class="text-gray-500 text-sm">({getThisWeekTasks().length})</span>
+                                <h4 class="text-sm font-semibold text-purple-400">This Week</h4>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getThisWeekTasks().length})</span>
                             </div>
                             <div class="space-y-3">
                                 <Index each={getThisWeekTasks()}>
@@ -666,8 +672,8 @@ function Todo() {
                         <div>
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-2 h-2 rounded-full bg-cyan-500"></div>
-                                <h4 class="text-lg font-semibold text-cyan-400">Later</h4>
-                                <span class="text-gray-500 text-sm">({getLaterTasks().length})</span>
+                                <h4 class="text-sm font-semibold text-cyan-400">Later</h4>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getLaterTasks().length})</span>
                             </div>
                             <div class="space-y-3">
                                 <Index each={getLaterTasks()}>
@@ -681,9 +687,9 @@ function Todo() {
                     <Show when={getNoDeadlineTasks().length > 0}>
                         <div>
                             <div class="flex items-center gap-2 mb-3">
-                                <div class="w-2 h-2 rounded-full bg-gray-500"></div>
-                                <h4 class="text-lg font-semibold text-gray-400">No Deadline</h4>
-                                <span class="text-gray-500 text-sm">({getNoDeadlineTasks().length})</span>
+                                <div class="w-2 h-2 rounded-full" style={{ "background-color": "var(--color-text-muted)" }}></div>
+                                <h4 class="text-sm font-semibold" style={{ "color": "var(--color-text-muted)" }}>No Deadline</h4>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getNoDeadlineTasks().length})</span>
                             </div>
                             <div class="space-y-3">
                                 <Index each={getNoDeadlineTasks()}>
@@ -695,10 +701,10 @@ function Todo() {
 
                     {/* Empty state */}
                     <Show when={getFilteredTodos().filter(t => !t.Completed).length === 0}>
-                        <div class="text-center py-12 text-gray-500">
-                            <CheckCircleIcon class="w-16 h-16 mx-auto mb-4 text-emerald-400" />
-                            <p class="text-xl">All caught up!</p>
-                            <p class="text-sm mt-2">No active tasks</p>
+                        <div class="text-center py-12" style={{ "color": "var(--color-text-muted)" }}>
+                            <CheckCircleIcon class="w-12 h-12 mx-auto mb-3" style={{ "color": "var(--color-accent)" }} />
+                            <p class="text-base font-medium" style={{ "color": "var(--color-text-secondary)" }}>All caught up!</p>
+                            <p class="text-sm mt-1">No active tasks</p>
                         </div>
                     </Show>
                 </div>
@@ -719,35 +725,36 @@ function Todo() {
                 <div class="mt-8">
                     <button
                         onClick={() => setShowCompletedSection(!showCompletedSection())}
-                        class="flex items-center justify-between w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-900/80 transition-all duration-200 mb-4"
+                        class="flex items-center justify-between w-full p-3 rounded-xl transition-all duration-200 mb-3"
+                        style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
                     >
-                        <div class="flex items-center gap-3">
-                            <CheckCircleIcon class="w-5 h-5 text-green-400" />
-                            <h3 class="text-lg font-semibold text-white">Completed Tasks</h3>
-                            <span class="text-gray-400 text-sm">({getCompletedTodos().length})</span>
+                        <div class="flex items-center gap-2">
+                            <CheckCircleIcon class="w-4 h-4" style={{ "color": "var(--color-accent)" }} />
+                            <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Completed</h3>
+                            <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getCompletedTodos().length})</span>
                         </div>
-                        <ChevronDownIcon class={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showCompletedSection() ? 'rotate-180' : ''}`} />
+                        <ChevronDownIcon class={`w-4 h-4 transition-transform duration-200 ${showCompletedSection() ? 'rotate-180' : ''}`} style={{ "color": "var(--color-text-muted)" }} />
                     </button>
                     
                     <Show when={showCompletedSection()}>
                         <div class="space-y-3">
                             <Index each={getCompletedTodos()}>
                                 {(item) => (
-                                    <div class="group relative bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 transition-all duration-200 hover:border-zinc-700">
-                                        <div class="flex items-start gap-3 mb-2 opacity-60">
+                                    <div class="group relative rounded-xl p-4 transition-all duration-200" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)", "opacity": 0.7 }}>
+                                        <div class="flex items-start gap-3 mb-2">
                                             <input 
                                                 type="checkbox" 
                                                 checked={item().Completed}
                                                 onChange={() => toggleComplete(item().id, item().Completed)}
-                                                class="w-5 h-5 mt-1 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 focus:ring-offset-0 bg-black cursor-pointer transition-all duration-200"
+                                                class="w-[18px] h-[18px] mt-1 cursor-pointer"
                                             />
                                             <div class="flex-1">
                                                 <div class="flex items-start justify-between">
-                                                    <h3 class="text-xl font-semibold text-gray-500 line-through">{item().Title}</h3>
+                                                    <h3 class="text-base font-semibold line-through" style={{ "color": "var(--color-text-muted)" }}>{item().Title}</h3>
                                                     <div class="flex items-center gap-2">
                                                         <Show when={item().CompletedAt}>
-                                                            <span class="text-xs text-gray-600">
-                                                                ✓ {new Date(item().CompletedAt).toLocaleDateString()}
+                                                            <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
+                                                                {new Date(item().CompletedAt).toLocaleDateString()}
                                                             </span>
                                                         </Show>
                                                         <button
@@ -759,7 +766,7 @@ function Todo() {
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <p class="text-gray-500 line-through leading-relaxed transition-all duration-200" style="white-space: pre-wrap;">{item().Description}</p>
+                                                <p class="line-through leading-relaxed text-sm transition-all duration-200" style={{ "white-space": "pre-wrap", "color": "var(--color-text-muted)" }}>{item().Description}</p>
                                                 <Show when={item().expand?.Tags && item().expand.Tags.length > 0}>
                                                     <div class="flex items-center gap-2 mt-3 flex-wrap">
                                                         <Index each={item().expand.Tags}>
@@ -791,7 +798,7 @@ function Todo() {
             {/* Create/Edit Modal */}
             <Show when={showModal()}>
             <div
-                class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 onClick={() => {
                     setShowModal(false);
                     setEditingTask(null);
@@ -799,23 +806,25 @@ function Todo() {
                 }}
             >
                 <div
-                    class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                    class="rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                    style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div class="sticky top-0 bg-zinc-900 border-b border-zinc-800 p-6 flex items-center justify-between">
-                        <h2 class="text-3xl font-bold text-white">{editingTask() ? 'Edit Todo Item' : 'Create Todo Item'}</h2>
+                    <div class="sticky top-0 p-5 flex items-center justify-between" style={{ "background-color": "var(--color-surface)", "border-bottom": "1px solid var(--color-border)" }}>
+                        <h2 class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>{editingTask() ? 'Edit Task' : 'New Task'}</h2>
                         <button
                             onClick={() => {
                                 setShowModal(false);
                                 setEditingTask(null);
                                 resetForm();
                             }}
-                            class="text-gray-400 hover:text-white transition-colors duration-200 text-2xl w-8 h-8 flex items-center justify-center"
+                            class="transition-colors duration-200 text-xl w-8 h-8 flex items-center justify-center rounded-lg"
+                            style={{ "color": "var(--color-text-muted)" }}
                         >
                             ×
                         </button>
                     </div>
-                    <div class="p-6">
+                    <div class="p-5">
                         <form
                             class="transition-all duration-200"
                             onSubmit={async (e) => {
@@ -855,99 +864,104 @@ function Todo() {
                             setShowModal(false);
                             setEditingTask(null);
                         }}>
-                            <div class="mb-5">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Title:</label>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Title</label>
                                 <input
                                     type="text"
                                     value={TaskName()}
                                     onInput={(e) => setTaskName(e.currentTarget.value)}
                                     required
-                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
-                                    placeholder="Enter task title..."
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    placeholder="What needs to be done?"
                                 />
                             </div>
-                            <div class="mb-5">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Description:</label>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Description</label>
                                 <textarea
                                     value={TaskDescription()}
                                     onInput={(e) => setTaskDescription(e.currentTarget.value)}
-                                    rows="4"
-                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200 resize-none"
-                                    placeholder="Describe your task..."
+                                    rows="3"
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 resize-none"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    placeholder="Add more details..."
                                 ></textarea>
                             </div>
-                            <div class="mb-5 flex items-center gap-3 p-3 bg-black/50 rounded-lg border border-zinc-800 transition-colors duration-200">
+                            <div class="mb-4 flex items-center gap-2 p-2.5 rounded-lg" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
                                 <input
                                     type="checkbox"
                                     checked={TaskCompleted()}
                                     onChange={(e) => setTaskCompleted(e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-white focus:ring-1 focus:ring-zinc-500 focus:ring-offset-0 bg-black cursor-pointer"
+                                    class="w-4 h-4 cursor-pointer"
                                 />
-                                <label class="text-sm font-medium text-gray-400 cursor-pointer">Mark as Completed</label>
+                                <label class="text-sm cursor-pointer" style={{ "color": "var(--color-text-secondary)" }}>Mark as Completed</label>
                             </div>
-                            <div class="mb-5">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">URL:</label>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>URL</label>
                                 <input
                                     type="url"
                                     value={TaskURL()}
                                     onInput={(e) => setTaskURL(e.currentTarget.value)}
-                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                     placeholder="https://..."
                                 />
                             </div>
-                            <div class="mb-5">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">File:</label>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>File</label>
                                 <input
                                     type="file"
                                     multiple
                                     use:fileUploader={{
                                     userCallback: fs => fs.forEach(f => console.log(f)), setFiles: setTaskFile
                                 }}
-                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white/5 file:text-gray-300 file:font-medium hover:file:bg-white/10 file:cursor-pointer focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
+                                    class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer focus:outline-none transition-colors duration-200"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
                                 />
                             </div>
-                            <div class="mb-5">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Priority:</label>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Priority</label>
                                 <div class="relative">
                                     <select
                                         value={TaskPriority()}
                                         onChange={(e) => setTaskPriority(e.currentTarget.value)}
-                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 cursor-pointer appearance-none"
-                                        style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
+                                        class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer appearance-none focus:outline-none transition-all duration-200"
+                                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                     >
-                                        <option value="P1" class="bg-zinc-900 text-white py-2">● P1 - High Priority</option>
-                                        <option value="P2" class="bg-zinc-900 text-white py-2">● P2 - Medium Priority</option>
-                                        <option value="P3" class="bg-zinc-900 text-white py-2">● P3 - Low Priority</option>
+                                        <option value="P1">P1 - High Priority</option>
+                                        <option value="P2">P2 - Medium Priority</option>
+                                        <option value="P3">P3 - Low Priority</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="mb-5">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Due By (Optional):</label>
-                                <div class="grid grid-cols-2 gap-3">
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Due Date</label>
+                                <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="block text-xs text-gray-500 mb-1">Date</label>
+                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
                                         <input
                                             type="date"
                                             value={TaskDeadlineDate()}
                                             onInput={(e) => setTaskDeadlineDate(e.currentTarget.value)}
-                                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
+                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer"
+                                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                         />
                                     </div>
                                     <div>
-                                        <label class="block text-xs text-gray-500 mb-1">Time (optional, defaults to 00:00)</label>
+                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Time</label>
                                         <input
                                             type="time"
                                             value={TaskDeadlineTime()}
                                             onInput={(e) => setTaskDeadlineTime(e.currentTarget.value)}
-                                            class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
+                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer"
+                                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                         />
                                     </div>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-1">Select a date and optionally a time. If no time is specified, it defaults to 00:00 (midnight).</p>
                             </div>
-                            <div class="mb-5">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Tags:</label>
-                                <div class="flex flex-wrap gap-2 p-3 bg-black border border-zinc-700 rounded-lg min-h-[44px]">
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Tags</label>
+                                <div class="flex flex-wrap gap-1.5 p-2 rounded-lg min-h-[36px]" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
                                     <Index each={allTags()}>
                                         {(tag) => (
                                             <button
@@ -982,36 +996,38 @@ function Todo() {
                                     </Show>
                                 </div>
                             </div>
-                            <div class="mb-5">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Recurrence:</label>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Recurrence</label>
                                 <div class="relative">
                                     <select
                                         value={recurrence()}
                                         onChange={(e) => setRecurrence(e.currentTarget.value)}
-                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 cursor-pointer appearance-none"
-                                        style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(156,163,175)%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em;"
+                                        class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer appearance-none focus:outline-none transition-all duration-200"
+                                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                     >
-                                        <option value="none" class="bg-zinc-900">None</option>
-                                        <option value="daily" class="bg-zinc-900">Daily</option>
-                                        <option value="weekly" class="bg-zinc-900">Weekly</option>
-                                        <option value="monthly" class="bg-zinc-900">Monthly</option>
+                                        <option value="none">None</option>
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
                                     </select>
                                 </div>
                             </div>
                             <Show when={recurrence() !== 'none'}>
-                                <div class="mb-6">
-                                    <label class="block text-sm font-medium text-gray-400 mb-2">Repeat Until (Optional):</label>
+                                <div class="mb-4">
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Repeat Until</label>
                                     <input
                                         type="date"
                                         value={recurrenceEndDate()}
                                         onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
-                                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200 cursor-pointer"
+                                        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer"
+                                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                     />
                                 </div>
                             </Show>
                             <button
                                 type="submit"
-                                class="w-full bg-white text-black font-semibold py-3.5 rounded-lg hover:bg-gray-200 active:scale-95 transition-all duration-200"
+                                class="w-full font-semibold py-2.5 rounded-lg transition-all duration-300 text-sm"
+                                style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                             >
                                 {editingTask() ? 'Update Task' : 'Create Task'}
                             </button>

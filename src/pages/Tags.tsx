@@ -84,14 +84,14 @@ function Tags() {
     return (
         <div class="flex-1 w-full max-w-4xl">
             <div class="mb-8">
-                <h1 class="text-4xl font-bold text-white mb-2 flex items-center gap-3"><TagIcon class="w-9 h-9" /> Tags</h1>
-                <p class="text-gray-400">Organize your tasks and events with colorful tags</p>
+                <h1 class="text-2xl font-bold mb-2 flex items-center gap-2" style={{ "color": "var(--color-text)" }}><TagIcon class="w-6 h-6" /> Tags</h1>
+                <p style={{ "color": "var(--color-text-secondary)" }}>Organize your tasks and events with colorful tags</p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Create/Edit Form */}
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                    <h2 class="text-xl font-bold text-white mb-4">
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <h2 class="text-lg font-bold mb-4" style={{ "color": "var(--color-text)" }}>
                         {editingTag() ? 'Edit Tag' : 'Create New Tag'}
                     </h2>
 
@@ -100,19 +100,19 @@ function Tags() {
                         editingTag() ? updateTag() : createTag();
                     }}>
                         <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-400 mb-2">Tag Name:</label>
+                            <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Tag Name:</label>
                             <input
                                 type="text"
                                 value={tagName()}
                                 onInput={(e) => setTagName(e.currentTarget.value)}
                                 required
                                 placeholder="e.g., Work, Personal, Urgent..."
-                                class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                                class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                             />
                         </div>
 
                         <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-400 mb-3">Tag Color:</label>
+                            <label class="block text-sm font-medium mb-3" style={{ "color": "var(--color-text-secondary)" }}>Tag Color:</label>
                             <div class="grid grid-cols-6 gap-2">
                                 <For each={colorPresets}>
                                     {(color) => (
@@ -140,7 +140,7 @@ function Tags() {
                         <div class="flex gap-2">
                             <button
                                 type="submit"
-                                class="flex-1 bg-white text-black font-semibold py-3 rounded-lg hover:bg-gray-200 transition-all duration-200"
+                                class="flex-1 font-semibold py-3 rounded-lg transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                             >
                                 {editingTag() ? 'Update Tag' : 'Create Tag'}
                             </button>
@@ -148,7 +148,7 @@ function Tags() {
                                 <button
                                     type="button"
                                     onClick={cancelEdit}
-                                    class="px-6 py-3 bg-zinc-800 text-gray-300 font-semibold rounded-lg hover:bg-zinc-700 transition-all duration-200"
+                                    class="px-6 py-3 font-semibold rounded-lg transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
                                 >
                                     Cancel
                                 </button>
@@ -158,8 +158,8 @@ function Tags() {
 
                     {/* Preview */}
                     <Show when={tagName()}>
-                        <div class="mt-6 p-4 bg-black/50 border border-zinc-700 rounded-lg">
-                            <p class="text-xs text-gray-400 mb-2">Preview:</p>
+                        <div class="mt-6 p-4 rounded-lg" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
+                            <p class="text-xs mb-2" style={{ "color": "var(--color-text-muted)" }}>Preview:</p>
                             <span
                                 class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-white"
                                 style={{ 'background-color': `${tagColor()}40`, 'border': `1px solid ${tagColor()}60` }}
@@ -175,24 +175,24 @@ function Tags() {
                 </div>
 
                 {/* Tags List */}
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                    <h2 class="text-xl font-bold text-white mb-4">Your Tags ({tags().length})</h2>
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <h2 class="text-lg font-bold mb-4" style={{ "color": "var(--color-text)" }}>Your Tags ({tags().length})</h2>
 
                     <div class="space-y-2 max-h-[500px] overflow-y-auto">
                         <For each={tags()}>
                             {(tag) => (
-                                <div class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-all duration-200">
+                                <div class="flex items-center justify-between p-3 rounded-lg transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
                                     <div class="flex items-center gap-3">
                                         <div
                                             class="w-4 h-4 rounded-full"
                                             style={{ 'background-color': tag.color }}
                                         />
-                                        <span class="text-white font-medium">{tag.name}</span>
+                                        <span class="font-medium" style={{ "color": "var(--color-text)" }}>{tag.name}</span>
                                     </div>
                                     <div class="flex gap-2">
                                         <button
                                             onClick={() => startEditing(tag)}
-                                            class="px-3 py-1 text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
+                                            class="px-3 py-1 text-sm transition-colors duration-200" style={{ "color": "var(--color-accent)" }}
                                         >
                                             Edit
                                         </button>
@@ -207,8 +207,8 @@ function Tags() {
                             )}
                         </For>
                         <Show when={tags().length === 0}>
-                            <div class="text-center py-12 text-gray-500">
-                                <TagIcon class="w-12 h-12 mx-auto mb-2 text-gray-500" />
+                            <div class="text-center py-12" style={{ "color": "var(--color-text-muted)" }}>
+                                <TagIcon class="w-12 h-12 mx-auto mb-2" style={{ "color": "var(--color-text-muted)" }} />
                                 <p>No tags yet. Create your first tag!</p>
                             </div>
                         </Show>

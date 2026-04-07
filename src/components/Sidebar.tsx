@@ -1,5 +1,6 @@
-import { createSignal, Show, onMount, onCleanup } from 'solid-js';
-import { currentUser, logout } from '../lib/backend.ts';
+import { createSignal, Show, onMount, onCleanup, For } from 'solid-js';
+import { currentTheme, getUserName } from '../lib/theme';
+import { bk, currentUser } from '../lib/backend.ts';
 import { 
     DashboardIcon, 
     CheckCircleIcon, 
@@ -9,28 +10,26 @@ import {
     TagIcon, 
     PlusIcon, 
     SettingsIcon, 
-    StarIcon, 
-    LogoutIcon,
-    HeartIcon,
     MenuIcon,
-    XIcon
+    XIcon,
+    SearchIcon
 } from './Icons';
 
 export default function Sidebar() {
-    const [showProfileMenu, setShowProfileMenu] = createSignal(false);
     const [mobileMenuOpen, setMobileMenuOpen] = createSignal(false);
     const [currentPath, setCurrentPath] = createSignal(window.location.pathname);
+    const [searchQuery, setSearchQuery] = createSignal('');
+    const [todoCount, setTodoCount] = createSignal(0);
+    const [calendarCount, setCalendarCount] = createSignal(0);
+    const [taskCount, setTaskCount] = createSignal(0);
+    const [noteCount, setNoteCount] = createSignal(0);
+    const [tags, setTags] = createSignal<any[]>([]);
 
     const isActive = (path: string) => currentPath() === path;
 
-    // Update the current path when navigation occurs
-    onMount(() => {
+    onMount(async () => {
         const updatePath = () => setCurrentPath(window.location.pathname);
-        
-        // Listen for popstate events (back/forward navigation)
         window.addEventListener('popstate', updatePath);
-        
-        // Intercept click events on links to update path
         const handleClick = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             const link = target.closest('a');
@@ -40,239 +39,289 @@ export default function Sidebar() {
         };
         document.addEventListener('click', handleClick);
         
+        // Fetch counts
+        try {
+            const userId = currentUser()?.id;
+            if (userId) {
+                const [todos, events, tagList] = await Promise.all([
+                    bk.collection('Todo').getFullList({ filter: `user = "${userId}"` }),
+                    bk.collection('Calendar').getFullList({ filter: `user = "${userId}"` }),
+                    bk.collection('Tags').getFullList({ filter: `user = "${userId}"` }),
+                ]);
+                const activeTodos = todos.filter((t: any) => !t.Completed);
+                setTodoCount(todos.length);
+                setTaskCount(activeTodos.length);
+                setCalendarCount(events.length);
+                setTags(tagList);
+            }
+        } catch (e) {}
+
+        // Listen for data changes
+        const handleItemCreated = () => {
+            try {
+                const userId = currentUser()?.id;
+                if (userId) {
+                    bk.collection('Todo').getFullList({ filter: `user = "${userId}"` }).then(todos => {
+                        setTodoCount(todos.length);
+                        setTaskCount(todos.filter((t: any) => !t.Completed).length);
+                    });
+                }
+            } catch {}
+        };
+        window.addEventListener('itemCreated', handleItemCreated);
+        
         onCleanup(() => {
             window.removeEventListener('popstate', updatePath);
             document.removeEventListener('click', handleClick);
+            window.removeEventListener('itemCreated', handleItemCreated);
         });
     });
-    
 
-    const handleLogout = () => {
-        logout();
-        window.location.href = '/login';
-    };
+    const navItems = [
+        { path: '/', label: 'My Day', icon: DashboardIcon, count: () => taskCount() },
+        { path: '/calendar', label: 'Calendar', icon: CalendarIcon, count: () => calendarCount() },
+    ];
+
+    const workspaceItems = [
+        { path: '/todo', label: 'All', icon: () => <span class="text-base">⊞</span>, count: () => todoCount() },
+        { path: '/todo?filter=active', label: 'Tasks', icon: CheckCircleIcon, count: () => taskCount() },
+    ];
 
     return (
         <>
             {/* Mobile Menu Button */}
             <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen())}
-                class="lg:hidden fixed top-4 left-4 z-[60] p-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white"
+                class="lg:hidden fixed top-4 left-4 z-[60] p-2 rounded-lg transition-all duration-300"
+                style={{
+                    "background-color": "var(--color-surface)",
+                    "border": "1px solid var(--color-border)",
+                    "color": "var(--color-text)"
+                }}
             >
-                {mobileMenuOpen() ? (
-                    <XIcon class="w-6 h-6" />
-                ) : (
-                    <MenuIcon class="w-6 h-6" />
-                )}
+                {mobileMenuOpen() ? <XIcon class="w-5 h-5" /> : <MenuIcon class="w-5 h-5" />}
             </button>
 
             {/* Mobile Overlay */}
             <Show when={mobileMenuOpen()}>
                 <div 
-                    class="lg:hidden fixed inset-0 bg-black/80 z-[50]"
+                    class="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[50]"
                     onClick={() => setMobileMenuOpen(false)}
                 />
             </Show>
 
             {/* Sidebar */}
-            <div class={`
-                flex flex-col gap-2 bg-black
-                fixed lg:sticky top-0 left-0 h-screen lg:h-fit
-                w-64 lg:w-64 
+            <aside class={`
+                flex flex-col
+                fixed lg:sticky top-0 left-0 h-screen
+                w-[260px] lg:w-[260px] 
                 z-[55] lg:z-auto
                 transition-transform duration-300
                 ${mobileMenuOpen() ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-                lg:top-6
-                p-4 lg:p-0
                 overflow-y-auto
-                border-r lg:border-r-0 border-zinc-800
-            `}>
-            {/* App Logo/Title */}
-            <div class="mb-4 px-4">
-                <h1 class="text-2xl font-bold text-white">
-                    RemmbrMe
-                </h1>
-                <p class="text-xs text-gray-500 mt-1">Your AI-powered organizer</p>
-            </div>
-
-            {/* User Profile Section */}
-            <div class="mb-4 px-4">
-                <div class="relative">
-                    <button
-                        onClick={() => setShowProfileMenu(!showProfileMenu())}
-                        class="w-full p-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 hover:bg-zinc-800 transition-all duration-200 group"
-                    >
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-zinc-700 rounded-full flex items-center justify-center text-white font-semibold">
-                                {currentUser()?.name?.charAt(0).toUpperCase() || 'U'}
-                            </div>
-                            <div class="flex-1 text-left">
-                                <p class="text-sm font-medium text-white truncate">
-                                    {currentUser()?.name || 'User'}
-                                </p>
-                                <p class="text-xs text-gray-500 truncate">
-                                    {currentUser()?.email}
-                                </p>
-                            </div>
-                            <Show when={currentUser()?.proUser}>
-                                <span class="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs text-gray-400 font-semibold">
-                                    PRO
-                                </span>
-                            </Show>
+            `}
+            style={{
+                "background-color": "var(--color-bg-secondary)",
+                "border-right": "1px solid var(--color-border)"
+            }}
+            >
+                {/* User Profile */}
+                <div class="p-4 pb-2">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div 
+                            class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
+                            style={{
+                                "background-color": "var(--color-accent-muted)",
+                                "color": "var(--color-accent)"
+                            }}
+                        >
+                            {getUserName()().charAt(0).toUpperCase()}
                         </div>
-                    </button>
-
-                    {/* Profile Dropdown */}
-                    <Show when={showProfileMenu()}>
-                        <div class="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl z-50 overflow-hidden">
-                            <a
-                                href="/profile"
-                                onClick={() => setShowProfileMenu(false)}
-                                class="w-full px-4 py-3 text-left text-sm text-gray-300 hover:bg-zinc-800 transition-colors flex items-center gap-3 block"
-                            >
-                                <SettingsIcon class="w-5 h-5" />
-                                <span>Settings</span>
-                            </a>
-                            <Show when={!currentUser()?.proUser}>
-                                <a
-                                    href="/upgrade"
-                                    onClick={() => setShowProfileMenu(false)}
-                                    class="w-full px-4 py-3 text-left text-sm text-yellow-400 hover:bg-zinc-800 transition-colors flex items-center gap-3 block"
-                                >
-                                    <StarIcon class="w-5 h-5" />
-                                    <span>Upgrade to Pro</span>
-                                </a>
-                            </Show>
-                            <div class="border-t border-zinc-800"></div>
-                            <button
-                                onClick={() => {
-                                    setShowProfileMenu(false);
-                                    handleLogout();
-                                }}
-                                class="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-zinc-800 transition-colors flex items-center gap-3"
-                            >
-                                <LogoutIcon class="w-5 h-5" />
-                                <span>Logout</span>
-                            </button>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold truncate" style={{ "color": "var(--color-text)" }}>
+                                {getUserName()()}
+                            </p>
                         </div>
-                    </Show>
-                </div>
-            </div>
+                        <button 
+                            class="p-1 rounded transition-colors duration-200"
+                            style={{ "color": "var(--color-text-muted)" }}
+                        >
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                <rect x="14" y="14" width="7" height="7" rx="1"/>
+                            </svg>
+                        </button>
+                    </div>
 
-            {/* Navigation Links */}
-            <nav class="space-y-1">
-                <a 
-                    href="/" 
-                    onClick={() => setMobileMenuOpen(false)}
-                    class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                        isActive('/') 
-                            ? 'bg-zinc-800 border border-zinc-700 text-white' 
-                            : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
-                    }`}
-                >
-                    <DashboardIcon class="w-5 h-5" />
-                    <span>Dashboard</span>
-                    {isActive('/') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
-                </a>
-                
-                <a 
-                    href="/todo" 
-                    onClick={() => setMobileMenuOpen(false)}
-                    class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                        isActive('/todo') 
-                            ? 'bg-zinc-800 border border-zinc-700 text-white' 
-                            : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
-                    }`}
-                >
-                    <CheckCircleIcon class="w-5 h-5" />
-                    <span>Todo List</span>
-                    {isActive('/todo') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
-                </a>
-                
-                <a 
-                    href="/calendar" 
-                    onClick={() => setMobileMenuOpen(false)}
-                    class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                        isActive('/calendar') 
-                            ? 'bg-zinc-800 border border-zinc-700 text-white' 
-                            : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
-                    }`}
-                >
-                    <CalendarIcon class="w-5 h-5" />
-                    <span>Calendar</span>
-                    {isActive('/calendar') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
-                </a>
-                
-                <a 
-                    href="/timemachine" 
-                    onClick={() => setMobileMenuOpen(false)}
-                    class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                        isActive('/timemachine') 
-                            ? 'bg-zinc-800 border border-zinc-700 text-white' 
-                            : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
-                    }`}
-                >
-                    <ClockIcon class="w-5 h-5" />
-                    <span>Time Machine</span>
-                    {isActive('/timemachine') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
-                </a>
-                
-                <a 
-                    href="/ai" 
-                    onClick={() => setMobileMenuOpen(false)}
-                    class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                        isActive('/ai') 
-                            ? 'bg-zinc-800 border border-zinc-700 text-white' 
-                            : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
-                    }`}
-                >
-                    <RobotIcon class="w-5 h-5" />
-                    <span>AI Assistant</span>
-                    {isActive('/ai') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
-                </a>
-                
-                <a 
-                    href="/tags" 
-                    onClick={() => setMobileMenuOpen(false)}
-                    class={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                        isActive('/tags') 
-                            ? 'bg-zinc-800 border border-zinc-700 text-white' 
-                            : 'text-gray-400 hover:bg-zinc-900 hover:text-white border border-transparent'
-                    }`}
-                >
-                    <TagIcon class="w-5 h-5" />
-                    <span>Tags</span>
-                    {isActive('/tags') && <div class="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>}
-                </a>
-            </nav>
-
-            {/* Quick Actions */}
-            <div class="mt-4 px-4">
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick Actions</p>
-                <div class="space-y-2">
+                    {/* Add Task Button */}
                     <a
                         href="/todo"
-                        class="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-gray-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all text-sm font-medium flex items-center gap-2"
+                        onClick={() => setMobileMenuOpen(false)}
+                        class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 mb-3"
+                        style={{
+                            "color": "var(--color-accent)",
+                        }}
                     >
                         <PlusIcon class="w-4 h-4" />
-                        <span>New Todo</span>
+                        <span>Add Task</span>
+                    </a>
+
+                    {/* Search */}
+                    <div class="relative mb-4">
+                        <SearchIcon class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ "color": "var(--color-text-muted)" }} />
+                        <input
+                            type="text"
+                            value={searchQuery()}
+                            onInput={(e) => setSearchQuery(e.currentTarget.value)}
+                            placeholder="Search"
+                            class="w-full rounded-lg pl-9 pr-3 py-2 text-sm border-0 focus:outline-none focus:ring-1 transition-all duration-200"
+                            style={{
+                                "background-color": "var(--color-bg-tertiary)",
+                                "color": "var(--color-text)",
+                            }}
+                        />
+                    </div>
+                </div>
+
+                {/* Main Navigation */}
+                <nav class="px-2 space-y-0.5">
+                    <For each={navItems}>
+                        {(item) => (
+                            <a
+                                href={item.path}
+                                onClick={() => setMobileMenuOpen(false)}
+                                class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                                style={{
+                                    "background-color": isActive(item.path) ? "var(--color-bg-tertiary)" : "transparent",
+                                    "color": isActive(item.path) ? "var(--color-text)" : "var(--color-text-secondary)",
+                                }}
+                            >
+                                <item.icon class="w-[18px] h-[18px]" />
+                                <span class="flex-1">{item.label}</span>
+                                <Show when={item.count() > 0}>
+                                    <span class="text-xs font-medium px-1.5 py-0.5 rounded" style={{ "color": "var(--color-text-muted)" }}>
+                                        {item.count()}
+                                    </span>
+                                </Show>
+                            </a>
+                        )}
+                    </For>
+                </nav>
+
+                {/* Workspace Section */}
+                <div class="mt-5 px-4">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ "color": "var(--color-text-muted)" }}>
+                        Workspace
+                    </p>
+                </div>
+                <nav class="px-2 space-y-0.5">
+                    <For each={workspaceItems}>
+                        {(item) => (
+                            <a
+                                href={item.path.split('?')[0]}
+                                onClick={() => setMobileMenuOpen(false)}
+                                class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                                style={{
+                                    "background-color": isActive(item.path.split('?')[0]) ? "var(--color-bg-tertiary)" : "transparent",
+                                    "color": isActive(item.path.split('?')[0]) ? "var(--color-text)" : "var(--color-text-secondary)",
+                                }}
+                            >
+                                <item.icon class="w-[18px] h-[18px]" />
+                                <span class="flex-1">{item.label}</span>
+                                <Show when={item.count() > 0}>
+                                    <span class="text-xs font-medium px-1.5 py-0.5 rounded" style={{ "color": "var(--color-text-muted)" }}>
+                                        {item.count()}
+                                    </span>
+                                </Show>
+                            </a>
+                        )}
+                    </For>
+                </nav>
+
+                {/* Tags / Projects Section */}
+                <Show when={tags().length > 0}>
+                    <div class="mt-5 px-4">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ "color": "var(--color-text-muted)" }}>
+                            Projects
+                        </p>
+                    </div>
+                    <nav class="px-2 space-y-0.5">
+                        <For each={tags().slice(0, 5)}>
+                            {(tag) => (
+                                <a
+                                    href="/tags"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                                    style={{ "color": "var(--color-text-secondary)" }}
+                                >
+                                    <div class="w-[18px] h-[18px] flex items-center justify-center">
+                                        <span class="text-base" style={{ "color": tag.color }}>#</span>
+                                    </div>
+                                    <span class="flex-1 truncate">{tag.name}</span>
+                                </a>
+                            )}
+                        </For>
+                    </nav>
+                </Show>
+
+                {/* Bottom section */}
+                <div class="mt-auto px-2 pb-4 space-y-0.5">
+                    <a
+                        href="/timemachine"
+                        onClick={() => setMobileMenuOpen(false)}
+                        class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                        style={{
+                            "background-color": isActive('/timemachine') ? "var(--color-bg-tertiary)" : "transparent",
+                            "color": isActive('/timemachine') ? "var(--color-text)" : "var(--color-text-secondary)",
+                        }}
+                    >
+                        <ClockIcon class="w-[18px] h-[18px]" />
+                        <span>Time Machine</span>
                     </a>
                     <a
-                        href="/calendar"
-                        class="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-gray-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all text-sm font-medium flex items-center gap-2"
+                        href="/ai"
+                        onClick={() => setMobileMenuOpen(false)}
+                        class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                        style={{
+                            "background-color": isActive('/ai') ? "var(--color-bg-tertiary)" : "transparent",
+                            "color": isActive('/ai') ? "var(--color-text)" : "var(--color-text-secondary)",
+                        }}
                     >
-                        <CalendarIcon class="w-4 h-4" />
-                        <span>New Event</span>
+                        <RobotIcon class="w-[18px] h-[18px]" />
+                        <span>AI Assistant</span>
                     </a>
+                    <a
+                        href="/tags"
+                        onClick={() => setMobileMenuOpen(false)}
+                        class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                        style={{
+                            "background-color": isActive('/tags') ? "var(--color-bg-tertiary)" : "transparent",
+                            "color": isActive('/tags') ? "var(--color-text)" : "var(--color-text-secondary)",
+                        }}
+                    >
+                        <TagIcon class="w-[18px] h-[18px]" />
+                        <span>Tags</span>
+                    </a>
+
+                    {/* New List button */}
+                    <div class="pt-2 border-t mt-2" style={{ "border-color": "var(--color-border)" }}>
+                        <a
+                            href="/settings"
+                            onClick={() => setMobileMenuOpen(false)}
+                            class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                            style={{
+                                "background-color": isActive('/settings') ? "var(--color-bg-tertiary)" : "transparent",
+                                "color": isActive('/settings') ? "var(--color-text)" : "var(--color-text-secondary)",
+                            }}
+                        >
+                            <SettingsIcon class="w-[18px] h-[18px]" />
+                            <span>Settings</span>
+                        </a>
+                    </div>
                 </div>
-            </div>
-            
-            {/* Footer */}
-            <div class="mt-6 px-4 py-3 bg-zinc-900/50 border border-zinc-800 rounded-xl">
-                <p class="text-xs text-gray-500">Version 1.0.0</p>
-                <p class="text-xs text-gray-600 mt-1 flex items-center gap-1">Made with <HeartIcon class="w-3 h-3 text-red-500" /> by RangerDevv</p>
-            </div>
-        </div>
+            </aside>
         </>
     );
 }

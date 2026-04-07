@@ -186,32 +186,32 @@ function TimeMachine() {
         <div class="flex-1 w-full">
             <div class="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 class="text-4xl font-bold text-white mb-1 flex items-center gap-3"><ClockIcon class="w-9 h-9" /> Time Machine</h1>
-                    <p class="text-gray-400">Monthly reflection and insights</p>
+                    <h1 class="text-2xl font-bold mb-1 flex items-center gap-2" style={{ "color": "var(--color-text)" }}><ClockIcon class="w-6 h-6" /> Time Machine</h1>
+                    <p style={{ "color": "var(--color-text-secondary)" }}>Monthly reflection and insights</p>
                 </div>
             </div>
 
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6">
+            <div class="rounded-xl p-4 mb-4" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <button
                             onClick={previousMonth}
-                            class="px-2 py-1 bg-black border border-zinc-800 rounded text-gray-400 hover:text-white hover:border-zinc-700 transition-all duration-200"
+                            class="px-2 py-1 rounded transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
                         >
                             ←
                         </button>
-                        <h2 class="text-xl font-bold text-white min-w-[200px] text-center">
+                        <h2 class="text-lg font-bold min-w-[200px] text-center" style={{ "color": "var(--color-text)" }}>
                             {selectedMonth().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                         </h2>
                         <button
                             onClick={nextMonth}
-                            class="px-2 py-1 bg-black border border-zinc-800 rounded text-gray-400 hover:text-white hover:border-zinc-700 transition-all duration-200"
+                            class="px-2 py-1 rounded transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
                         >
                             →
                         </button>
                         <button
                             onClick={goToCurrentMonth}
-                            class="px-3 py-1 bg-black border border-zinc-800 rounded text-gray-400 hover:text-white hover:border-zinc-700 transition-all duration-200 text-sm ml-2"
+                            class="px-3 py-1 rounded text-sm ml-2 transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
                         >
                             Current Month
                         </button>
@@ -220,32 +220,32 @@ function TimeMachine() {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                    <DashboardIcon class="w-8 h-8 text-gray-400 mb-2" />
-                    <div class="text-3xl font-bold text-white mb-1">{getProductivityScore()}%</div>
-                    <div class="text-sm text-gray-400">Tasks Completed This Month</div>
+                <div class="rounded-xl p-5 transition-all duration-200" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <DashboardIcon class="w-8 h-8 mb-2" style={{ "color": "var(--color-text-muted)" }} />
+                    <div class="text-2xl font-bold mb-1" style={{ "color": "var(--color-text)" }}>{getProductivityScore()}%</div>
+                    <div class="text-sm" style={{ "color": "var(--color-text-muted)" }}>Tasks Completed This Month</div>
                 </div>
 
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                    <CalendarIcon class="w-8 h-8 text-gray-400 mb-2" />
-                    <div class="text-3xl font-bold text-white mb-1">{getStreakDays()} days</div>
-                    <div class="text-sm text-gray-400">Active Days This Month</div>
+                <div class="rounded-xl p-5 transition-all duration-200" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <CalendarIcon class="w-8 h-8 mb-2" style={{ "color": "var(--color-text-muted)" }} />
+                    <div class="text-2xl font-bold mb-1" style={{ "color": "var(--color-text)" }}>{getStreakDays()} days</div>
+                    <div class="text-sm" style={{ "color": "var(--color-text-muted)" }}>Active Days This Month</div>
                 </div>
 
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                    <div class="w-8 h-8 text-gray-400 mb-2 flex items-center justify-center text-2xl">🎯</div>
-                    <div class="text-3xl font-bold text-white mb-1">{getMonthEvents().length}</div>
-                    <div class="text-sm text-gray-400">Events This Month</div>
+                <div class="rounded-xl p-5 transition-all duration-200" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <div class="w-8 h-8 mb-2 flex items-center justify-center text-2xl" style={{ "color": "var(--color-text-muted)" }}>🎯</div>
+                    <div class="text-2xl font-bold mb-1" style={{ "color": "var(--color-text)" }}>{getMonthEvents().length}</div>
+                    <div class="text-sm" style={{ "color": "var(--color-text-muted)" }}>Events This Month</div>
                 </div>
             </div>
 
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
-                <h2 class="text-xl font-bold text-white mb-4">📈 Daily Activity</h2>
+            <div class="rounded-xl p-5 mb-6" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <h2 class="text-lg font-bold mb-4" style={{ "color": "var(--color-text)" }}>📈 Daily Activity</h2>
                 
                 <div class="grid grid-cols-7 gap-2 mb-2">
                     <For each={['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']}>
                         {(day) => (
-                            <div class="text-center text-xs font-semibold text-gray-400">
+                            <div class="text-center text-xs font-semibold" style={{ "color": "var(--color-text-muted)" }}>
                                 {day}
                             </div>
                         )}
@@ -260,11 +260,11 @@ function TimeMachine() {
                     <For each={getHeatMapData()}>
                         {(day) => (
                             <div
-                                class="aspect-square rounded-lg flex flex-col items-center justify-center hover:border-zinc-700 transition-transform duration-200 cursor-pointer border border-zinc-800"
-                                style={{ 'background-color': getHeatColor(day.count) }}
+                                class="aspect-square rounded-lg flex flex-col items-center justify-center transition-transform duration-200 cursor-pointer"
+                                style={{ "border": "1px solid var(--color-border)", 'background-color': getHeatColor(day.count) }}
                                 title={`${new Date(day.date).toLocaleDateString()}: ${day.count} event${day.count !== 1 ? 's' : ''}`}
                             >
-                                <div class="text-xs font-semibold text-white">
+                                <div class="text-xs font-semibold" style={{ "color": "var(--color-text)" }}>
                                     {new Date(day.date).getDate()}
                                 </div>
                                 <Show when={day.count > 0}>
@@ -277,7 +277,7 @@ function TimeMachine() {
                     </For>
                 </div>
 
-                <div class="flex items-center gap-4 mt-4 text-xs text-gray-500">
+                <div class="flex items-center gap-4 mt-4 text-xs" style={{ "color": "var(--color-text-muted)" }}>
                     <span>Less</span>
                     <div class="flex gap-1">
                         <div class="w-3 h-3 rounded-sm" style="background-color: #18181b"></div>
@@ -290,12 +290,12 @@ function TimeMachine() {
                 </div>
             </div>
 
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
+            <div class="rounded-xl p-5 mb-6" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold text-white">💌 Messages to Future Self</h2>
+                    <h2 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>💌 Messages to Future Self</h2>
                     <button
                         onClick={() => setShowNoteModal(true)}
-                        class="px-4 py-2 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                        class="px-4 py-2 font-medium rounded-lg transition-colors duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                     >
                         + New Note
                     </button>
@@ -308,15 +308,11 @@ function TimeMachine() {
                             const isDelivered = deliveryDate <= new Date();
 
                             return (
-                                <div class={`p-4 rounded-lg border transition-all duration-200 ${
-                                    isDelivered 
-                                        ? 'bg-green-500/10 border-green-500/20' 
-                                        : 'bg-zinc-800 border-zinc-700'
-                                }`}>
+                                <div class={`p-4 rounded-lg transition-all duration-200 ${isDelivered ? 'bg-green-500/10' : ''}`} style={{ "border": "1px solid var(--color-border)" }}>
                                     <div class="flex items-start justify-between">
                                         <div class="flex-1">
-                                            <p class="text-white mb-2">{note.Content}</p>
-                                            <p class="text-sm text-gray-400">
+                                            <p style={{ "color": "var(--color-text)" }} class="mb-2">{note.Content}</p>
+                                            <p class="text-sm" style={{ "color": "var(--color-text-muted)" }}>
                                                 {isDelivered ? '✓ ' : '⏰ '}
                                                 {deliveryDate.toLocaleDateString('en-US', { 
                                                     weekday: 'long', 
@@ -338,13 +334,13 @@ function TimeMachine() {
                         }}
                     </For>
                     <Show when={futureNotes().length === 0}>
-                        <p class="text-gray-500 text-center py-8">No future notes yet. Create one!</p>
+                        <p class="text-center py-8" style={{ "color": "var(--color-text-muted)" }}>No future notes yet. Create one!</p>
                     </Show>
                 </div>
             </div>
 
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                <h2 class="text-xl font-bold text-white mb-4">📜 Events This Month</h2>
+            <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <h2 class="text-lg font-bold mb-4" style={{ "color": "var(--color-text)" }}>📜 Events This Month</h2>
                 <div class="space-y-4 max-h-[500px] overflow-y-auto">
                     <For each={getMonthEvents()}>
                         {(event) => (
@@ -355,14 +351,14 @@ function TimeMachine() {
                                 ></div>
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-1">
-                                        <h3 class="font-semibold text-white">{event.EventName}</h3>
+                                        <h3 class="font-semibold" style={{ "color": "var(--color-text)" }}>{event.EventName}</h3>
                                         <Show when={event.expand?.Tasks?.length > 0}>
-                                            <span class="text-xs px-2 py-0.5 bg-zinc-800 text-gray-400 rounded-full">
+                                            <span class="text-xs px-2 py-0.5 rounded-full" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-muted)" }}>
                                                 {event.expand.Tasks.filter((t: any) => t.Completed).length}/{event.expand.Tasks.length} tasks
                                             </span>
                                         </Show>
                                     </div>
-                                    <p class="text-sm text-gray-400">
+                                    <p class="text-sm" style={{ "color": "var(--color-text-muted)" }}>
                                         {new Date(event.Start).toLocaleDateString('en-US', { 
                                             weekday: 'short', 
                                             month: 'short', 
@@ -375,26 +371,26 @@ function TimeMachine() {
                                         })}`}
                                     </p>
                                     <Show when={event.Description}>
-                                        <p class="text-sm text-gray-500 mt-1">{event.Description}</p>
+                                        <p class="text-sm mt-1" style={{ "color": "var(--color-text-muted)" }}>{event.Description}</p>
                                     </Show>
                                 </div>
                             </div>
                         )}
                     </For>
                     <Show when={getMonthEvents().length === 0}>
-                        <p class="text-gray-500 text-center py-8">No events for this month yet</p>
+                        <p class="text-center py-8" style={{ "color": "var(--color-text-muted)" }}>No events for this month yet</p>
                     </Show>
                 </div>
             </div>
 
             <Show when={showNoteModal()}>
                 <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowNoteModal(false)}>
-                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                    <div class="rounded-xl p-6 max-w-md w-full" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
                         <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-2xl font-bold text-white">💌 Message to Future Self</h2>
+                            <h2 class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>💌 Message to Future Self</h2>
                             <button
                                 onClick={() => setShowNoteModal(false)}
-                                class="text-gray-400 hover:text-white transition-colors duration-200 text-2xl"
+                                class="transition-colors duration-200 text-2xl" style={{ "color": "var(--color-text-muted)" }}
                             >
                                 ×
                             </button>
@@ -405,32 +401,32 @@ function TimeMachine() {
                             createFutureNote();
                         }}>
                             <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Your Message:</label>
+                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Your Message:</label>
                                 <textarea
                                     value={noteContent()}
                                     onInput={(e) => setNoteContent(e.currentTarget.value)}
                                     required
                                     rows="4"
                                     placeholder="Write a message to your future self..."
-                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-zinc-500 transition-colors duration-200 resize-none"
+                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200 resize-none" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                 ></textarea>
                             </div>
 
                             <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Delivery Date:</label>
+                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Delivery Date:</label>
                                 <input
                                     type="date"
                                     value={noteDate()}
                                     onInput={(e) => setNoteDate(e.currentTarget.value)}
                                     required
                                     min={new Date().toISOString().split('T')[0]}
-                                    class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-zinc-500 transition-colors duration-200"
+                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                 />
                             </div>
 
                             <button
                                 type="submit"
-                                class="w-full bg-white text-black font-semibold py-3 rounded-lg hover:bg-gray-200 active:scale-95 transition-all duration-200"
+                                class="w-full font-semibold py-3 rounded-lg active:scale-95 transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                             >
                                 Send to Future
                             </button>
@@ -446,14 +442,14 @@ function TimeMachine() {
                     onClick={() => setDeleteConfirm({ show: false, noteId: '' })}
                 >
                     <div 
-                        class="bg-zinc-900 border border-red-600/30 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scaleIn"
+                        class="rounded-xl p-6 max-w-md w-full shadow-2xl animate-scaleIn" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-danger)" }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div class="flex items-start gap-4 mb-6">
                             <WarningIcon class="w-10 h-10 text-red-400 shrink-0" />
                             <div class="flex-1">
-                                <h3 class="text-xl font-bold text-white mb-2">Delete Note?</h3>
-                                <p class="text-gray-300 leading-relaxed">
+                                <h3 class="text-lg font-bold mb-2" style={{ "color": "var(--color-text)" }}>Delete Note?</h3>
+                                <p style={{ "color": "var(--color-text-secondary)" }} class="leading-relaxed">
                                     Are you sure you want to delete this future note? This action cannot be undone.
                                 </p>
                             </div>
@@ -462,7 +458,7 @@ function TimeMachine() {
                         <div class="flex gap-3">
                             <button
                                 onClick={() => setDeleteConfirm({ show: false, noteId: '' })}
-                                class="flex-1 px-6 py-2.5 bg-zinc-800 text-white font-semibold rounded-lg hover:bg-zinc-700 transition-all duration-200"
+                                class="flex-1 px-6 py-2.5 font-semibold rounded-lg transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                             >
                                 Cancel
                             </button>

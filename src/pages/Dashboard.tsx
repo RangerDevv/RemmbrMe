@@ -395,7 +395,7 @@ function Dashboard() {
         createEffect(() => {
             if (interval) clearInterval(interval);
             if (settings().autoRefresh) {
-                interval = setInterval(fetchDashboardData, settings().refreshInterval * 60 * 1000);
+                interval = setInterval(fetchDashboardData, settings().refreshInterval * 60 * 1000) as unknown as number;
             }
         });
 
@@ -407,10 +407,10 @@ function Dashboard() {
     return (
         <div class="flex-1 w-full">
             {/* Header */}
-            <div class="mb-8">
+            <div class="mb-6">
                 <div>
-                    <h1 class="text-5xl font-bold text-white mb-2">{greeting}</h1>
-                    <p class="text-xl text-gray-400">{new Date().toLocaleDateString('en-US', { 
+                    <h1 class="text-2xl font-bold mb-1" style={{ "color": "var(--color-text)" }}>{greeting}</h1>
+                    <p class="text-sm" style={{ "color": "var(--color-text-muted)" }}>{new Date().toLocaleDateString('en-US', { 
                         weekday: 'long', 
                         month: 'long', 
                         day: 'numeric', 
@@ -421,43 +421,43 @@ function Dashboard() {
 
             <Show when={isLoading()}>
                 <div class="flex items-center justify-center h-64">
-                    <DashboardIcon class="w-12 h-12 text-gray-400 animate-pulse" />
+                    <DashboardIcon class="w-10 h-10 animate-pulse" style={{ "color": "var(--color-text-muted)" }} />
                 </div>
             </Show>
 
             <Show when={!isLoading()}>
                 {/* Stats Grid */}
                 <Show when={settings().showCompletedToday || settings().showActiveTasks || settings().showEventsToday || settings().showUpcomingDeadlines}>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                         <Show when={settings().showCompletedToday}>
-                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                                <CheckCircleIcon class="w-7 h-7 text-gray-400 mb-2" />
-                                <div class="text-3xl font-bold text-white mb-1">{stats().completedToday}</div>
-                                <div class="text-sm text-gray-400">Completed Today</div>
+                            <div class="rounded-xl p-4 transition-all duration-300" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                <CheckCircleIcon class="w-5 h-5 mb-1.5" style={{ "color": "var(--color-accent)" }} />
+                                <div class="text-2xl font-bold" style={{ "color": "var(--color-text)" }}>{stats().completedToday}</div>
+                                <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Done Today</div>
                             </div>
                         </Show>
 
                         <Show when={settings().showActiveTasks}>
-                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                                <BoltIcon class="w-7 h-7 text-gray-400 mb-2" />
-                                <div class="text-3xl font-bold text-white mb-1">{stats().totalTasks}</div>
-                                <div class="text-sm text-gray-400">Active Tasks</div>
+                            <div class="rounded-xl p-4 transition-all duration-300" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                <BoltIcon class="w-5 h-5 mb-1.5" style={{ "color": "var(--color-accent)" }} />
+                                <div class="text-2xl font-bold" style={{ "color": "var(--color-text)" }}>{stats().totalTasks}</div>
+                                <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Active Tasks</div>
                             </div>
                         </Show>
 
                         <Show when={settings().showEventsToday}>
-                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                                <CalendarIcon class="w-7 h-7 text-gray-400 mb-2" />
-                                <div class="text-3xl font-bold text-white mb-1">{stats().eventsToday}</div>
-                                <div class="text-sm text-gray-400">Events Today</div>
+                            <div class="rounded-xl p-4 transition-all duration-300" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                <CalendarIcon class="w-5 h-5 mb-1.5" style={{ "color": "var(--color-accent)" }} />
+                                <div class="text-2xl font-bold" style={{ "color": "var(--color-text)" }}>{stats().eventsToday}</div>
+                                <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Events Today</div>
                             </div>
                         </Show>
 
                         <Show when={settings().showUpcomingDeadlines}>
-                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-                                <ClockIcon class="w-7 h-7 text-gray-400 mb-2" />
-                                <div class="text-3xl font-bold text-white mb-1">{stats().upcomingDeadlines}</div>
-                                <div class="text-sm text-gray-400">Due This Week</div>
+                            <div class="rounded-xl p-4 transition-all duration-300" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                <ClockIcon class="w-5 h-5 mb-1.5" style={{ "color": "var(--color-accent)" }} />
+                                <div class="text-2xl font-bold" style={{ "color": "var(--color-text)" }}>{stats().upcomingDeadlines}</div>
+                                <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Due This Week</div>
                             </div>
                         </Show>
                     </div>
@@ -465,64 +465,64 @@ function Dashboard() {
 
                 {/* Extended Stats */}
                 <Show when={settings().showStreak || settings().showHighPriority || settings().showAvgTasks || settings().showRecurring}>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
                         <Show when={settings().showStreak}>
-                            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                                <div class="text-red-400 text-xl mb-1">🔥</div>
-                                <div class="text-2xl font-bold text-white">{streak()}</div>
-                                <div class="text-xs text-gray-500">Day Streak</div>
+                            <div class="rounded-lg p-3" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                <div class="text-base mb-0.5">🔥</div>
+                                <div class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>{streak()}</div>
+                                <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Day Streak</div>
                             </div>
                         </Show>
 
                         <Show when={settings().showHighPriority}>
-                            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                                <WarningIcon class="w-6 h-6 text-red-400 mb-1" />
-                                <div class="text-2xl font-bold text-white">{stats().highPriorityTasks}</div>
-                                <div class="text-xs text-gray-500">High Priority</div>
+                            <div class="rounded-lg p-3" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                <WarningIcon class="w-5 h-5 text-red-400 mb-0.5" />
+                                <div class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>{stats().highPriorityTasks}</div>
+                                <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>High Priority</div>
                             </div>
                         </Show>
 
                         <Show when={settings().showAvgTasks}>
-                            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                                <DashboardIcon class="w-6 h-6 text-cyan-400 mb-1" />
-                                <div class="text-2xl font-bold text-white">{stats().avgTasksPerDay}</div>
-                                <div class="text-xs text-gray-500">Avg Tasks/Day</div>
+                            <div class="rounded-lg p-3" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                <DashboardIcon class="w-5 h-5 text-cyan-400 mb-0.5" />
+                                <div class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>{stats().avgTasksPerDay}</div>
+                                <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Avg/Day</div>
                             </div>
                         </Show>
 
                         <Show when={settings().showRecurring}>
-                            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                                <RepeatIcon class="w-6 h-6 text-purple-400 mb-1" />
-                                <div class="text-2xl font-bold text-white">{stats().recurringTasks}</div>
-                                <div class="text-xs text-gray-500">Recurring</div>
+                            <div class="rounded-lg p-3" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                <RepeatIcon class="w-5 h-5 text-purple-400 mb-0.5" />
+                                <div class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>{stats().recurringTasks}</div>
+                                <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Recurring</div>
                             </div>
                         </Show>
 
-                        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                            <div class="text-emerald-400 text-xl mb-1">⏰</div>
-                            <div class="text-2xl font-bold text-white">{stats().freeTimePercent}%</div>
-                            <div class="text-xs text-gray-500">Free Time Today</div>
+                        <div class="rounded-lg p-3" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                            <div class="text-base mb-0.5">⏰</div>
+                            <div class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>{stats().freeTimePercent}%</div>
+                            <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Free Today</div>
                         </div>
                     </div>
                 </Show>
 
                 {/* Overdue Tasks Alert */}
                 <Show when={settings().showOverdueAlert && getOverdueTasks().length > 0}>
-                    <div class="mb-6 bg-zinc-900 border border-red-900/50 rounded-2xl p-6">
-                        <div class="flex items-start gap-4">
-                            <WarningIcon class="w-8 h-8 text-red-400 shrink-0" />
+                    <div class="mb-5 rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid rgba(239,68,68,0.3)" }}>
+                        <div class="flex items-start gap-3">
+                            <WarningIcon class="w-6 h-6 text-red-400 shrink-0" />
                             <div class="flex-1">
-                                <h3 class="text-xl font-bold text-red-400 mb-2">
+                                <h3 class="text-base font-bold text-red-400 mb-2">
                                     {getOverdueTasks().length} Overdue {getOverdueTasks().length === 1 ? 'Task' : 'Tasks'}
                                 </h3>
-                                <div class="space-y-2">
+                                <div class="space-y-1.5">
                                     <For each={getOverdueTasks().slice(0, 3)}>
                                         {(task) => (
-                                            <div class="flex items-center justify-between p-2 bg-black/30 rounded-lg">
-                                                <span class="text-white text-sm">{task.Title}</span>
+                                            <div class="flex items-center justify-between p-2 rounded-lg" style={{ "background-color": "var(--color-bg-tertiary)" }}>
+                                                <span class="text-sm" style={{ "color": "var(--color-text)" }}>{task.Title}</span>
                                                 <button
                                                     onClick={() => quickCompleteTask(task.id)}
-                                                    class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors duration-200"
+                                                    class="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-md transition-colors duration-200"
                                                 >
                                                     Complete
                                                 </button>
@@ -531,7 +531,7 @@ function Dashboard() {
                                     </For>
                                 </div>
                                 <Show when={getOverdueTasks().length > 3}>
-                                    <A href="/todo" class="text-sm text-red-400 hover:text-red-300 mt-2 inline-block">
+                                    <A href="/todo" class="text-xs text-red-400 hover:text-red-300 mt-2 inline-block">
                                         View all {getOverdueTasks().length} overdue tasks →
                                     </A>
                                 </Show>
@@ -542,18 +542,18 @@ function Dashboard() {
 
                 {/* Productivity Progress */}
                 <Show when={settings().showProgressBar}>
-                    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
-                        <div class="flex items-center justify-between mb-4">
+                    <div class="rounded-xl p-5 mb-6" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                        <div class="flex items-center justify-between mb-3">
                             <div>
-                                <h3 class="text-xl font-bold text-white">Overall Progress</h3>
-                                <p class="text-sm text-gray-400">Your task completion rate</p>
+                                <h3 class="text-base font-bold" style={{ "color": "var(--color-text)" }}>Progress</h3>
+                                <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Task completion rate</p>
                             </div>
-                            <div class="text-4xl font-bold text-white">{stats().completionRate}%</div>
+                            <div class="text-2xl font-bold" style={{ "color": "var(--color-text)" }}>{stats().completionRate}%</div>
                         </div>
-                        <div class="w-full bg-zinc-800 rounded-full h-4 overflow-hidden">
+                        <div class="w-full rounded-full h-2.5 overflow-hidden" style={{ "background-color": "var(--color-bg-tertiary)" }}>
                             <div 
-                                class="h-full bg-zinc-600 rounded-full transition-all duration-500"
-                                style={{ width: `${stats().completionRate}%` }}
+                                class="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${stats().completionRate}%`, "background-color": "var(--color-accent)" }}
                             ></div>
                         </div>
                     </div>
@@ -562,10 +562,10 @@ function Dashboard() {
                 <Show when={settings().showTodaySchedule}>
                     <div class="mb-6">
                         {/* Today's Schedule */}
-                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-xl font-bold text-white flex items-center gap-2"><CalendarIcon class="w-5 h-5" /> Today's Schedule</h3>
-                                <A href="/calendar" class="text-sm text-blue-400 hover:text-blue-300">
+                        <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-base font-bold flex items-center gap-2" style={{ "color": "var(--color-text)" }}><CalendarIcon class="w-4 h-4" /> Today's Schedule</h3>
+                                <A href="/calendar" class="text-xs" style={{ "color": "var(--color-accent)" }}>
                                     View Calendar →
                                 </A>
                         </div>
@@ -573,16 +573,16 @@ function Dashboard() {
                             <Show when={getTodayEvents().length > 0}>
                                 <For each={getTodayEvents()}>
                                     {(event) => (
-                                        <div class="p-4 bg-black/50 border border-zinc-700 rounded-xl hover:border-zinc-600 transition-all duration-200">
+                                        <div class="p-3 rounded-lg transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
                                             <div class="flex items-start gap-3">
                                                 <div 
                                                     class="w-4 h-4 rounded-full mt-1 shrink-0"
                                                     style={{ 'background-color': event.Color || '#3b82f6' }}
                                                 ></div>
                                                 <div class="flex-1">
-                                                    <h4 class="font-semibold text-white text-lg">{event.EventName}</h4>
+                                                    <h4 class="font-semibold text-sm" style={{ "color": "var(--color-text)" }}>{event.EventName}</h4>
                                                     <Show when={event.Description}>
-                                                        <p class="text-sm text-gray-400 mt-1">{event.Description}</p>
+                                                        <p class="text-xs mt-0.5" style={{ "color": "var(--color-text-secondary)" }}>{event.Description}</p>
                                                     </Show>
                                                     <Show when={!event.AllDay}>
                                                         <p class="text-sm text-gray-500 mt-2 flex items-center gap-1">
@@ -632,9 +632,9 @@ function Dashboard() {
                                 </For>
                             </Show>
                             <Show when={getTodayEvents().length === 0}>
-                                <div class="text-center py-12 text-gray-500">
-                                    <div class="text-4xl mb-2">🎉</div>
-                                    <p>No events today - free day!</p>
+                                <div class="text-center py-8" style={{ "color": "var(--color-text-muted)" }}>
+                                    <div class="text-3xl mb-1">🎉</div>
+                                    <p class="text-sm">No events today</p>
                                 </div>
                             </Show>
                         </div>
@@ -648,12 +648,12 @@ function Dashboard() {
                     <Show when={settings().showPriorityTasks}>
                         <div class="space-y-6">
                             {/* Today's Tasks */}
-                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
-                                <div class="flex items-center justify-between mb-4">
-                                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                                        <CheckCircleIcon class="w-5 h-5 text-blue-400" /> Today's Tasks
+                            <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-base font-bold flex items-center gap-2" style={{ "color": "var(--color-text)" }}>
+                                        <CheckCircleIcon class="w-4 h-4" style={{ "color": "var(--color-accent)" }} /> Today's Tasks
                                     </h3>
-                                    <A href="/todo" class="text-sm text-blue-400 hover:text-blue-300">
+                                    <A href="/todo" class="text-xs" style={{ "color": "var(--color-accent)" }}>
                                         View All →
                                     </A>
                                 </div>
@@ -661,7 +661,7 @@ function Dashboard() {
                                     <Show when={getTodayTasks().length > 0}>
                                         <For each={getTodayTasks()}>
                                             {(task) => (
-                                                <div class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg hover:border-blue-500/50 transition-all duration-200">
+                                                <div class="p-3 rounded-lg transition-all duration-200" style={{ "background-color": "var(--color-accent-muted)", "border": "1px solid var(--color-accent)30" }}>
                                                     <div class="flex items-start justify-between gap-3">
                                                         <div class="flex-1 min-w-0">
                                                             <div class="flex items-center gap-2 mb-1">
@@ -715,21 +715,21 @@ function Dashboard() {
                                         </For>
                                     </Show>
                                     <Show when={getTodayTasks().length === 0}>
-                                        <div class="text-center py-8 text-gray-500">
-                                            <div class="text-4xl mb-2">☀️</div>
-                                            <p>No tasks due today</p>
+                                        <div class="text-center py-6" style={{ "color": "var(--color-text-muted)" }}>
+                                            <div class="text-3xl mb-1">☀️</div>
+                                            <p class="text-sm">No tasks due today</p>
                                         </div>
                                     </Show>
                                 </div>
                             </div>
 
                             {/* Upcoming Tasks */}
-                            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
-                                <div class="flex items-center justify-between mb-4">
-                                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                                        <BoltIcon class="w-5 h-5 text-amber-400" /> Upcoming Tasks
+                            <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-base font-bold flex items-center gap-2" style={{ "color": "var(--color-text)" }}>
+                                        <BoltIcon class="w-4 h-4 text-amber-400" /> Upcoming
                                     </h3>
-                                    <A href="/todo" class="text-sm text-blue-400 hover:text-blue-300">
+                                    <A href="/todo" class="text-xs" style={{ "color": "var(--color-accent)" }}>
                                         View All →
                                     </A>
                                 </div>
@@ -791,9 +791,9 @@ function Dashboard() {
                                 </For>
                                     </Show>
                                     <Show when={getUpcomingTasks().length === 0}>
-                                        <div class="text-center py-8 text-gray-500">
-                                            <div class="text-4xl mb-2">✨</div>
-                                            <p>No upcoming tasks</p>
+                                        <div class="text-center py-6" style={{ "color": "var(--color-text-muted)" }}>
+                                            <div class="text-3xl mb-1">✨</div>
+                                            <p class="text-sm">No upcoming tasks</p>
                                         </div>
                                     </Show>
                                 </div>
@@ -801,12 +801,12 @@ function Dashboard() {
 
                             {/* Tasks Without Deadline */}
                             <Show when={getNoDeadlineTasks().length > 0}>
-                                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
-                                    <div class="flex items-center justify-between mb-4">
-                                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                                            <BoltIcon class="w-5 h-5 text-gray-400" /> No Deadline
+                                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h3 class="text-base font-bold flex items-center gap-2" style={{ "color": "var(--color-text)" }}>
+                                            <BoltIcon class="w-4 h-4" style={{ "color": "var(--color-text-muted)" }} /> No Deadline
                                         </h3>
-                                        <A href="/todo" class="text-sm text-blue-400 hover:text-blue-300">
+                                        <A href="/todo" class="text-xs" style={{ "color": "var(--color-accent)" }}>
                                             View All →
                                         </A>
                                     </div>
@@ -868,37 +868,37 @@ function Dashboard() {
 
                     {/* Top Tags */}
                     <Show when={settings().showTopTags}>
-                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 lg:p-8">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xl font-bold text-white flex items-center gap-2"><TagIcon class="w-5 h-5" /> Top Tags</h3>
-                            <A href="/tags" class="text-sm text-blue-400 hover:text-blue-300">
+                        <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-base font-bold flex items-center gap-2" style={{ "color": "var(--color-text)" }}><TagIcon class="w-4 h-4" /> Top Tags</h3>
+                            <A href="/tags" class="text-xs" style={{ "color": "var(--color-accent)" }}>
                                 Manage →
                             </A>
                         </div>
-                        <div class="space-y-3">
+                        <div class="space-y-2">
                             <Show when={getTopTags().length > 0}>
                                 <For each={getTopTags()}>
                                     {(tag) => (
-                                        <div class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-all duration-200">
-                                            <div class="flex items-center gap-3">
+                                        <div class="flex items-center justify-between p-2.5 rounded-lg transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
+                                            <div class="flex items-center gap-2">
                                                 <div 
-                                                    class="w-4 h-4 rounded-full"
+                                                    class="w-3 h-3 rounded-full"
                                                     style={{ 'background-color': tag.color }}
                                                 ></div>
-                                                <span class="text-white font-medium">{tag.name}</span>
+                                                <span class="text-sm font-medium" style={{ "color": "var(--color-text)" }}>{tag.name}</span>
                                             </div>
-                                            <div class="text-gray-400 text-sm">
-                                                {tag.count} {tag.count === 1 ? 'task' : 'tasks'}
+                                            <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
+                                                {tag.count}
                                             </div>
                                         </div>
                                     )}
                                 </For>
                             </Show>
                             <Show when={getTopTags().length === 0}>
-                                <div class="text-center py-8 text-gray-500">
-                                    <TagIcon class="w-8 h-8 mx-auto mb-2 text-gray-500" />
+                                <div class="text-center py-6" style={{ "color": "var(--color-text-muted)" }}>
+                                    <TagIcon class="w-6 h-6 mx-auto mb-1" />
                                     <p class="text-sm">No tags yet</p>
-                                    <A href="/tags" class="text-xs text-blue-400 hover:text-blue-300 mt-2 inline-block">
+                                    <A href="/tags" class="text-xs mt-1 inline-block" style={{ "color": "var(--color-accent)" }}>
                                         Create your first tag →
                                     </A>
                                 </div>
@@ -911,32 +911,35 @@ function Dashboard() {
 
                 {/* Quick Actions */}
                 <Show when={settings().showQuickActions}>
-                    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
                         <A 
                             href="/ai" 
-                            class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 hover:bg-zinc-800 transition-all duration-200"
+                            class="rounded-xl p-4 transition-all duration-300"
+                            style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
                         >
-                            <RobotIcon class="w-8 h-8 text-gray-400 mb-2" />
-                            <h4 class="text-xl font-bold text-white mb-1">AI Assistant</h4>
-                            <p class="text-sm text-gray-400">Brain dump & get insights</p>
+                            <RobotIcon class="w-6 h-6 mb-1.5" style={{ "color": "var(--color-accent)" }} />
+                            <h4 class="text-sm font-bold mb-0.5" style={{ "color": "var(--color-text)" }}>AI Assistant</h4>
+                            <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Brain dump & insights</p>
                         </A>
 
                         <A 
                             href="/calendar" 
-                            class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 hover:bg-zinc-800 transition-all duration-200"
+                            class="rounded-xl p-4 transition-all duration-300"
+                            style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
                         >
-                            <CalendarIcon class="w-8 h-8 text-gray-400 mb-2" />
-                            <h4 class="text-xl font-bold text-white mb-1">Plan Your Day</h4>
-                            <p class="text-sm text-gray-400">Schedule new events</p>
+                            <CalendarIcon class="w-6 h-6 mb-1.5" style={{ "color": "var(--color-accent)" }} />
+                            <h4 class="text-sm font-bold mb-0.5" style={{ "color": "var(--color-text)" }}>Plan Your Day</h4>
+                            <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Schedule new events</p>
                         </A>
 
                         <A 
                             href="/timemachine" 
-                            class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 hover:bg-zinc-800 transition-all duration-200"
+                            class="rounded-xl p-4 transition-all duration-300"
+                            style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
                         >
-                            <ClockIcon class="w-8 h-8 text-gray-400 mb-2" />
-                            <h4 class="text-xl font-bold text-white mb-1">Reflect</h4>
-                            <p class="text-sm text-gray-400">Review your progress</p>
+                            <ClockIcon class="w-6 h-6 mb-1.5" style={{ "color": "var(--color-accent)" }} />
+                            <h4 class="text-sm font-bold mb-0.5" style={{ "color": "var(--color-text)" }}>Reflect</h4>
+                            <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Review progress</p>
                         </A>
                     </div>
                 </Show>

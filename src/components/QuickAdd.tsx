@@ -53,96 +53,110 @@ function QuickAdd() {
     function parseInput(input: string): ParsedData {
         const lowerInput = input.toLowerCase();
         
-        // Priority detection
+        // Priority detection - expanded patterns
         let priority: 'P1' | 'P2' | 'P3' = 'P2';
-        if (/urgent|important|asap|critical|!!!/i.test(input)) {
+        if (/urgent|important|asap|critical|!!!|high\s*pri(ority)?|must\s*do|p1\b/i.test(input)) {
             priority = 'P1';
-        } else if (/low priority|someday|maybe|when possible/i.test(input)) {
+        } else if (/low\s*pri(ority)?|someday|maybe|when\s*possible|no\s*rush|whenever|p3\b/i.test(input)) {
             priority = 'P3';
         }
 
-        // Time detection (various formats)
+        // Time detection - improved patterns with better ordering
         const timePatterns = [
-            /(\d{1,2}):(\d{2})\s*(am|pm)?/i,
-            /(\d{1,2})\s*(am|pm)/i,
-            /\b(\d{1,2})\b/i, // Just a number like "2" or "11"
-            /(morning|afternoon|evening|noon|night)/i
+            { re: /(\d{1,2}):(\d{2})\s*(am|pm)/i, type: 'hh:mm ampm' },
+            { re: /(\d{1,2}):(\d{2})/i, type: 'hh:mm' },
+            { re: /(\d{1,2})\s*(am|pm)/i, type: 'hh ampm' },
+            { re: /\b(morning|afternoon|evening|noon|midnight|night|eod|end\s*of\s*day)\b/i, type: 'word' }
         ];
 
         let time: { hours: number; minutes: number } | undefined;
         let hasTimeIndicator = false;
 
-        for (const pattern of timePatterns) {
-            const match = input.match(pattern);
+        for (const { re, type } of timePatterns) {
+            const match = input.match(re);
             if (match) {
                 hasTimeIndicator = true;
-                if (match[1] && match[2]) {
-                    // Format: "2:30" or "2:30pm"
+                if (type === 'hh:mm ampm') {
                     let hours = parseInt(match[1]);
                     const minutes = parseInt(match[2]);
-                    const period = match[3]?.toLowerCase();
-                    
+                    const period = match[3].toLowerCase();
                     if (period === 'pm' && hours < 12) hours += 12;
                     else if (period === 'am' && hours === 12) hours = 0;
-                    else if (!period && hours < 12) hours += 12; // Default to PM if no period specified
-                    
                     time = { hours, minutes };
-                } else if (match[1] && match[2]) {
-                    // Format: "2pm" or "2am"
+                } else if (type === 'hh:mm') {
                     let hours = parseInt(match[1]);
-                    const period = match[2]?.toLowerCase();
-                    
+                    const minutes = parseInt(match[2]);
+                    if (hours < 8) hours += 12; // 1:00-7:59 assumed PM
+                    time = { hours, minutes };
+                } else if (type === 'hh ampm') {
+                    let hours = parseInt(match[1]);
+                    const period = match[2].toLowerCase();
                     if (period === 'pm' && hours < 12) hours += 12;
                     else if (period === 'am' && hours === 12) hours = 0;
-                    else if (!period && hours < 12) hours += 12; // Default to PM
-                    
                     time = { hours, minutes: 0 };
-                } else if (match[1] && /^\d{1,2}$/.test(match[1])) {
-                    // Format: just "2" or "11"
-                    let hours = parseInt(match[1]);
-                    // Always assume PM for single digit or double digit hours < 12
-                    if (hours < 12) hours += 12;
-                    time = { hours, minutes: 0 };
-                } else if (match[1]) {
-                    // Word-based time
+                } else if (type === 'word') {
                     const timeWord = match[1].toLowerCase();
-                    time = {
-                        hours: timeWord === 'morning' ? 9 : 
-                               timeWord === 'afternoon' ? 14 : 
-                               timeWord === 'evening' ? 18 : 
-                               timeWord === 'noon' ? 12 : 20,
-                        minutes: 0
+                    const wordMap: Record<string, number> = {
+                        morning: 9, afternoon: 14, evening: 18,
+                        noon: 12, midnight: 0, night: 20,
+                        eod: 17, 'end of day': 17
                     };
+                    time = { hours: wordMap[timeWord] || 9, minutes: 0 };
                 }
                 break;
             }
         }
 
-        // Date detection
+        // Date detection - expanded patterns
         let date: Date | undefined;
         const today = new Date();
         
-        if (/\btoday\b/i.test(input)) {
+        // Check for explicit date formats first (MM/DD, MM-DD, Month Day)
+        const explicitDateMatch = input.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+        const monthNameMatch = input.match(/\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:\s*,?\s*(\d{4}))?\b/i);
+        
+        if (explicitDateMatch) {
+            const month = parseInt(explicitDateMatch[1]) - 1;
+            const day = parseInt(explicitDateMatch[2]);
+            const year = explicitDateMatch[3] ? parseInt(explicitDateMatch[3]) : today.getFullYear();
+            date = new Date(year < 100 ? year + 2000 : year, month, day);
+        } else if (monthNameMatch) {
+            const monthNames: Record<string, number> = {
+                jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+                apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6,
+                aug: 7, august: 7, sep: 8, sept: 8, september: 8, oct: 9,
+                october: 9, nov: 10, november: 10, dec: 11, december: 11
+            };
+            const month = monthNames[monthNameMatch[1].toLowerCase()];
+            const day = parseInt(monthNameMatch[2]);
+            const year = monthNameMatch[3] ? parseInt(monthNameMatch[3]) : today.getFullYear();
+            date = new Date(year, month, day);
+        } else if (/\btoday\b/i.test(input)) {
             date = new Date(today);
-        } else if (/\btomorrow\b/i.test(input)) {
+        } else if (/\btomorrow\b|tmrw\b|tmr\b/i.test(input)) {
             date = new Date(today);
             date.setDate(date.getDate() + 1);
+        } else if (/\bday after tomorrow\b/i.test(input)) {
+            date = new Date(today);
+            date.setDate(date.getDate() + 2);
         } else if (/\bnext week\b/i.test(input)) {
             date = new Date(today);
             date.setDate(date.getDate() + 7);
-        } else if (/\bmonday\b/i.test(input)) {
-            date = getNextWeekday(today, 1);
-        } else if (/\btuesday\b/i.test(input)) {
-            date = getNextWeekday(today, 2);
-        } else if (/\bwednesday\b/i.test(input)) {
-            date = getNextWeekday(today, 3);
-        } else if (/\bthursday\b/i.test(input)) {
-            date = getNextWeekday(today, 4);
-        } else if (/\bfriday\b/i.test(input)) {
-            date = getNextWeekday(today, 5);
-        } else if (/\bsaturday\b/i.test(input)) {
+        } else if (/\bthis weekend\b/i.test(input)) {
             date = getNextWeekday(today, 6);
-        } else if (/\bsunday\b/i.test(input)) {
+        } else if (/\b(mon(day)?)\b/i.test(input)) {
+            date = getNextWeekday(today, 1);
+        } else if (/\b(tue(s(day)?)?)\b/i.test(input)) {
+            date = getNextWeekday(today, 2);
+        } else if (/\b(wed(nesday)?)\b/i.test(input)) {
+            date = getNextWeekday(today, 3);
+        } else if (/\b(thu(rs(day)?)?)\b/i.test(input)) {
+            date = getNextWeekday(today, 4);
+        } else if (/\b(fri(day)?)\b/i.test(input)) {
+            date = getNextWeekday(today, 5);
+        } else if (/\b(sat(urday)?)\b/i.test(input)) {
+            date = getNextWeekday(today, 6);
+        } else if (/\b(sun(day)?)\b/i.test(input)) {
             date = getNextWeekday(today, 0);
         }
 
@@ -191,21 +205,28 @@ function QuickAdd() {
             tags.push(...tagMatches.map(t => t.slice(1)));
         }
 
-        // Event indicators
+        // Event indicators - expanded
         const eventKeywords = [
             'meeting', 'call', 'appointment', 'lunch', 'dinner', 'breakfast',
             'conference', 'interview', 'presentation', 'workshop', 'class',
             'meet', 'catch up', 'hangout', 'party', 'event', 'session',
-            'training', 'seminar', 'webinar'
+            'training', 'seminar', 'webinar', 'standup', 'sync', 'huddle',
+            'brunch', 'happy hour', 'demo', 'review meeting', 'retro',
+            'one on one', '1:1', '1-on-1', 'coffee chat', 'date night',
+            'gym', 'workout', 'yoga', 'run', 'walk', 'hike'
         ];
         
-        // Task indicators
+        // Task indicators - expanded
         const taskKeywords = [
             'buy', 'get', 'pick up', 'finish', 'complete', 'submit', 'send',
             'review', 'check', 'read', 'write', 'prepare', 'plan', 'organize',
             'clean', 'fix', 'update', 'install', 'download', 'upload', 'call back',
             'email', 'text', 'message', 'remind', 'book', 'schedule', 'pay',
-            'renew', 'cancel', 'return', 'deliver'
+            'renew', 'cancel', 'return', 'deliver', 'todo', 'task', 'do',
+            'make', 'create', 'setup', 'set up', 'configure', 'deploy',
+            'research', 'look into', 'figure out', 'investigate', 'debug',
+            'refactor', 'test', 'implement', 'design', 'draft', 'edit',
+            'proofread', 'approve', 'sign', 'apply', 'register', 'order'
         ];
         
         const hasEventKeyword = eventKeywords.some(keyword => 
@@ -257,7 +278,24 @@ function QuickAdd() {
                 title = title.replace(tag, '');
             });
         }
-        title = title.replace(/urgent|important|asap|critical|low priority/gi, '').trim();
+        // Remove priority words
+        title = title.replace(/\b(urgent|important|asap|critical|low\s*priority|high\s*priority|no\s*rush|p[123])\b/gi, '');
+        // Remove time expressions
+        title = title.replace(/\b(at\s+)?\d{1,2}:\d{2}\s*(am|pm)?/gi, '');
+        title = title.replace(/\b(at\s+)?\d{1,2}\s*(am|pm)/gi, '');
+        title = title.replace(/\b(morning|afternoon|evening|noon|midnight|night|eod|end\s*of\s*day)\b/gi, '');
+        // Remove date expressions
+        title = title.replace(/\b(today|tomorrow|tmrw|tmr|day after tomorrow|next week|this weekend)\b/gi, '');
+        title = title.replace(/\b(mon(day)?|tue(s(day)?)?|wed(nesday)?|thu(rs(day)?)?|fri(day)?|sat(urday)?|sun(day)?)\b/gi, '');
+        title = title.replace(/\b(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)\s+\d{1,2}(,?\s*\d{4})?\b/gi, '');
+        title = title.replace(/\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?/g, '');
+        // Remove duration expressions
+        title = title.replace(/\b(for\s+)?\d+\s*(hours?|hrs?|minutes?|mins?)\b/gi, '');
+        // Remove time ranges
+        title = title.replace(/\d{1,2}(:\d{2})?\s*(-|to)\s*\d{1,2}(:\d{2})?/gi, '');
+        // Clean up extra whitespace and trailing prepositions
+        title = title.replace(/\b(at|on|for|by|from)\s*$/gi, '');
+        title = title.replace(/\s{2,}/g, ' ').trim();
         
         return {
             type,
@@ -410,7 +448,7 @@ function QuickAdd() {
             {/* Floating Action Button with pulse animation */}
             <button
                 onClick={() => setShowModal(true)}
-                class="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full hover:from-blue-500 hover:to-purple-500 active:scale-95 transition-all duration-200 z-50 flex items-center justify-center text-white shadow-lg shadow-blue-500/50 hover:shadow-xl hover:shadow-blue-500/60 group"
+                class="fixed bottom-8 right-8 w-14 h-14 rounded-full active:scale-95 transition-all duration-200 z-50 flex items-center justify-center shadow-lg group" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                 title="Quick Add (Ctrl+K)"
             >
                 <svg class="w-7 h-7 transition-transform group-hover:rotate-90 duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -426,24 +464,24 @@ function QuickAdd() {
                 >
                     <Show when={!showSuccess()}>
                         <div 
-                            class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-700 rounded-3xl p-8 max-w-2xl w-full shadow-2xl animate-slide-up"
+                            class="rounded-xl p-6 max-w-2xl w-full shadow-2xl animate-slide-up" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div class="flex items-center justify-between mb-6">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style={{ "background-color": "var(--color-accent)" }}>
                                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                         </svg>
                                     </div>
                                     <div>
-                                        <h2 class="text-2xl font-bold text-white">Quick Add</h2>
-                                        <p class="text-xs text-gray-500">Natural language parsing</p>
+                                        <h2 class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>Quick Add</h2>
+                                        <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Natural language parsing</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setShowModal(false)}
-                                    class="text-gray-400 hover:text-white transition-colors p-2 hover:bg-zinc-800 rounded-lg"
+                                    class="transition-colors p-2 rounded-lg" style={{ "color": "var(--color-text-muted)" }}
                                 >
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -463,13 +501,13 @@ function QuickAdd() {
                                         placeholder="Try: 'Meeting with John tomorrow at 3pm' or 'Buy groceries #urgent'"
                                         rows="2"
                                         autofocus
-                                        class="w-full bg-zinc-950 border-2 border-zinc-700 rounded-xl px-5 py-4 text-white text-lg placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none transition-all"
+                                        class="w-full rounded-xl px-5 py-4 text-lg focus:outline-none resize-none transition-all" style={{ "background-color": "var(--color-bg-tertiary)", "border": "2px solid var(--color-border)", "color": "var(--color-text)" }}
                                     ></textarea>
                                 </div>
 
                                 {/* Real-time preview */}
                                 <Show when={parsedData()}>
-                                    <div class="mb-6 bg-zinc-950/50 border border-zinc-800 rounded-xl p-4">
+                                    <div class="mb-6 rounded-xl p-4" style={{ "background-color": "var(--color-bg-secondary)", "border": "1px solid var(--color-border)" }}>
                                         <div class="flex items-start gap-3">
                                             <Show when={(overrideType() || parsedData()!.type) === 'event'}>
                                                 <div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -487,7 +525,7 @@ function QuickAdd() {
                                             </Show>
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex items-center gap-2 mb-1 flex-wrap">
-                                                    <span class="text-sm font-semibold text-gray-400">
+                                                    <span class="text-sm font-semibold" style={{ "color": "var(--color-text-secondary)" }}>
                                                         Creating {overrideType() || parsedData()!.type}
                                                     </span>
                                                     <span class={`px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -497,16 +535,16 @@ function QuickAdd() {
                                                     }`}>
                                                         {parsedData()!.priority}
                                                     </span>
-                                                    <div class="flex-1 h-px bg-zinc-800"></div>
+                                                    <div class="flex-1 h-px" style={{ "background-color": "var(--color-border)" }}></div>
                                                     <Show when={!overrideType()}>
-                                                        <span class="text-xs text-gray-600">
+                                                        <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
                                                             {Math.round(parsedData()!.confidence * 100)}% confident
                                                         </span>
                                                     </Show>
                                                 </div>
-                                                <h3 class="text-white font-medium mb-1 truncate">{parsedData()!.title}</h3>
+                                                <h3 class="font-medium mb-1 truncate" style={{ "color": "var(--color-text)" }}>{parsedData()!.title}</h3>
                                                 <Show when={formatPreview()}>
-                                                    <div class="flex items-center gap-2 text-sm text-gray-400">
+                                                    <div class="flex items-center gap-2 text-sm" style={{ "color": "var(--color-text-secondary)" }}>
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                         </svg>
@@ -516,7 +554,7 @@ function QuickAdd() {
                                                 <Show when={parsedData()!.tags && parsedData()!.tags!.length > 0}>
                                                     <div class="flex gap-1 mt-2">
                                                         {parsedData()!.tags!.map(tag => (
-                                                            <span class="px-2 py-0.5 bg-zinc-800 text-gray-400 rounded text-xs">
+                                                            <span class="px-2 py-0.5 rounded text-xs" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)" }}>
                                                                 #{tag}
                                                             </span>
                                                         ))}
@@ -531,7 +569,7 @@ function QuickAdd() {
                                                         class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                                             (overrideType() || parsedData()!.type) === 'task'
                                                                 ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                                : 'bg-zinc-800/50 text-gray-500 border border-zinc-700 hover:bg-zinc-800 hover:text-gray-400'
+                                                                : 'bg-zinc-800/50 text-gray-500 border border-zinc-700'
                                                         }`}
                                                     >
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -545,7 +583,7 @@ function QuickAdd() {
                                                         class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                                             (overrideType() || parsedData()!.type) === 'event'
                                                                 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                                                : 'bg-zinc-800/50 text-gray-500 border border-zinc-700 hover:bg-zinc-800 hover:text-gray-400'
+                                                                : 'bg-zinc-800/50 text-gray-500 border border-zinc-700'
                                                         }`}
                                                     >
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -584,7 +622,7 @@ function QuickAdd() {
                                     <button
                                         type="submit"
                                         disabled={isProcessing() || !quickInput().trim()}
-                                        class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3.5 rounded-xl hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 flex items-center justify-center gap-2"
+                                        class="flex-1 font-semibold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                                     >
                                         {isProcessing() ? (
                                             <>
@@ -606,15 +644,15 @@ function QuickAdd() {
                                     <button
                                         type="button"
                                         onClick={() => setShowModal(false)}
-                                        class="px-6 py-3.5 bg-zinc-800 text-gray-300 font-semibold rounded-xl hover:bg-zinc-700 transition-all duration-200"
+                                        class="px-6 py-3 font-semibold rounded-xl transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)" }}
                                     >
                                         Cancel
                                     </button>
                                 </div>
 
-                                <div class="mt-4 pt-4 border-t border-zinc-800 text-xs text-gray-500">
+                                <div class="mt-4 pt-4 text-xs" style={{ "border-top": "1px solid var(--color-border)", "color": "var(--color-text-muted)" }}>
                                     <div class="grid grid-cols-2 gap-2">
-                                        <div>💡 Use <kbd class="px-1.5 py-0.5 bg-zinc-800 rounded">Ctrl+K</kbd> to open</div>
+                                        <div>💡 Use <kbd class="px-1.5 py-0.5 rounded" style={{ "background-color": "var(--color-bg-tertiary)" }}>Ctrl+K</kbd> to open</div>
                                         <div>📅 Mention times for events</div>
                                         <div>🏷️ Use #tags for organization</div>
                                         <div>⚡ Say "urgent" for high priority</div>
@@ -626,14 +664,14 @@ function QuickAdd() {
 
                     {/* Success Animation */}
                     <Show when={showSuccess()}>
-                        <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-700 rounded-3xl p-12 max-w-md w-full shadow-2xl animate-scale-in text-center">
+                        <div class="rounded-xl p-10 max-w-md w-full shadow-2xl animate-scale-in text-center" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                             <div class="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-in">
                                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
-                            <h3 class="text-2xl font-bold text-white mb-2">Success!</h3>
-                            <p class="text-gray-400">{successMessage()}</p>
+                            <h3 class="text-xl font-bold mb-2" style={{ "color": "var(--color-text)" }}>Success!</h3>
+                            <p style={{ "color": "var(--color-text-secondary)" }}>{successMessage()}</p>
                         </div>
                     </Show>
                 </div>

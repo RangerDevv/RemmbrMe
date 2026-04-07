@@ -1,6 +1,8 @@
-import { createSignal, onMount, createEffect } from 'solid-js';
+import { createSignal, onMount, createEffect, For } from 'solid-js';
 import { A } from '@solidjs/router';
 import ConfirmModal from '../components/ConfirmModal';
+import { themes, currentThemeId, setTheme, getUserName, setUserName } from '../lib/theme';
+import { getStorageMode, setStorageMode, getPocketBaseUrl, setPocketBaseUrl, reinitBackend } from '../lib/backend';
 import { 
     DashboardIcon, 
     CheckCircleIcon, 
@@ -9,7 +11,8 @@ import {
     ClockIcon,
     WarningIcon,
     RepeatIcon,
-    TagIcon
+    TagIcon,
+    SettingsIcon
 } from '../components/Icons';
 
 interface DashboardSettings {
@@ -55,6 +58,11 @@ function Settings() {
     const [saved, setSaved] = createSignal(false);
     const [isInitialLoad, setIsInitialLoad] = createSignal(true);
     const [confirmReset, setConfirmReset] = createSignal(false);
+    const [userName, setLocalUserName] = createSignal(getUserName()());
+    const [pbUrl, setPbUrl] = createSignal(getPocketBaseUrl());
+    const [storageMode, setLocalStorageMode] = createSignal(getStorageMode());
+    const [pbConnecting, setPbConnecting] = createSignal(false);
+    const [pbStatus, setPbStatus] = createSignal('');
 
     onMount(() => {
         loadSettings();
@@ -91,249 +99,206 @@ function Settings() {
         setSettings({ ...settings(), [key]: value });
     }
 
+    function handleNameChange(name: string) {
+        setLocalUserName(name);
+        setUserName(name);
+    }
+
+    async function handleStorageModeChange(mode: string) {
+        if (mode === 'pocketbase' && pbUrl()) {
+            setPbConnecting(true);
+            setPbStatus('');
+            try {
+                setPocketBaseUrl(pbUrl());
+                setStorageMode('pocketbase');
+                await reinitBackend();
+                setLocalStorageMode('pocketbase');
+                setPbStatus('Connected to PocketBase');
+            } catch (e: any) {
+                setPbStatus('Failed to connect: ' + (e.message || 'Unknown error'));
+                setStorageMode('local');
+                setLocalStorageMode('local');
+            } finally {
+                setPbConnecting(false);
+            }
+        } else {
+            setStorageMode('local');
+            setLocalStorageMode('local');
+            await reinitBackend();
+        }
+    }
+
+    const ToggleRow = (props: { icon: any; label: string; checked: boolean; onChange: (v: boolean) => void }) => (
+        <label class="flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
+            <div class="flex items-center gap-2">
+                <props.icon class="w-4 h-4" style={{ "color": "var(--color-text-muted)" }} />
+                <span class="text-sm" style={{ "color": "var(--color-text)" }}>{props.label}</span>
+            </div>
+            <input
+                type="checkbox"
+                checked={props.checked}
+                onChange={(e) => props.onChange(e.currentTarget.checked)}
+                class="w-4 h-4 cursor-pointer"
+            />
+        </label>
+    );
+
     return (
-        <div class="flex-1 w-full max-w-4xl">
-            <div class="mb-8">
+        <div class="flex-1 w-full max-w-3xl">
+            <div class="mb-5">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h1 class="text-4xl font-bold text-white mb-2">⚙️ Settings</h1>
-                        <p class="text-gray-400">Customize your dashboard experience</p>
+                        <h1 class="text-2xl font-bold" style={{ "color": "var(--color-text)" }}>Settings</h1>
+                        <p class="text-sm mt-0.5" style={{ "color": "var(--color-text-muted)" }}>Customize your experience</p>
                     </div>
-                    <div class="text-sm">
+                    <div class="text-xs">
                         {saved() ? (
-                            <span class="text-green-400 flex items-center gap-2">
-                                <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                            <span class="flex items-center gap-1.5" style={{ "color": "var(--color-accent)" }}>
+                                <span class="w-1.5 h-1.5 rounded-full animate-pulse" style={{ "background-color": "var(--color-accent)" }}></span>
                                 Saved
                             </span>
                         ) : (
-                            <span class="text-gray-500">Autosave enabled</span>
+                            <span style={{ "color": "var(--color-text-muted)" }}>Autosave</span>
                         )}
                     </div>
                 </div>
             </div>
 
-            <div class="space-y-6">
-                {/* Dashboard Widgets */}
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2"><DashboardIcon class="w-6 h-6" /> Dashboard Widgets</h2>
-                    <p class="text-sm text-gray-400 mb-6">Choose which widgets to display on your dashboard</p>
-
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-white mb-3">Main Stats Cards</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <CheckCircleIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Completed Today</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showCompletedToday}
-                                    onChange={(e) => updateSetting('showCompletedToday', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <BoltIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Active Tasks</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showActiveTasks}
-                                    onChange={(e) => updateSetting('showActiveTasks', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <CalendarIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Events Today</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showEventsToday}
-                                    onChange={(e) => updateSetting('showEventsToday', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <ClockIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Due This Week</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showUpcomingDeadlines}
-                                    onChange={(e) => updateSetting('showUpcomingDeadlines', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-                        </div>
-
-                        <h3 class="text-lg font-semibold text-white mb-3 mt-6">Extended Stats</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-xl">🔥</span>
-                                    <span class="text-white">Day Streak</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showStreak}
-                                    onChange={(e) => updateSetting('showStreak', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <WarningIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">High Priority</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showHighPriority}
-                                    onChange={(e) => updateSetting('showHighPriority', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <DashboardIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Avg Tasks/Day</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showAvgTasks}
-                                    onChange={(e) => updateSetting('showAvgTasks', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <RepeatIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Recurring Tasks</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showRecurring}
-                                    onChange={(e) => updateSetting('showRecurring', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-                        </div>
-
-                        <h3 class="text-lg font-semibold text-white mb-3 mt-6">Dashboard Sections</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <WarningIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Overdue Alert</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showOverdueAlert}
-                                    onChange={(e) => updateSetting('showOverdueAlert', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <DashboardIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Progress Bar</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showProgressBar}
-                                    onChange={(e) => updateSetting('showProgressBar', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <CalendarIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Today's Schedule</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showTodaySchedule}
-                                    onChange={(e) => updateSetting('showTodaySchedule', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <CheckCircleIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Priority Tasks</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showPriorityTasks}
-                                    onChange={(e) => updateSetting('showPriorityTasks', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <TagIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Top Tags</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showTopTags}
-                                    onChange={(e) => updateSetting('showTopTags', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-
-                            <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors duration-200 cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <BoltIcon class="w-5 h-5 text-gray-400" />
-                                    <span class="text-white">Quick Actions</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings().showQuickActions}
-                                    onChange={(e) => updateSetting('showQuickActions', e.currentTarget.checked)}
-                                    class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                />
-                            </label>
-                        </div>
+            <div class="space-y-4">
+                {/* Profile Section */}
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <h2 class="text-base font-bold mb-3 flex items-center gap-2" style={{ "color": "var(--color-text)" }}>
+                        <SettingsIcon class="w-4 h-4" /> Profile
+                    </h2>
+                    <div class="mb-3">
+                        <label class="block text-xs font-medium mb-1" style={{ "color": "var(--color-text-secondary)" }}>Display Name</label>
+                        <input
+                            type="text"
+                            value={userName()}
+                            onInput={(e) => handleNameChange(e.currentTarget.value)}
+                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-all duration-200"
+                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                            placeholder="Your name..."
+                        />
                     </div>
                 </div>
 
-                {/* Auto-Refresh Settings */}
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                    <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2"><RepeatIcon class="w-6 h-6" /> Auto-Refresh</h2>
-                    <p class="text-sm text-gray-400 mb-6">Configure automatic dashboard updates</p>
+                {/* Theme Section */}
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <h2 class="text-base font-bold mb-3" style={{ "color": "var(--color-text)" }}>Theme</h2>
+                    <div class="grid grid-cols-5 gap-2">
+                        <For each={themes}>
+                            {(theme) => (
+                                <button
+                                    onClick={() => setTheme(theme.id)}
+                                    class="p-3 rounded-lg transition-all duration-300 text-center"
+                                    style={{
+                                        "background-color": theme.colors.bg,
+                                        "border": currentThemeId() === theme.id ? `2px solid ${theme.colors.accent}` : "2px solid transparent",
+                                        "box-shadow": currentThemeId() === theme.id ? `0 0 12px ${theme.colors.accent}40` : "none"
+                                    }}
+                                >
+                                    <div class="w-5 h-5 rounded-full mx-auto mb-1.5" style={{ "background-color": theme.colors.accent }}></div>
+                                    <span class="text-[10px] font-medium" style={{ "color": theme.colors.text }}>{theme.name}</span>
+                                </button>
+                            )}
+                        </For>
+                    </div>
+                </div>
 
-                    <div class="space-y-4">
-                        <label class="flex items-center justify-between p-3 bg-black/50 border border-zinc-700 rounded-lg">
-                            <div>
-                                <span class="text-white font-medium">Enable Auto-Refresh</span>
-                                <p class="text-xs text-gray-500 mt-1">Automatically update dashboard data</p>
-                            </div>
+                {/* Storage / Backup Section */}
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <h2 class="text-base font-bold mb-3" style={{ "color": "var(--color-text)" }}>Data & Backup</h2>
+                    <div class="space-y-3">
+                        <div class="flex gap-2">
+                            <button
+                                onClick={() => handleStorageModeChange('local')}
+                                class="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                                style={{
+                                    "background-color": storageMode() === 'local' ? "var(--color-accent)" : "var(--color-bg-tertiary)",
+                                    "color": storageMode() === 'local' ? "var(--color-accent-text)" : "var(--color-text-secondary)",
+                                    "border": `1px solid ${storageMode() === 'local' ? 'transparent' : 'var(--color-border)'}`
+                                }}
+                            >
+                                Local Storage
+                            </button>
+                            <button
+                                onClick={() => { if (pbUrl()) handleStorageModeChange('pocketbase'); }}
+                                class="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                                style={{
+                                    "background-color": storageMode() === 'pocketbase' ? "var(--color-accent)" : "var(--color-bg-tertiary)",
+                                    "color": storageMode() === 'pocketbase' ? "var(--color-accent-text)" : "var(--color-text-secondary)",
+                                    "border": `1px solid ${storageMode() === 'pocketbase' ? 'transparent' : 'var(--color-border)'}`
+                                }}
+                            >
+                                PocketBase
+                            </button>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1" style={{ "color": "var(--color-text-secondary)" }}>PocketBase URL</label>
                             <input
-                                type="checkbox"
-                                checked={settings().autoRefresh}
-                                onChange={(e) => updateSetting('autoRefresh', e.currentTarget.checked)}
-                                class="w-5 h-5 rounded border-zinc-600 text-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                                type="url"
+                                value={pbUrl()}
+                                onInput={(e) => setPbUrl(e.currentTarget.value)}
+                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-all duration-200"
+                                style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                placeholder="https://your-pocketbase.example.com"
                             />
-                        </label>
+                        </div>
+                        {pbStatus() && (
+                            <p class={`text-xs ${pbStatus().includes('Failed') ? 'text-red-400' : ''}`} style={{ "color": pbStatus().includes('Failed') ? undefined : "var(--color-accent)" }}>
+                                {pbStatus()}
+                            </p>
+                        )}
+                        <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
+                            Local mode saves data in your browser. PocketBase mode syncs with a remote server for backup.
+                        </p>
+                    </div>
+                </div>
 
-                        <div class="p-3 bg-black/50 border border-zinc-700 rounded-lg">
-                            <label class="block text-white font-medium mb-2">Refresh Interval</label>
-                            <div class="flex items-center gap-4">
+                {/* Dashboard Widgets */}
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <h2 class="text-base font-bold mb-3 flex items-center gap-2" style={{ "color": "var(--color-text)" }}>
+                        <DashboardIcon class="w-4 h-4" /> Dashboard Widgets
+                    </h2>
+
+                    <p class="text-xs mb-3" style={{ "color": "var(--color-text-muted)" }}>Stats Cards</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                        <ToggleRow icon={CheckCircleIcon} label="Completed Today" checked={settings().showCompletedToday} onChange={(v) => updateSetting('showCompletedToday', v)} />
+                        <ToggleRow icon={BoltIcon} label="Active Tasks" checked={settings().showActiveTasks} onChange={(v) => updateSetting('showActiveTasks', v)} />
+                        <ToggleRow icon={CalendarIcon} label="Events Today" checked={settings().showEventsToday} onChange={(v) => updateSetting('showEventsToday', v)} />
+                        <ToggleRow icon={ClockIcon} label="Due This Week" checked={settings().showUpcomingDeadlines} onChange={(v) => updateSetting('showUpcomingDeadlines', v)} />
+                    </div>
+
+                    <p class="text-xs mb-3" style={{ "color": "var(--color-text-muted)" }}>Extended Stats</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                        <ToggleRow icon={WarningIcon} label="Day Streak" checked={settings().showStreak} onChange={(v) => updateSetting('showStreak', v)} />
+                        <ToggleRow icon={WarningIcon} label="High Priority" checked={settings().showHighPriority} onChange={(v) => updateSetting('showHighPriority', v)} />
+                        <ToggleRow icon={DashboardIcon} label="Avg Tasks/Day" checked={settings().showAvgTasks} onChange={(v) => updateSetting('showAvgTasks', v)} />
+                        <ToggleRow icon={RepeatIcon} label="Recurring Tasks" checked={settings().showRecurring} onChange={(v) => updateSetting('showRecurring', v)} />
+                    </div>
+
+                    <p class="text-xs mb-3" style={{ "color": "var(--color-text-muted)" }}>Sections</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <ToggleRow icon={WarningIcon} label="Overdue Alert" checked={settings().showOverdueAlert} onChange={(v) => updateSetting('showOverdueAlert', v)} />
+                        <ToggleRow icon={DashboardIcon} label="Progress Bar" checked={settings().showProgressBar} onChange={(v) => updateSetting('showProgressBar', v)} />
+                        <ToggleRow icon={CalendarIcon} label="Today's Schedule" checked={settings().showTodaySchedule} onChange={(v) => updateSetting('showTodaySchedule', v)} />
+                        <ToggleRow icon={CheckCircleIcon} label="Priority Tasks" checked={settings().showPriorityTasks} onChange={(v) => updateSetting('showPriorityTasks', v)} />
+                        <ToggleRow icon={TagIcon} label="Top Tags" checked={settings().showTopTags} onChange={(v) => updateSetting('showTopTags', v)} />
+                        <ToggleRow icon={BoltIcon} label="Quick Actions" checked={settings().showQuickActions} onChange={(v) => updateSetting('showQuickActions', v)} />
+                    </div>
+                </div>
+
+                {/* Auto-Refresh */}
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <h2 class="text-base font-bold mb-3 flex items-center gap-2" style={{ "color": "var(--color-text)" }}>
+                        <RepeatIcon class="w-4 h-4" /> Auto-Refresh
+                    </h2>
+                    <div class="space-y-3">
+                        <ToggleRow icon={RepeatIcon} label="Enable Auto-Refresh" checked={settings().autoRefresh} onChange={(v) => updateSetting('autoRefresh', v)} />
+                        <div class="p-2.5 rounded-lg" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
+                            <label class="block text-sm font-medium mb-1.5" style={{ "color": "var(--color-text)" }}>Interval</label>
+                            <div class="flex items-center gap-3">
                                 <input
                                     type="range"
                                     min="1"
@@ -342,33 +307,27 @@ function Settings() {
                                     onInput={(e) => updateSetting('refreshInterval', parseInt(e.currentTarget.value))}
                                     class="flex-1"
                                     disabled={!settings().autoRefresh}
+                                    style={{ "accent-color": "var(--color-accent)" }}
                                 />
-                                <span class="text-white font-semibold min-w-[80px] text-right">
-                                    {settings().refreshInterval} min{settings().refreshInterval !== 1 ? 's' : ''}
+                                <span class="text-sm font-semibold min-w-[60px] text-right" style={{ "color": "var(--color-text)" }}>
+                                    {settings().refreshInterval}m
                                 </span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2">
-                                Dashboard will refresh every {settings().refreshInterval} minute{settings().refreshInterval !== 1 ? 's' : ''}
-                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div class="flex justify-center">
+                {/* Actions */}
+                <div class="flex justify-between items-center">
                     <button
                         onClick={resetToDefaults}
-                        class="px-8 py-4 bg-zinc-800 text-gray-300 font-semibold rounded-xl hover:bg-zinc-700 transition-all duration-200"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
                     >
-                        🔄 Reset to Defaults
+                        Reset to Defaults
                     </button>
-                </div>
-
-                {/* Preview Link */}
-                <div class="text-center">
-                    <A href="/" class="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors duration-200">
-                        <span>←</span>
-                        <span>Back to Dashboard</span>
+                    <A href="/" class="text-sm flex items-center gap-1" style={{ "color": "var(--color-accent)" }}>
+                        <span>←</span> Back to Dashboard
                     </A>
                 </div>
             </div>

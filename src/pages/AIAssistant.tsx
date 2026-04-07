@@ -440,15 +440,15 @@ Return ONLY the JSON array, no markdown.`;
     return (
         <div class="flex-1 w-full max-w-6xl mx-auto">
             <div class="mb-8">
-                <h1 class="text-4xl font-bold text-white mb-2 flex items-center gap-3"><RobotIcon class="w-9 h-9" /> AI Assistant</h1>
-                <p class="text-gray-400">Powered by Google Gemini - Organize your thoughts and get personalized feedback</p>
+                <h1 class="text-2xl font-bold mb-2 flex items-center gap-2" style={{ "color": "var(--color-text)" }}><RobotIcon class="w-6 h-6" /> AI Assistant</h1>
+                <p style={{ "color": "var(--color-text-secondary)" }}>Powered by Google Gemini - Organize your thoughts and get personalized feedback</p>
             </div>
 
             {/* API Key Setup */}
             <Show when={showApiKeyInput()}>
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6">
-                    <h2 class="text-xl font-bold text-white mb-3">🔑 API Key Setup</h2>
-                    <p class="text-gray-300 text-sm mb-4">
+                <div class="rounded-xl p-5 mb-4" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                    <h2 class="text-lg font-bold mb-3" style={{ "color": "var(--color-text)" }}>🔑 API Key Setup</h2>
+                    <p class="text-sm mb-4" style={{ "color": "var(--color-text-secondary)" }}>
                         Get your free API key from <a href="https://aistudio.google.com/apikey" target="_blank" class="text-blue-400 hover:text-blue-300 underline">Google AI Studio</a>
                     </p>
                     <div class="flex gap-2">
@@ -457,11 +457,11 @@ Return ONLY the JSON array, no markdown.`;
                             value={apiKey()}
                             onInput={(e) => setApiKey(e.currentTarget.value)}
                             placeholder="Enter your Gemini API key..."
-                            class="flex-1 bg-black/50 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                            class="flex-1 rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                         />
                         <button
                             onClick={saveApiKey}
-                            class="px-6 py-2.5 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 transition-all duration-200"
+                            class="px-6 py-2.5 font-semibold rounded-lg transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                         >
                             Save
                         </button>
@@ -469,7 +469,7 @@ Return ONLY the JSON array, no markdown.`;
                     <Show when={apiKey()}>
                         <button
                             onClick={() => setShowApiKeyInput(false)}
-                            class="mt-2 text-sm text-gray-400 hover:text-gray-300"
+                            class="mt-2 text-sm" style={{ "color": "var(--color-text-muted)" }}
                         >
                             Hide
                         </button>
@@ -480,7 +480,7 @@ Return ONLY the JSON array, no markdown.`;
             <Show when={!showApiKeyInput() && apiKey()}>
                 <button
                     onClick={() => setShowApiKeyInput(true)}
-                    class="mb-6 text-sm text-gray-400 hover:text-gray-300 flex items-center gap-2"
+                    class="mb-4 text-sm flex items-center gap-2" style={{ "color": "var(--color-text-muted)" }}
                 >
                     🔑 Change API Key
                 </button>
@@ -488,18 +488,18 @@ Return ONLY the JSON array, no markdown.`;
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Ramble Feature */}
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                     <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-bold text-white">💭 Brain Dump</h2>
+                        <h2 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>💭 Brain Dump</h2>
                         <button
                             onClick={processRamble}
                             disabled={isProcessing()}
-                            class="px-4 py-2 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            class="px-4 py-2 font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                         >
                             {isProcessing() ? 'Processing...' : 'Organize'}
                         </button>
                     </div>
-                    <p class="text-gray-400 text-sm mb-4">
+                    <p class="text-sm mb-4" style={{ "color": "var(--color-text-muted)" }}>
                         Just start typing about your day, thoughts, or plans. AI will extract tasks and events automatically!
                     </p>
                     <textarea
@@ -507,11 +507,11 @@ Return ONLY the JSON array, no markdown.`;
                         onInput={(e) => setRambleText(e.currentTarget.value)}
                         placeholder="Example: Tomorrow I need to finish the project report by 3pm, then meet Sarah for coffee at 5. Also should call mom this week and remember to buy groceries..."
                         rows="10"
-                        class="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 resize-none"
+                        class="w-full rounded-lg px-4 py-3 focus:outline-none transition-colors duration-200 resize-none" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                     ></textarea>
 
                     <Show when={processingStatus()}>
-                        <div class="mt-4 p-3 bg-black/50 border border-zinc-700 rounded-lg text-gray-300 text-sm">
+                        <div class="mt-4 p-3 rounded-lg text-sm" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}>
                             {processingStatus()}
                         </div>
                     </Show>
@@ -519,17 +519,17 @@ Return ONLY the JSON array, no markdown.`;
                     <Show when={createdItems().length > 0}>
                         <div class="mt-4 space-y-2">
                             <div class="flex items-center justify-between mb-2">
-                                <h3 class="font-semibold text-white">Created Items:</h3>
+                                <h3 class="font-semibold" style={{ "color": "var(--color-text)" }}>Created Items:</h3>
                                 <a 
                                     href="/calendar"
-                                    class="text-xs px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200"
+                                    class="text-xs px-3 py-1 rounded-lg transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                                 >
                                     View in Calendar →
                                 </a>
                             </div>
                             <For each={createdItems()}>
                                 {(item) => (
-                                    <div class="p-3 bg-black/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-all duration-200">
+                                    <div class="p-3 rounded-lg transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
                                         <div class="flex items-start justify-between">
                                             <div class="flex-1">
                                                 <span class="text-xs font-semibold px-2 py-0.5 rounded" style={{
@@ -538,14 +538,14 @@ Return ONLY the JSON array, no markdown.`;
                                                 }}>
                                                     {item.type === 'todo' ? '📝 Task' : '📅 Event'}
                                                 </span>
-                                                <div class="text-white mt-2 font-medium">
+                                                <div class="mt-2 font-medium" style={{ "color": "var(--color-text)" }}>
                                                     {item.type === 'todo' ? item.data.Title : item.data.EventName}
                                                 </div>
                                                 <Show when={item.data.Description}>
-                                                    <div class="text-sm text-gray-400 mt-1">{item.data.Description}</div>
+                                                    <div class="text-sm mt-1" style={{ "color": "var(--color-text-secondary)" }}>{item.data.Description}</div>
                                                 </Show>
                                                 <Show when={item.type === 'event' && !item.data.AllDay}>
-                                                    <div class="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                                                    <div class="text-xs mt-2 flex items-center gap-1" style={{ "color": "var(--color-text-muted)" }}>
                                                         <span>🕐</span>
                                                         <span>
                                                             {new Date(item.data.Start).toLocaleDateString('en-US', { 
@@ -567,7 +567,7 @@ Return ONLY the JSON array, no markdown.`;
                                                     </div>
                                                 </Show>
                                                 <Show when={item.type === 'todo' && item.data.Deadline}>
-                                                    <div class="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                                                    <div class="text-xs mt-2 flex items-center gap-1" style={{ "color": "var(--color-text-muted)" }}>
                                                         <span>📅</span>
                                                         <span>Due: {new Date(item.data.Deadline).toLocaleDateString()}</span>
                                                     </div>
@@ -582,24 +582,24 @@ Return ONLY the JSON array, no markdown.`;
                 </div>
 
                 {/* Feedback Feature */}
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                     <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-bold text-white">💡 Get Feedback</h2>
+                        <h2 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>💡 Get Feedback</h2>
                         <button
                             onClick={getFeedback}
                             disabled={isProcessing()}
-                            class="px-4 py-2 bg-zinc-800 border border-zinc-700 text-white font-semibold rounded-lg hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            class="px-4 py-2 font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                         >
                             {isProcessing() ? 'Analyzing...' : 'Analyze My Day'}
                         </button>
                     </div>
-                    <p class="text-gray-400 text-sm mb-4">
+                    <p class="text-sm mb-4" style={{ "color": "var(--color-text-muted)" }}>
                         Get AI-powered insights and personalized suggestions to improve your productivity!
                     </p>
 
                     <Show when={!showFeedback()}>
-                        <div class="flex items-center justify-center h-64 border-2 border-dashed border-zinc-700 rounded-lg">
-                            <div class="text-center text-gray-500">
+                        <div class="flex items-center justify-center h-64 border-2 border-dashed rounded-lg" style={{ "border-color": "var(--color-border)" }}>
+                            <div class="text-center" style={{ "color": "var(--color-text-muted)" }}>
                                 <div class="text-4xl mb-2">🎯</div>
                                 <p>Click "Analyze My Day" to get started</p>
                             </div>
@@ -607,13 +607,13 @@ Return ONLY the JSON array, no markdown.`;
                     </Show>
 
                     <Show when={showFeedback()}>
-                        <div class="bg-black/50 border border-zinc-700 rounded-lg p-4 max-h-[400px] overflow-y-auto">
+                        <div class="rounded-lg p-4 max-h-[400px] overflow-y-auto" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
                             <Show when={isProcessing()}>
-                                <div class="text-gray-400 animate-pulse">{processingStatus()}</div>
+                                <div class="animate-pulse" style={{ "color": "var(--color-text-muted)" }}>{processingStatus()}</div>
                             </Show>
                             <Show when={!isProcessing() && feedbackText()}>
                                 <div 
-                                    class="text-gray-300 leading-relaxed"
+                                    style={{ "color": "var(--color-text-secondary)" }} class="leading-relaxed"
                                     innerHTML={parseMarkdown(feedbackText())}
                                 />
                             </Show>
@@ -625,24 +625,24 @@ Return ONLY the JSON array, no markdown.`;
             {/* Daily Briefing & Smart Suggestions */}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Daily Briefing */}
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                     <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-bold text-white">☀️ Daily Briefing</h2>
+                        <h2 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>☀️ Daily Briefing</h2>
                         <button
                             onClick={getDailyBriefing}
                             disabled={isProcessing()}
-                            class="px-4 py-2 bg-zinc-800 border border-zinc-700 text-white font-semibold rounded-lg hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            class="px-4 py-2 font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                         >
                             {isProcessing() ? 'Loading...' : 'Get Briefing'}
                         </button>
                     </div>
-                    <p class="text-gray-400 text-sm mb-4">
+                    <p class="text-sm mb-4" style={{ "color": "var(--color-text-muted)" }}>
                         Start your day right with an AI-powered briefing tailored to your schedule and tasks!
                     </p>
 
                     <Show when={!showBriefing()}>
-                        <div class="flex items-center justify-center h-64 border-2 border-dashed border-zinc-700 rounded-lg">
-                            <div class="text-center text-gray-500">
+                        <div class="flex items-center justify-center h-64 border-2 border-dashed rounded-lg" style={{ "border-color": "var(--color-border)" }}>
+                            <div class="text-center" style={{ "color": "var(--color-text-muted)" }}>
                                 <div class="text-4xl mb-2">☀️</div>
                                 <p>Get your personalized daily briefing</p>
                             </div>
@@ -650,13 +650,13 @@ Return ONLY the JSON array, no markdown.`;
                     </Show>
 
                     <Show when={showBriefing()}>
-                        <div class="bg-black/50 border border-zinc-700 rounded-lg p-4 max-h-[400px] overflow-y-auto">
+                        <div class="rounded-lg p-4 max-h-[400px] overflow-y-auto" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
                             <Show when={isProcessing()}>
-                                <div class="text-gray-400 animate-pulse">{processingStatus()}</div>
+                                <div class="animate-pulse" style={{ "color": "var(--color-text-muted)" }}>{processingStatus()}</div>
                             </Show>
                             <Show when={!isProcessing() && dailyBriefing()}>
                                 <div 
-                                    class="text-gray-300 leading-relaxed"
+                                    style={{ "color": "var(--color-text-secondary)" }} class="leading-relaxed"
                                     innerHTML={parseMarkdown(dailyBriefing())}
                                 />
                             </Show>
@@ -665,24 +665,24 @@ Return ONLY the JSON array, no markdown.`;
                 </div>
 
                 {/* Smart Suggestions */}
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                     <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-bold text-white">🧠 Smart Suggestions</h2>
+                        <h2 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>🧠 Smart Suggestions</h2>
                         <button
                             onClick={getSmartSuggestions}
                             disabled={isProcessing()}
-                            class="px-4 py-2 bg-zinc-800 border border-zinc-700 text-white font-semibold rounded-lg hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            class="px-4 py-2 font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                         >
                             {isProcessing() ? 'Thinking...' : 'Generate'}
                         </button>
                     </div>
-                    <p class="text-gray-400 text-sm mb-4">
+                    <p class="text-sm mb-4" style={{ "color": "var(--color-text-muted)" }}>
                         Get AI-powered suggestions based on your patterns and workload!
                     </p>
 
                     <Show when={smartSuggestions().length === 0}>
-                        <div class="flex items-center justify-center h-64 border-2 border-dashed border-zinc-700 rounded-lg">
-                            <div class="text-center text-gray-500">
+                        <div class="flex items-center justify-center h-64 border-2 border-dashed rounded-lg" style={{ "border-color": "var(--color-border)" }}>
+                            <div class="text-center" style={{ "color": "var(--color-text-muted)" }}>
                                 <div class="text-4xl mb-2">💡</div>
                                 <p>Click to get smart suggestions</p>
                             </div>
@@ -693,11 +693,11 @@ Return ONLY the JSON array, no markdown.`;
                         <div class="space-y-3">
                             <For each={smartSuggestions()}>
                                 {(suggestion, _) => (
-                                    <div class="bg-black/50 border border-zinc-700 rounded-lg p-4 hover:border-emerald-600/50 transition-all duration-200">
+                                    <div class="rounded-lg p-4 transition-all duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
                                         <div class="flex items-start gap-3">
                                             <span class="text-lg">💡</span>
                                             <div class="flex-1">
-                                                <p class="text-gray-300">{suggestion}</p>
+                                                <p style={{ "color": "var(--color-text-secondary)" }}>{suggestion}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -709,30 +709,30 @@ Return ONLY the JSON array, no markdown.`;
             </div>
 
             {/* Info Section */}
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                <h3 class="text-lg font-bold text-white mb-3">ℹ️ AI Features</h3>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-400">
+            <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                <h3 class="text-base font-bold mb-3" style={{ "color": "var(--color-text)" }}>ℹ️ AI Features</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm" style={{ "color": "var(--color-text-secondary)" }}>
                     <div>
-                        <h4 class="font-semibold text-white mb-2">💭 Brain Dump</h4>
-                        <p class="text-gray-500">
+                        <h4 class="font-semibold mb-2" style={{ "color": "var(--color-text)" }}>💭 Brain Dump</h4>
+                        <p style={{ "color": "var(--color-text-muted)" }}>
                             Natural language processing to extract tasks and events from your thoughts
                         </p>
                     </div>
                     <div>
-                        <h4 class="font-semibold text-white mb-2">💡 Feedback</h4>
-                        <p class="text-gray-500">
+                        <h4 class="font-semibold mb-2" style={{ "color": "var(--color-text)" }}>💡 Feedback</h4>
+                        <p style={{ "color": "var(--color-text-muted)" }}>
                             Analyzes 7 days of data for productivity insights and personalized tips
                         </p>
                     </div>
                     <div>
-                        <h4 class="font-semibold text-white mb-2">☀️ Daily Briefing</h4>
-                        <p class="text-gray-500">
+                        <h4 class="font-semibold mb-2" style={{ "color": "var(--color-text)" }}>☀️ Daily Briefing</h4>
+                        <p style={{ "color": "var(--color-text-muted)" }}>
                             Morning briefing with focus areas, time blocking, and energy management
                         </p>
                     </div>
                     <div>
-                        <h4 class="font-semibold text-white mb-2">🧠 Smart Suggestions</h4>
-                        <p class="text-gray-500">
+                        <h4 class="font-semibold mb-2" style={{ "color": "var(--color-text)" }}>🧠 Smart Suggestions</h4>
+                        <p style={{ "color": "var(--color-text-muted)" }}>
                             Context-aware recommendations based on your actual calendar and tasks
                         </p>
                     </div>

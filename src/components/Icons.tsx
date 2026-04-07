@@ -6,11 +6,13 @@ import { JSX } from 'solid-js';
 interface IconProps {
     class?: string;
     size?: number;
+    style?: JSX.CSSProperties;
 }
 
 // Helper to apply common props
 const iconProps = (props: IconProps): JSX.SvgSVGAttributes<SVGSVGElement> => ({
     class: props.class || 'w-5 h-5',
+    style: props.style,
     width: props.size || 20,
     height: props.size || 20,
     viewBox: '0 0 24 24',
