@@ -10,7 +10,6 @@ export interface Calendar<K extends objectModes> {
     EventName: string;
     Start: string;
     End: string;
-    Location: {lat: number, lon: number};
     Color: string;
     Tasks: sqlRelation<Todo<K>, K>[];
     Tags?: sqlRelation<Tags<K>, K>[];

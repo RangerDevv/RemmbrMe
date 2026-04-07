@@ -17,6 +17,7 @@ export interface Todo<K extends objectModes> {
     File?: File;
     Priority: `P${number}`;
     Deadline?: string;
+    Duration?: number;
     Tags?: sqlRelation<Tags<K>, K>[],
     Subtasks?: Subtask[];
     Recurrence?: "none"|"daily"|"weekly"|"monthly";

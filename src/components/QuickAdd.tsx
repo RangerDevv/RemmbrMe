@@ -352,7 +352,6 @@ function QuickAdd() {
                     AllDay: false,
                     Start: start.toISOString(),
                     End: end.toISOString(),
-                    Location: { lat: 0, lon: 0 },
                     Color: parsed.priority === 'P1' ? '#ef4444' : 
                            parsed.priority === 'P3' ? '#22c55e' : '#3b82f6',
                     Tasks: [],

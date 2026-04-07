@@ -18,7 +18,7 @@ import {
 
 function Todo() {
 
-    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[]) {
+    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[], duration:number) {
         // Combine date and time into ISO string
         let deadlineISO = undefined;
         if (deadlineDate && deadlineDate.trim()) {
@@ -40,6 +40,7 @@ function Todo() {
             Recurrence: recur as "none" | "daily" | "weekly" | "monthly",
             RecurrenceEndDate: recurEnd || undefined,
             Subtasks: subs,
+            Duration: duration || undefined,
             user: currentUser()!.id
         };
         console.log('Creating task with data:', data);
@@ -50,7 +51,7 @@ function Todo() {
         setTimeout(() => refreshNotifications(), 100);
     }
 
-    async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[]) {
+    async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[], duration:number) {
         // Combine date and time into ISO string
         let deadlineISO = undefined;
         if (deadlineDate && deadlineDate.trim()) {
@@ -72,6 +73,7 @@ function Todo() {
             Recurrence: recur as "none"|"daily"|"weekly"|"monthly",
             RecurrenceEndDate: recurEnd || undefined,
             Subtasks: subs,
+            Duration: duration || undefined,
             user: currentUser()?.id
         };
         await bk.collection('Todo').update(id, data);
@@ -169,6 +171,7 @@ function Todo() {
     const [recurrenceEndDate, setRecurrenceEndDate] = createSignal('');
     const [subtasks, setSubtasks] = createSignal<Subtask[]>([]);
     const [newSubtaskTitle, setNewSubtaskTitle] = createSignal('');
+    const [taskDuration, setTaskDuration] = createSignal(0);
 
     const [todoItems, setTodoItems] = createSignal([] as any[]);
     const [allTags, setAllTags] = createSignal([] as any[]);
@@ -214,6 +217,7 @@ function Todo() {
         setRecurrenceEndDate('');
         setSubtasks([]);
         setNewSubtaskTitle('');
+        setTaskDuration(0);
     }
 
     function startEditing(task: any) {
@@ -244,6 +248,7 @@ function Todo() {
         setRecurrenceEndDate(task.RecurrenceEndDate || '');
         setSubtasks(task.Subtasks || []);
         setNewSubtaskTitle('');
+        setTaskDuration(task.Duration || 0);
         setShowModal(true);
     }
 
@@ -910,13 +915,14 @@ function Todo() {
                                     selectedTags(),
                                     recurrence(),
                                     recurrenceEndDate(),
-                                    subtasks()
+                                    subtasks(),
+                                    taskDuration()
                                 );
                             } else {
                                 await createTask(
                                     TaskName(),
                                     TaskDescription(),
-                                    TaskCompleted(),
+                                    false,
                                     TaskURL(),
                                     TaskFile().map(f => f.file),
                                     TaskPriority(),
@@ -925,7 +931,8 @@ function Todo() {
                                     selectedTags(),
                                     recurrence(),
                                     recurrenceEndDate(),
-                                    subtasks()
+                                    subtasks(),
+                                    taskDuration()
                                 );
                             }
                             resetForm();
@@ -955,15 +962,17 @@ function Todo() {
                                     placeholder="Add more details..."
                                 ></textarea>
                             </div>
-                            <div class="mb-4 flex items-center gap-2 p-2.5 rounded-lg" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
-                                <input
-                                    type="checkbox"
-                                    checked={TaskCompleted()}
-                                    onChange={(e) => setTaskCompleted(e.currentTarget.checked)}
-                                    class="w-4 h-4 cursor-pointer"
-                                />
-                                <label class="text-sm cursor-pointer" style={{ "color": "var(--color-text-secondary)" }}>Mark as Completed</label>
-                            </div>
+                            <Show when={editingTask()}>
+                                <div class="mb-4 flex items-center gap-2 p-2.5 rounded-lg" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={TaskCompleted()}
+                                        onChange={(e) => setTaskCompleted(e.currentTarget.checked)}
+                                        class="w-4 h-4 cursor-pointer"
+                                    />
+                                    <label class="text-sm cursor-pointer" style={{ "color": "var(--color-text-secondary)" }}>Mark as Completed</label>
+                                </div>
+                            </Show>
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>URL</label>
                                 <input
@@ -1026,6 +1035,33 @@ function Todo() {
                                         />
                                     </div>
                                 </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Duration</label>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={taskDuration() || ''}
+                                        onInput={(e) => setTaskDuration(parseInt(e.currentTarget.value) || 0)}
+                                        placeholder="Minutes"
+                                        class="flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200"
+                                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    />
+                                    <div class="flex gap-1">
+                                        {[{label: '15m', val: 15}, {label: '30m', val: 30}, {label: '1h', val: 60}, {label: '2h', val: 120}].map(p => (
+                                            <button
+                                                type="button"
+                                                onClick={() => setTaskDuration(p.val)}
+                                                class={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${taskDuration() === p.val ? 'ring-1 ring-[var(--color-accent)]' : ''}`}
+                                                style={{ "background-color": taskDuration() === p.val ? "var(--color-accent)" : "var(--color-bg-tertiary)", "color": taskDuration() === p.val ? "var(--color-accent-text)" : "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
+                                            >
+                                                {p.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <p class="text-xs mt-1" style={{ "color": "var(--color-text-muted)" }}>Shows as a time block on the calendar</p>
                             </div>
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Tags</label>

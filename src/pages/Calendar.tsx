@@ -33,7 +33,6 @@ function Calendar() {
     const [startTime, setStartTime] = createSignal('');
     const [endDate, setEndDate] = createSignal('');
     const [endTime, setEndTime] = createSignal('');
-    const [location, setLocation] = createSignal({ lat: 0, lon: 0 });
     const [selectedTasks, setSelectedTasks] = createSignal<string[]>([]);
     const [todoItems, setTodoItems] = createSignal<Todo<"read">[]>([]);
     const [eventColor, setEventColor] = createSignal('#3b82f6');
@@ -41,9 +40,6 @@ function Calendar() {
     const [newTasks, setNewTasks] = createSignal<{title: string, completed: boolean}[]>([]);
     const [newTaskInput, setNewTaskInput] = createSignal('');
     const [editingEvent, setEditingEvent] = createSignal<any>(null);
-    const [showEditEventModal, setShowEditEventModal] = createSignal(false);
-    const [locationLat, setLocationLat] = createSignal(0);
-    const [locationLon, setLocationLon] = createSignal(0);
     const [quickAddTasks, setQuickAddTasks] = createSignal<string[]>([]);
     const [linkedTaskIds, setLinkedTaskIds] = createSignal<string[]>([]);
     const [isLoading, setIsLoading] = createSignal(true);
@@ -256,7 +252,6 @@ function Calendar() {
             AllDay: allDay(),
             Start: start,
             End: end,
-            Location: { lat: locationLat() || 0, lon: locationLon() || 0 },
             Tasks: allTaskIds,
             Color: eventColor() || '#3b82f6',
             Tags: selectedTags() || [],
@@ -311,7 +306,6 @@ function Calendar() {
             AllDay: allDay(),
             Start: start,
             End: end,
-            Location: { lat: locationLat() || 0, lon: locationLon() || 0 },
             Tasks: allTaskIds,
             Color: eventColor() || '#3b82f6',
             Tags: selectedTags() || [],
@@ -324,17 +318,11 @@ function Calendar() {
         await fetchEvents();
         await fetchTodos();
         
-        // Refresh quickViewEvent if it was showing this event
-        const updatedEvent = await bk.collection('Calendar').getOne(editingEvent().id, {
-            expand: 'Tasks,Tags'
-        });
-        setQuickViewEvent(updatedEvent);
-        
         setTimeout(() => refreshNotifications(), 100);
         resetForm();
         await fetchEvents();
         await fetchTodos();
-        setShowEditEventModal(false);
+        setQuickViewEvent(null);
         setEditingEvent(null);
     }
 
@@ -354,36 +342,6 @@ function Calendar() {
         setConfirmDelete({ show: false, eventId: '' });
     }
 
-    function startEditingEvent(event: any) {
-        setEditingEvent(event);
-        setEventName(event.EventName);
-        setDescription(event.Description || '');
-        setAllDay(event.AllDay);
-        
-        const startDateTime = new Date(event.Start);
-        const endDateTime = new Date(event.End);
-
-        setStartDate(startDateTime.toLocaleString("sv-SE").split(' ')[0]);
-        setEndDate(endDateTime.toLocaleString("sv-SE").split(' ')[0]);
-
-        if (!event.AllDay) {
-            setStartTime(startDateTime.toTimeString().slice(0, 5));
-            setEndTime(endDateTime.toTimeString().slice(0, 5));
-        }
-        
-        setLocationLat(event.Location?.lat || 0);
-        setLocationLon(event.Location?.lon || 0);
-        setEventColor(event.Color || '#3b82f6');
-        setLinkedTaskIds(event.Tasks || []);
-        setQuickAddTasks([]);
-        setSelectedTags(event.expand?.Tags?.map((t: any) => t.id) || []);
-        setRecurrence(event.Recurrence || 'none');
-        setRecurrenceEndDate(event.RecurrenceEndDate || '');
-        
-        setQuickViewEvent(null);
-        setShowEditEventModal(true);
-    }
-
     function resetForm() {
         setEventName('');
         setDescription('');
@@ -392,13 +350,10 @@ function Calendar() {
         setStartTime('');
         setEndDate('');
         setEndTime('');
-        setLocation({ lat: 0, lon: 0 });
         setSelectedTasks([]);
         setEventColor('#3b82f6');
         setNewTasks([]);
         setNewTaskInput('');
-        setLocationLat(0);
-        setLocationLon(0);
         setQuickAddTasks([]);
         setLinkedTaskIds([]);
         setEditingEvent(null);
@@ -431,9 +386,33 @@ function Calendar() {
 
     async function openEventModal(eventId: string) {
         try {
-            const event = await bk.collection('Calendar').getOne(eventId, {
+            const event: any = await bk.collection('Calendar').getOne(eventId, {
                 expand: 'Tasks,Tags'
             });
+            // Populate form signals for inline editing
+            setEditingEvent(event);
+            setEventName(event.EventName);
+            setDescription(event.Description || '');
+            setAllDay(event.AllDay);
+            
+            const startDateTime = new Date(event.Start);
+            const endDateTime = new Date(event.End);
+
+            setStartDate(startDateTime.toLocaleString("sv-SE").split(' ')[0]);
+            setEndDate(endDateTime.toLocaleString("sv-SE").split(' ')[0]);
+
+            if (!event.AllDay) {
+                setStartTime(startDateTime.toTimeString().slice(0, 5));
+                setEndTime(endDateTime.toTimeString().slice(0, 5));
+            }
+            
+            setEventColor(event.Color || '#3b82f6');
+            setLinkedTaskIds(event.Tasks || []);
+            setQuickAddTasks([]);
+            setSelectedTags(event.expand?.Tags?.map((t: any) => t.id) || []);
+            setRecurrence(event.Recurrence || 'none');
+            setRecurrenceEndDate(event.RecurrenceEndDate || '');
+            
             setQuickViewEvent(event);
         } catch (error) {
             console.error('Error fetching event:', error);
@@ -1401,16 +1380,21 @@ function Calendar() {
                                                                 return null;
                                                             }
                                                             
-                                                            // Calculate position and height (30 min block)
+                                                            // Calculate position and height based on duration
                                                             const topOffset = (taskMinute / 60) * 60;
-                                                            const height = 30;
+                                                            const hasDuration = task.Duration && task.Duration > 0;
+                                                            const height = hasDuration ? Math.max(30, (task.Duration / 60) * 60) : 30;
+                                                            const priorityColor = task.Priority === 'P1' ? '#ef4444' : task.Priority === 'P2' ? '#f97316' : '#22c55e';
+                                                            
+                                                            // Calculate end time for display
+                                                            const endTime = hasDuration ? new Date(deadline.getTime() + task.Duration * 60000) : null;
                                                             
                                                             return (
                                                                 <div
-                                                                    class="absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 cursor-pointer hover:opacity-80 transition-all duration-200 border-l-2"
+                                                                    class={`absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 cursor-pointer hover:opacity-80 transition-all duration-200 ${hasDuration ? '' : 'border-l-2'}`}
                                                                     style={{ 
-                                                                        'background-color': task.Priority === 'P1' ? '#ef444420' : task.Priority === 'P2' ? '#f9731620' : '#22c55e20',
-                                                                        'border-left-color': task.Priority === 'P1' ? '#ef4444' : task.Priority === 'P2' ? '#f97316' : '#22c55e',
+                                                                        'background-color': hasDuration ? priorityColor : (task.Priority === 'P1' ? '#ef444420' : task.Priority === 'P2' ? '#f9731620' : '#22c55e20'),
+                                                                        'border-left-color': hasDuration ? undefined : priorityColor,
                                                                         'top': `${topOffset}px`,
                                                                         'height': `${height}px`,
                                                                         'opacity': task.Completed ? 0.5 : 0.9
@@ -1421,9 +1405,20 @@ function Calendar() {
                                                                         setShowTasksModal(true);
                                                                     }}
                                                                 >
-                                                                    <div class={`font-medium truncate ${task.Completed ? 'line-through' : ''}`}>
+                                                                    <div class={`font-medium truncate ${task.Completed ? 'line-through' : ''}`} style={{ "color": hasDuration ? "white" : undefined }}>
                                                                         {task.Completed ? '✓ ' : '📋 '}{task.Title}
                                                                     </div>
+                                                                    <Show when={hasDuration && !task.Completed}>
+                                                                        <div class="text-[10px] opacity-75" style={{ "color": "white" }}>
+                                                                            {deadline.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                                                            {endTime && (<span> - {endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>)}
+                                                                        </div>
+                                                                    </Show>
+                                                                    <Show when={hasDuration && height > 50 && task.Description}>
+                                                                        <div class="text-[10px] opacity-60 mt-1 line-clamp-2" style={{ "color": "white", "white-space": "pre-wrap" }}>
+                                                                            {task.Description}
+                                                                        </div>
+                                                                    </Show>
                                                                 </div>
                                                             );
                                                         }}
@@ -1473,122 +1468,20 @@ function Calendar() {
                 </div>
             </Show>
 
-            {/* Quick View Modal */}
+            {/* Event Detail/Edit Modal */}
             <Show when={quickViewEvent()}>
-                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => setQuickViewEvent(null)}>
-                    <div class="glass-modal rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-md max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="flex items-start gap-3">
-                                <div 
-                                    class="w-4 h-4 rounded-full mt-1 flex-shrink-0"
-                                    style={{ 'background-color': quickViewEvent()!.Color }}
-                                ></div>
-                                <div>
-                                    <h3 class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>{quickViewEvent()!.EventName}</h3>
-                                    <Show when={quickViewEvent()!.Description}>
-                                        <p class="mt-2" style={{ "color": "var(--color-text-secondary)", "white-space": "pre-wrap" }}>{quickViewEvent()!.Description}</p>
-                                    </Show>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setQuickViewEvent(null)}
-                                class="transition-colors duration-200 text-2xl"
-                                style={{ "color": "var(--color-text-muted)" }}
-                            >
-                                ×
-                            </button>
-                        </div>
-
-                        <div class="space-y-3 mb-4">
-                            <div class="flex items-center gap-2" style={{ "color": "var(--color-text-secondary)" }}>
-                                <span>📅</span>
-                                <span class="text-sm">
-                                    {new Date(quickViewEvent()!.Start).toLocaleDateString('en-US', { 
-                                        weekday: 'long', 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric' 
-                                    })}
-                                </span>
-                            </div>
-                            <Show when={!quickViewEvent()!.AllDay}>
-                                <div class="flex items-center gap-2" style={{ "color": "var(--color-text-secondary)" }}>
-                                    <span>🕐</span>
-                                    <span class="text-sm">
-                                        {new Date(quickViewEvent()!.Start).toLocaleTimeString('en-US', { 
-                                            hour: 'numeric', 
-                                            minute: '2-digit' 
-                                        })} - {new Date(quickViewEvent()!.End).toLocaleTimeString('en-US', { 
-                                            hour: 'numeric', 
-                                            minute: '2-digit' 
-                                        })}
-                                    </span>
-                                </div>
-                            </Show>
-                            <Show when={quickViewEvent()!.Location?.lat !== 0 || quickViewEvent()!.Location?.lon !== 0}>
-                                <div class="flex items-center gap-2" style={{ "color": "var(--color-text-secondary)" }}>
-                                    <span>📍</span>
-                                    <span class="text-sm">
-                                        {quickViewEvent()!.Location.lat}, {quickViewEvent()!.Location.lon}
-                                    </span>
-                                </div>
-                            </Show>
-                        </div>
-
-                        <Show when={quickViewEvent()!.expand?.Tasks?.length > 0}>
-                            <div class="pt-4 mb-4" style={{ "border-top": "1px solid var(--color-border)" }}>
-                                <h4 class="text-sm font-semibold mb-3" style={{ "color": "var(--color-text-secondary)" }}>Tasks</h4>
-                                <div class="space-y-2">
-                                    <For each={quickViewEvent()!.expand.Tasks}>
-                                        {(task: any) => (
-                                            <label class="flex items-center gap-3 p-2 rounded-lg transition-colors duration-200 cursor-pointer" style={{ "background-color": "transparent" }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={task.Completed}
-                                                    onChange={() => toggleTaskCompletion(task.id, task.Completed)}
-                                                    class="w-4 h-4 rounded"
-                                                />
-                                                <span class={`flex-1 ${task.Completed ? 'line-through' : ''}`} style={{ "color": task.Completed ? "var(--color-text-muted)" : "var(--color-text)" }}>
-                                                    {task.Title}
-                                                </span>
-                                            </label>
-                                        )}
-                                    </For>
-                                </div>
-                            </div>
-                        </Show>
-
-                        <div class="flex gap-2">
-                            <button
-                                onClick={() => startEditingEvent(quickViewEvent())}
-                                class="flex-1 px-4 py-2 font-medium rounded-lg transition-colors duration-200"
-                                style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
-                            >
-                                ✏️ Edit Event
-                            </button>
-                            <button
-                                onClick={() => deleteEvent(quickViewEvent()!.id)}
-                                class="px-4 py-2 font-medium rounded-lg transition-colors duration-200"
-                                style={{ "background-color": "var(--color-danger)", "color": "white" }}
-                            >
-                                🗑️ Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </Show>
-
-            {/* Edit Event Modal */}
-            <Show when={showEditEventModal()}>
-                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => setShowEditEventModal(false)}>
+                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => { setQuickViewEvent(null); resetForm(); }}>
                     <div class="glass-modal rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <div class="flex items-center justify-between mb-5">
-                            <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>Edit Event</h2>
+                            <div class="flex items-center gap-3">
+                                <div 
+                                    class="w-4 h-4 rounded-full flex-shrink-0"
+                                    style={{ 'background-color': eventColor() }}
+                                ></div>
+                                <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>Event Details</h2>
+                            </div>
                             <button
-                                onClick={() => {
-                                    setShowEditEventModal(false);
-                                    resetForm();
-                                }}
+                                onClick={() => { setQuickViewEvent(null); resetForm(); }}
                                 class="transition-colors duration-200 text-2xl" style={{ "color": "var(--color-text-muted)" }}
                             >
                                 ×
@@ -1680,29 +1573,6 @@ function Calendar() {
                                 </Show>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Latitude:</label>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={locationLat()}
-                                        onInput={(e) => setLocationLat(parseFloat(e.currentTarget.value) || 0)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                    />
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Longitude:</label>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={locationLon()}
-                                        onInput={(e) => setLocationLon(parseFloat(e.currentTarget.value) || 0)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                    />
-                                </div>
-                            </div>
-
                             <div class="mb-4">
                                 <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Event Color:</label>
                                 <div class="flex gap-2 flex-wrap">
@@ -1729,6 +1599,29 @@ function Calendar() {
                                 </div>
                             </div>
 
+                            <Show when={quickViewEvent()!.expand?.Tasks?.length > 0}>
+                                <div class="mb-4 pt-4" style={{ "border-top": "1px solid var(--color-border)" }}>
+                                    <h4 class="text-sm font-semibold mb-3" style={{ "color": "var(--color-text-secondary)" }}>Tasks</h4>
+                                    <div class="space-y-2">
+                                        <For each={quickViewEvent()!.expand.Tasks}>
+                                            {(task: any) => (
+                                                <label class="flex items-center gap-3 p-2 rounded-lg transition-colors duration-200 cursor-pointer" style={{ "background-color": "transparent" }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={task.Completed}
+                                                        onChange={() => toggleTaskCompletion(task.id, task.Completed)}
+                                                        class="w-4 h-4 rounded"
+                                                    />
+                                                    <span class={`flex-1 ${task.Completed ? 'line-through' : ''}`} style={{ "color": task.Completed ? "var(--color-text-muted)" : "var(--color-text)" }}>
+                                                        {task.Title}
+                                                    </span>
+                                                </label>
+                                            )}
+                                        </For>
+                                    </div>
+                                </div>
+                            </Show>
+
                             <div class="mb-4">
                                 <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Quick Add Tasks:</label>
                                 <div class="space-y-2">
@@ -1743,7 +1636,6 @@ function Calendar() {
                                                         updated[index()] = e.currentTarget.value;
                                                         setQuickAddTasks(updated);
                                                     }}
-                                                    // TODO: Find out why the input for this doesnt work
                                                     placeholder="Enter task title..."
                                                     class="flex-1 rounded-lg px-4 py-2 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                                 />
@@ -1821,12 +1713,22 @@ function Calendar() {
                                 </div>
                             </Show>
 
-                            <button
-                                type="submit"
-                                class="w-full font-semibold py-3 rounded-lg active:scale-95 transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
-                            >
-                                Save Changes
-                            </button>
+                            <div class="flex gap-2">
+                                <button
+                                    type="submit"
+                                    class="flex-1 font-semibold py-3 rounded-lg active:scale-95 transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
+                                >
+                                    Save Changes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => deleteEvent(quickViewEvent()!.id)}
+                                    class="px-4 py-3 font-semibold rounded-lg active:scale-95 transition-all duration-200"
+                                    style={{ "background-color": "var(--color-danger)", "color": "white" }}
+                                >
+                                    🗑️ Delete
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -1932,29 +1834,6 @@ function Calendar() {
                                         />
                                     </div>
                                 </Show>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Latitude:</label>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={locationLat()}
-                                        onInput={(e) => setLocationLat(parseFloat(e.currentTarget.value) || 0)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                    />
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Longitude:</label>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={locationLon()}
-                                        onInput={(e) => setLocationLon(parseFloat(e.currentTarget.value) || 0)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                    />
-                                </div>
                             </div>
 
                             <div class="mb-4">

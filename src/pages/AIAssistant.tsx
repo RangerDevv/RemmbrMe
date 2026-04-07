@@ -213,7 +213,6 @@ Guidelines:
                         AllDay: event.allDay || false,
                         Start: event.start,
                         End: event.end,
-                        Location: { lat: 0, lon: 0 },
                         Color: event.color || '#3b82f6',
                         Tasks: [],
                         user: currentUser().id
