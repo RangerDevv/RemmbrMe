@@ -83,8 +83,8 @@ function Tags() {
 
     return (
         <div class="flex-1 w-full max-w-4xl">
-            <div class="mb-8">
-                <h1 class="text-2xl font-bold mb-2 flex items-center gap-2" style={{ "color": "var(--color-text)" }}><TagIcon class="w-6 h-6" /> Tags</h1>
+            <div class="mb-6 lg:mb-8">
+                <h1 class="text-xl lg:text-2xl font-bold mb-2 flex items-center gap-2" style={{ "color": "var(--color-text)" }}><TagIcon class="w-5 h-5 lg:w-6 lg:h-6" /> Tags</h1>
                 <p style={{ "color": "var(--color-text-secondary)" }}>Organize your tasks and events with colorful tags</p>
             </div>
 

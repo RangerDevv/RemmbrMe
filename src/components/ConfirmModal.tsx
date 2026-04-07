@@ -40,33 +40,35 @@ export default function ConfirmModal(props: ConfirmModalProps) {
     return (
         <Show when={props.show}>
             <div 
-                class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4 animate-fadeIn"
+                class="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-[100] animate-fadeIn"
                 onClick={props.onCancel}
             >
                 <div 
-                    class={`bg-zinc-900 border ${getColor()} rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scaleIn`}
+                    class={`rounded-t-2xl lg:rounded-2xl p-5 lg:p-6 w-full lg:max-w-md shadow-2xl animate-scaleIn ${getColor()}`}
+                    style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div class="flex items-start gap-4 mb-6">
+                    <div class="flex items-start gap-4 mb-5">
                         <div>{getIcon()}</div>
                         <div class="flex-1">
                             <Show when={props.title}>
-                                <h3 class="text-white text-xl font-semibold mb-2">{props.title}</h3>
+                                <h3 class="text-lg lg:text-xl font-semibold mb-2" style={{ "color": "var(--color-text)" }}>{props.title}</h3>
                             </Show>
-                            <p class="text-gray-300 text-base leading-relaxed">{props.message}</p>
+                            <p class="text-sm lg:text-base leading-relaxed" style={{ "color": "var(--color-text-secondary)" }}>{props.message}</p>
                         </div>
                     </div>
 
                     <div class="flex justify-end gap-3">
                         <button
                             onClick={props.onCancel}
-                            class="px-6 py-2.5 bg-zinc-800 text-white font-semibold rounded-lg hover:bg-zinc-700 transition-all duration-200 border border-zinc-700"
+                            class="px-5 py-2.5 font-semibold rounded-xl transition-all duration-200"
+                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                         >
                             {props.cancelText || 'Cancel'}
                         </button>
                         <button
                             onClick={props.onConfirm}
-                            class={`px-6 py-2.5 text-white font-semibold rounded-lg transition-all duration-200 ${getConfirmButtonStyle()}`}
+                            class={`px-5 py-2.5 text-white font-semibold rounded-xl transition-all duration-200 ${getConfirmButtonStyle()}`}
                         >
                             {props.confirmText || 'Confirm'}
                         </button>

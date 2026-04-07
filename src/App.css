@@ -25,6 +25,9 @@
   --color-success-muted: #0f7b6c18;
   --color-info: #529cca;
   --color-info-muted: #529cca18;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   font-size: 16px;
@@ -44,12 +47,13 @@ body {
   min-height: 100vh;
   background: var(--color-bg);
   color: var(--color-text);
+  overflow: hidden;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -58,7 +62,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: 3px;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -72,10 +76,10 @@ input[type="checkbox"] {
   width: 18px;
   height: 18px;
   border: 2px solid var(--color-border-hover);
-  border-radius: 4px;
+  border-radius: 5px;
   background: transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   position: relative;
   flex-shrink: 0;
 }
@@ -120,13 +124,42 @@ select {
 
 /* Smooth transitions for theme changes */
 body, main, div, nav, aside, section, header {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 /* Animation keyframes */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+
+/* Touch-friendly tap targets */
+@media (max-width: 1023px) {
+  button, a, input[type="checkbox"] {
+    min-height: 36px;
+    min-width: 36px;
+  }
+  
+  /* Prevent text overflow on small screens */
+  .truncate-mobile {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 @keyframes slideUp {

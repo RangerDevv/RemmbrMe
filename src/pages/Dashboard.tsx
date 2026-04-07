@@ -206,9 +206,9 @@ function Dashboard() {
     return (
         <div class="flex-1 w-full max-w-5xl mx-auto">
             {/* Header */}
-            <div class="mb-8 pt-1">
-                <h1 class="text-2xl font-semibold" style={{ "color": "var(--color-text)" }}>{greeting}</h1>
-                <p class="text-sm mt-0.5" style={{ "color": "var(--color-text-muted)" }}>
+            <div class="mb-6 lg:mb-8">
+                <h1 class="text-xl lg:text-2xl font-semibold" style={{ "color": "var(--color-text)" }}>{greeting}</h1>
+                <p class="text-xs lg:text-sm mt-0.5" style={{ "color": "var(--color-text-muted)" }}>
                     {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
             </div>
@@ -220,42 +220,40 @@ function Dashboard() {
             </Show>
 
             <Show when={!isLoading()}>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
                     {/* Left column: Calendar + Events */}
-                    <div class="lg:col-span-2 space-y-6">
+                    <div class="lg:col-span-2 space-y-5 lg:space-y-6">
                         {/* Mini Calendar */}
-                        <div class="rounded-lg p-4" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                        <div class="rounded-xl p-4 lg:p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                             <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center gap-2">
-                                    <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>{calTitle()}</h3>
-                                </div>
-                                <div class="flex items-center gap-1">
+                                <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>{calTitle()}</h3>
+                                <div class="flex items-center gap-0.5">
                                     <button
                                         onClick={() => navigateCal(-1)}
-                                        class="p-1 rounded hover:opacity-70 transition-opacity"
+                                        class="p-1.5 rounded-lg hover:opacity-70 transition-opacity"
                                         style={{ "color": "var(--color-text-secondary)" }}
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                                     </button>
                                     <button
                                         onClick={() => setCurrentDate(new Date())}
-                                        class="px-2 py-0.5 rounded text-xs font-medium transition-opacity hover:opacity-70"
+                                        class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors hover:opacity-80"
                                         style={{ "color": "var(--color-accent)" }}
                                     >
                                         Today
                                     </button>
                                     <button
                                         onClick={() => navigateCal(1)}
-                                        class="p-1 rounded hover:opacity-70 transition-opacity"
+                                        class="p-1.5 rounded-lg hover:opacity-70 transition-opacity"
                                         style={{ "color": "var(--color-text-secondary)" }}
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                                     </button>
-                                    <div class="w-px h-4 mx-1" style={{ "background-color": "var(--color-border)" }}></div>
+                                    <div class="w-px h-4 mx-1.5" style={{ "background-color": "var(--color-border)" }}></div>
                                     <button
                                         onClick={toggleCalView}
-                                        class="px-2 py-0.5 rounded text-xs font-medium transition-opacity hover:opacity-70"
-                                        style={{ "color": "var(--color-text-secondary)" }}
+                                        class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors hover:opacity-80"
+                                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)" }}
                                     >
                                         {calView() === 'week' ? 'Month' : 'Week'}
                                     </button>
@@ -266,7 +264,7 @@ function Dashboard() {
                             <div class="grid grid-cols-7 mb-1">
                                 <For each={dayNames}>
                                     {(name) => (
-                                        <div class="text-center text-xs py-1 font-medium" style={{ "color": "var(--color-text-muted)" }}>{name}</div>
+                                        <div class="text-center text-[11px] py-1 font-medium" style={{ "color": "var(--color-text-muted)" }}>{name}</div>
                                     )}
                                 </For>
                             </div>
@@ -276,10 +274,10 @@ function Dashboard() {
                                 <div class="grid grid-cols-7">
                                     <For each={getMonthDays()}>
                                         {(day) => (
-                                            <div class="text-center py-1.5">
+                                            <div class="text-center py-1">
                                                 <Show when={day !== null}>
                                                     <div
-                                                        class="inline-flex flex-col items-center justify-center w-8 h-8 rounded-full text-xs relative"
+                                                        class="inline-flex flex-col items-center justify-center w-8 h-8 rounded-full text-xs relative cursor-default"
                                                         style={{
                                                             "background-color": isToday(day) ? "var(--color-accent)" : "transparent",
                                                             "color": isToday(day) ? "var(--color-accent-text)" : "var(--color-text)",
@@ -302,9 +300,9 @@ function Dashboard() {
                                 <div class="grid grid-cols-7">
                                     <For each={getWeekDays()}>
                                         {(day) => (
-                                            <div class="text-center py-1.5">
+                                            <div class="text-center py-1">
                                                 <div
-                                                    class="inline-flex flex-col items-center justify-center w-8 h-8 rounded-full text-xs relative"
+                                                    class="inline-flex flex-col items-center justify-center w-8 h-8 rounded-full text-xs relative cursor-default"
                                                     style={{
                                                         "background-color": isToday(day) ? "var(--color-accent)" : "transparent",
                                                         "color": isToday(day) ? "var(--color-accent-text)" : "var(--color-text)",
@@ -327,18 +325,18 @@ function Dashboard() {
                         <div>
                             <div class="flex items-center justify-between mb-3">
                                 <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Today's Schedule</h3>
-                                <A href="/calendar" class="text-xs hover:underline" style={{ "color": "var(--color-accent)" }}>
-                                    View Calendar →
+                                <A href="/calendar" class="text-xs font-medium hover:underline" style={{ "color": "var(--color-accent)" }}>
+                                    View Calendar
                                 </A>
                             </div>
-                            <div class="space-y-1">
+                            <div class="space-y-2">
                                 <Show when={getTodayEvents().length > 0}>
                                     <For each={getTodayEvents()}>
                                         {(event) => (
-                                            <div class="flex items-start gap-3 p-3 rounded-lg transition-colors" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
-                                                <div class="w-1 self-stretch rounded-full shrink-0" style={{ "background-color": event.Color || 'var(--color-accent)' }}></div>
+                                            <div class="flex items-start gap-3 p-3 rounded-xl transition-colors card-hover" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                                <div class="w-1 self-stretch rounded-full shrink-0 mt-0.5" style={{ "background-color": event.Color || 'var(--color-accent)' }}></div>
                                                 <div class="flex-1 min-w-0">
-                                                    <div class="text-sm font-medium" style={{ "color": "var(--color-text)" }}>{event.EventName}</div>
+                                                    <div class="text-sm font-medium truncate" style={{ "color": "var(--color-text)" }}>{event.EventName}</div>
                                                     <Show when={!event.AllDay}>
                                                         <div class="text-xs mt-0.5 flex items-center gap-1" style={{ "color": "var(--color-text-muted)" }}>
                                                             <ClockIcon class="w-3 h-3" />
@@ -356,8 +354,9 @@ function Dashboard() {
                                     </For>
                                 </Show>
                                 <Show when={getTodayEvents().length === 0}>
-                                    <div class="py-8 text-center text-sm" style={{ "color": "var(--color-text-muted)" }}>
-                                        Nothing scheduled today
+                                    <div class="py-8 text-center rounded-xl" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                        <p class="text-sm" style={{ "color": "var(--color-text-muted)" }}>No events today</p>
+                                        <p class="text-xs mt-1" style={{ "color": "var(--color-text-muted)", "opacity": "0.6" }}>Enjoy your free time</p>
                                     </div>
                                 </Show>
                             </div>
@@ -367,12 +366,12 @@ function Dashboard() {
                         <Show when={getUpcomingEvents().length > 0}>
                             <div>
                                 <h3 class="text-sm font-semibold mb-3" style={{ "color": "var(--color-text)" }}>Upcoming</h3>
-                                <div class="space-y-1">
+                                <div class="space-y-1.5">
                                     <For each={getUpcomingEvents()}>
                                         {(event) => {
                                             const eventDate = new Date(event.Start);
                                             return (
-                                                <div class="flex items-center gap-3 py-2 px-3 rounded-lg" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                                <div class="flex items-center gap-3 py-2.5 px-3 rounded-xl card-hover" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                                                     <div class="w-1 h-8 rounded-full shrink-0" style={{ "background-color": event.Color || 'var(--color-accent)' }}></div>
                                                     <div class="flex-1 min-w-0">
                                                         <div class="text-sm font-medium truncate" style={{ "color": "var(--color-text)" }}>{event.EventName}</div>
@@ -380,7 +379,7 @@ function Dashboard() {
                                                     <div class="text-xs shrink-0" style={{ "color": "var(--color-text-muted)" }}>
                                                         {eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                                                         <Show when={!event.AllDay}>
-                                                            <span class="ml-1">
+                                                            <span class="ml-1 hidden sm:inline">
                                                                 {eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                                                             </span>
                                                         </Show>
@@ -395,20 +394,20 @@ function Dashboard() {
                     </div>
 
                     {/* Right column: Tasks */}
-                    <div class="space-y-6">
+                    <div class="space-y-5 lg:space-y-6">
                         {/* Overdue */}
                         <Show when={getOverdueTasks().length > 0}>
                             <div>
                                 <h3 class="text-sm font-semibold mb-2 flex items-center gap-1.5" style={{ "color": "var(--color-danger)" }}>
                                     Overdue · {getOverdueTasks().length}
                                 </h3>
-                                <div class="space-y-0.5">
+                                <div class="space-y-1.5">
                                     <For each={getOverdueTasks().slice(0, 5)}>
                                         {(task) => (
-                                            <div class="flex items-center gap-2.5 py-2 px-3 rounded-lg group" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                            <div class="flex items-center gap-2.5 py-2.5 px-3 rounded-xl group card-hover" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                                                 <button
                                                     onClick={() => quickCompleteTask(task.id)}
-                                                    class="w-[18px] h-[18px] rounded-full shrink-0 transition-colors"
+                                                    class="w-[18px] h-[18px] rounded-full shrink-0 transition-colors hover:opacity-70"
                                                     style={{ "border": `2px solid var(--color-danger)` }}
                                                     title="Complete"
                                                 ></button>
@@ -430,15 +429,15 @@ function Dashboard() {
                         <div>
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Tasks</h3>
-                                <A href="/todo" class="text-xs hover:underline" style={{ "color": "var(--color-accent)" }}>
-                                    View All →
+                                <A href="/todo" class="text-xs font-medium hover:underline" style={{ "color": "var(--color-accent)" }}>
+                                    View All
                                 </A>
                             </div>
-                            <div class="space-y-0.5">
+                            <div class="space-y-1.5">
                                 <Show when={getActiveTasks().length > 0}>
                                     <For each={getActiveTasks()}>
                                         {(task) => (
-                                            <div class="flex items-center gap-2.5 py-2 px-3 rounded-lg group" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                            <div class="flex items-center gap-2.5 py-2.5 px-3 rounded-xl group card-hover" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                                                 <button
                                                     onClick={() => quickCompleteTask(task.id)}
                                                     class="w-[18px] h-[18px] rounded-full shrink-0 transition-colors hover:opacity-70"
@@ -464,8 +463,8 @@ function Dashboard() {
                                     </For>
                                 </Show>
                                 <Show when={getActiveTasks().length === 0}>
-                                    <div class="py-8 text-center text-sm" style={{ "color": "var(--color-text-muted)" }}>
-                                        All caught up!
+                                    <div class="py-8 text-center rounded-xl" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
+                                        <p class="text-sm" style={{ "color": "var(--color-text-muted)" }}>All caught up!</p>
                                     </div>
                                 </Show>
                             </div>

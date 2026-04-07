@@ -439,8 +439,8 @@ Return ONLY the JSON array, no markdown.`;
 
     return (
         <div class="flex-1 w-full max-w-6xl mx-auto">
-            <div class="mb-8">
-                <h1 class="text-2xl font-bold mb-2 flex items-center gap-2" style={{ "color": "var(--color-text)" }}><RobotIcon class="w-6 h-6" /> AI Assistant</h1>
+            <div class="mb-6 lg:mb-8">
+                <h1 class="text-xl lg:text-2xl font-bold mb-2 flex items-center gap-2" style={{ "color": "var(--color-text)" }}><RobotIcon class="w-5 h-5 lg:w-6 lg:h-6" /> AI Assistant</h1>
                 <p style={{ "color": "var(--color-text-secondary)" }}>Powered by Google Gemini - Organize your thoughts and get personalized feedback</p>
             </div>
 

@@ -501,12 +501,12 @@ function Todo() {
     };
 
     return (
-        <div class="flex flex-col gap-4 w-full">
+        <div class="flex flex-col gap-3 lg:gap-4 w-full">
             {/* Header */}
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold" style={{ "color": "var(--color-text)" }}>My Day</h2>
-                    <p class="text-sm mt-1" style={{ "color": "var(--color-text-muted)" }}>
+                    <h2 class="text-xl lg:text-2xl font-bold" style={{ "color": "var(--color-text)" }}>My Day</h2>
+                    <p class="text-xs lg:text-sm mt-0.5" style={{ "color": "var(--color-text-muted)" }}>
                         {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                     </p>
                 </div>
@@ -798,7 +798,7 @@ function Todo() {
             {/* Create/Edit Modal */}
             <Show when={showModal()}>
             <div
-                class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                class="fixed inset-0 bg-black/50 z-50 flex items-end lg:items-center justify-center"
                 onClick={() => {
                     setShowModal(false);
                     setEditingTask(null);
@@ -806,12 +806,12 @@ function Todo() {
                 }}
             >
                 <div
-                    class="rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                    class="rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto"
                     style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div class="sticky top-0 p-5 flex items-center justify-between" style={{ "background-color": "var(--color-surface)", "border-bottom": "1px solid var(--color-border)" }}>
-                        <h2 class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>{editingTask() ? 'Edit Task' : 'New Task'}</h2>
+                    <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background-color": "var(--color-surface)", "border-bottom": "1px solid var(--color-border)" }}>
+                        <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>{editingTask() ? 'Edit Task' : 'New Task'}</h2>
                         <button
                             onClick={() => {
                                 setShowModal(false);

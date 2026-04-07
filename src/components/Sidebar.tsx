@@ -92,11 +92,12 @@ export default function Sidebar() {
             {/* Mobile Menu Button */}
             <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen())}
-                class="lg:hidden fixed top-4 left-4 z-[60] p-2 rounded-lg transition-all duration-300"
+                class="lg:hidden fixed top-3 left-3 z-[60] p-2.5 rounded-xl transition-all duration-200 active:scale-95"
                 style={{
-                    "background-color": "var(--color-surface)",
-                    "border": "1px solid var(--color-border)",
-                    "color": "var(--color-text)"
+                    "background-color": mobileMenuOpen() ? "transparent" : "var(--color-surface)",
+                    "border": mobileMenuOpen() ? "none" : "1px solid var(--color-border)",
+                    "color": "var(--color-text)",
+                    "box-shadow": mobileMenuOpen() ? "none" : "0 2px 8px rgba(0,0,0,0.15)"
                 }}
             >
                 {mobileMenuOpen() ? <XIcon class="w-5 h-5" /> : <MenuIcon class="w-5 h-5" />}
@@ -105,7 +106,8 @@ export default function Sidebar() {
             {/* Mobile Overlay */}
             <Show when={mobileMenuOpen()}>
                 <div 
-                    class="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[50]"
+                    class="lg:hidden fixed inset-0 z-[50] transition-opacity duration-300"
+                    style={{ "background-color": "rgba(0,0,0,0.5)" }}
                     onClick={() => setMobileMenuOpen(false)}
                 />
             </Show>
@@ -114,11 +116,11 @@ export default function Sidebar() {
             <aside class={`
                 flex flex-col
                 fixed lg:sticky top-0 left-0 h-screen
-                w-[260px] lg:w-[260px] 
+                w-[280px] lg:w-[260px]
                 z-[55] lg:z-auto
-                transition-transform duration-300
+                transition-transform duration-300 ease-out
                 ${mobileMenuOpen() ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-                overflow-y-auto
+                overflow-y-auto overscroll-contain
             `}
             style={{
                 "background-color": "var(--color-bg-secondary)",

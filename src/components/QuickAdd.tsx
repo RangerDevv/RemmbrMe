@@ -445,13 +445,13 @@ function QuickAdd() {
 
     return (
         <>
-            {/* Floating Action Button with pulse animation */}
+            {/* Floating Action Button */}
             <button
                 onClick={() => setShowModal(true)}
-                class="fixed bottom-8 right-8 w-14 h-14 rounded-full active:scale-95 transition-all duration-200 z-50 flex items-center justify-center shadow-lg group" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
+                class="fixed bottom-5 right-5 lg:bottom-8 lg:right-8 w-12 h-12 lg:w-14 lg:h-14 rounded-full active:scale-95 transition-all duration-200 z-50 flex items-center justify-center shadow-lg group" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                 title="Quick Add (Ctrl+K)"
             >
-                <svg class="w-7 h-7 transition-transform group-hover:rotate-90 duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-6 h-6 lg:w-7 lg:h-7 transition-transform group-hover:rotate-90 duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
                 </svg>
             </button>
@@ -459,23 +459,23 @@ function QuickAdd() {
             {/* Quick Add Modal */}
             <Show when={showModal()}>
                 <div 
-                    class="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
+                    class="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-50 animate-fade-in"
                     onClick={() => setShowModal(false)}
                 >
                     <Show when={!showSuccess()}>
                         <div 
-                            class="rounded-xl p-6 max-w-2xl w-full shadow-2xl animate-slide-up" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
+                            class="rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl animate-slide-up" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center justify-between mb-5">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style={{ "background-color": "var(--color-accent)" }}>
-                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center" style={{ "background-color": "var(--color-accent)" }}>
+                                        <svg class="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                         </svg>
                                     </div>
                                     <div>
-                                        <h2 class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>Quick Add</h2>
+                                        <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>Quick Add</h2>
                                         <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>Natural language parsing</p>
                                     </div>
                                 </div>
@@ -651,7 +651,7 @@ function QuickAdd() {
                                 </div>
 
                                 <div class="mt-4 pt-4 text-xs" style={{ "border-top": "1px solid var(--color-border)", "color": "var(--color-text-muted)" }}>
-                                    <div class="grid grid-cols-2 gap-2">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <div>💡 Use <kbd class="px-1.5 py-0.5 rounded" style={{ "background-color": "var(--color-bg-tertiary)" }}>Ctrl+K</kbd> to open</div>
                                         <div>📅 Mention times for events</div>
                                         <div>🏷️ Use #tags for organization</div>

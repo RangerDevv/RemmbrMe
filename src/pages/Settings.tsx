@@ -148,7 +148,7 @@ function Settings() {
             <div class="mb-5">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h1 class="text-2xl font-bold" style={{ "color": "var(--color-text)" }}>Settings</h1>
+                        <h1 class="text-xl lg:text-2xl font-bold" style={{ "color": "var(--color-text)" }}>Settings</h1>
                         <p class="text-sm mt-0.5" style={{ "color": "var(--color-text-muted)" }}>Customize your experience</p>
                     </div>
                     <div class="text-xs">
@@ -186,7 +186,7 @@ function Settings() {
                 {/* Theme Section */}
                 <div class="rounded-xl p-5" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                     <h2 class="text-base font-bold mb-3" style={{ "color": "var(--color-text)" }}>Theme</h2>
-                    <div class="grid grid-cols-5 gap-2">
+                    <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
                         <For each={themes}>
                             {(theme) => (
                                 <button

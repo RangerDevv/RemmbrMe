@@ -186,7 +186,7 @@ function TimeMachine() {
         <div class="flex-1 w-full">
             <div class="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold mb-1 flex items-center gap-2" style={{ "color": "var(--color-text)" }}><ClockIcon class="w-6 h-6" /> Time Machine</h1>
+                    <h1 class="text-xl lg:text-2xl font-bold mb-1 flex items-center gap-2" style={{ "color": "var(--color-text)" }}><ClockIcon class="w-5 h-5 lg:w-6 lg:h-6" /> Time Machine</h1>
                     <p style={{ "color": "var(--color-text-secondary)" }}>Monthly reflection and insights</p>
                 </div>
             </div>
@@ -219,7 +219,7 @@ function TimeMachine() {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
                 <div class="rounded-xl p-5 transition-all duration-200" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }}>
                     <DashboardIcon class="w-8 h-8 mb-2" style={{ "color": "var(--color-text-muted)" }} />
                     <div class="text-2xl font-bold mb-1" style={{ "color": "var(--color-text)" }}>{getProductivityScore()}%</div>
@@ -384,10 +384,10 @@ function TimeMachine() {
             </div>
 
             <Show when={showNoteModal()}>
-                <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowNoteModal(false)}>
-                    <div class="rounded-xl p-6 max-w-md w-full" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
-                        <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-xl font-bold" style={{ "color": "var(--color-text)" }}>💌 Message to Future Self</h2>
+                <div class="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center z-50" onClick={() => setShowNoteModal(false)}>
+                    <div class="rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-md max-h-[85vh] overflow-y-auto" style={{ "background-color": "var(--color-surface)", "border": "1px solid var(--color-border)" }} onClick={(e) => e.stopPropagation()}>
+                        <div class="flex items-center justify-between mb-5">
+                            <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>Message to Future Self</h2>
                             <button
                                 onClick={() => setShowNoteModal(false)}
                                 class="transition-colors duration-200 text-2xl" style={{ "color": "var(--color-text-muted)" }}

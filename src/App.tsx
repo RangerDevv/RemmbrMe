@@ -30,11 +30,11 @@ export default function App() {
   });
 
   return (
-    <main class="flex flex-col lg:flex-row min-h-screen" style={{ "background-color": "var(--color-bg)" }}>
+    <main class="flex min-h-screen" style={{ "background-color": "var(--color-bg)" }}>
       <Sidebar />
       
-      <div class="flex-1 lg:ml-0 overflow-y-auto">
-        <div class="max-w-[1400px] mx-auto w-full p-4 lg:p-6">
+      <div class="flex-1 min-w-0 overflow-y-auto h-screen">
+        <div class="max-w-[1400px] mx-auto w-full px-4 pb-4 pt-16 lg:px-8 lg:pt-6 lg:pb-6">
           <Router>
             <Route path="/" component={Dashboard} />
             <Route path="/todo" component={Todo} />
