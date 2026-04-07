@@ -1,4 +1,5 @@
-import { createSignal, onMount, onCleanup, For, Show, createMemo } from 'solid-js';
+import { createSignal, onMount, onCleanup, For, Show, createMemo, createEffect } from 'solid-js';
+import { useLocation } from '@solidjs/router';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
@@ -13,6 +14,8 @@ import {
 } from '../components/Icons';
 
 function Calendar() {
+
+    const routeLocation = useLocation();
 
     const [events, setEvents] = createSignal([] as any[]);
     const [currentDate, setCurrentDate] = createSignal(new Date());
@@ -65,6 +68,11 @@ function Calendar() {
     const [resizingEvent, setResizingEvent] = createSignal<any>(null);
     const [resizeEndTime, setResizeEndTime] = createSignal<{ hour: number, minutes: number } | null>(null);
     
+    // Sync viewMode with URL when navigating via sidebar
+    createEffect(() => {
+        const path = routeLocation.pathname;
+        setViewMode(path === '/schedule' ? 'week' : 'month');
+    });
     const colorPresets = [
         { name: 'Blue', value: '#3b82f6' },
         { name: 'Purple', value: '#a855f7' },
