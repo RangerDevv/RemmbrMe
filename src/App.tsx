@@ -39,6 +39,7 @@ export default function App() {
             <Route path="/" component={Dashboard} />
             <Route path="/todo" component={Todo} />
             <Route path="/calendar" component={Calendar} />
+            <Route path="/schedule" component={Calendar} />
             <Route path="/timemachine" component={TimeMachine} />
             <Route path="/ai" component={AIAssistant} />
             <Route path="/tags" component={Tags} />

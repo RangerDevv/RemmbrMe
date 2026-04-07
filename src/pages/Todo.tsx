@@ -4,6 +4,7 @@ import { generateRecurringTasks } from '../utils/recurrence';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
+import { Subtask } from '../lib/models/Todo.ts';
 import { 
     SearchIcon, 
     EditIcon, 
@@ -17,7 +18,7 @@ import {
 
 function Todo() {
 
-    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string) {
+    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[]) {
         // Combine date and time into ISO string
         let deadlineISO = undefined;
         if (deadlineDate && deadlineDate.trim()) {
@@ -38,6 +39,7 @@ function Todo() {
             Tags: tags,
             Recurrence: recur as "none" | "daily" | "weekly" | "monthly",
             RecurrenceEndDate: recurEnd || undefined,
+            Subtasks: subs,
             user: currentUser()!.id
         };
         console.log('Creating task with data:', data);
@@ -48,7 +50,7 @@ function Todo() {
         setTimeout(() => refreshNotifications(), 100);
     }
 
-    async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string) {
+    async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[]) {
         // Combine date and time into ISO string
         let deadlineISO = undefined;
         if (deadlineDate && deadlineDate.trim()) {
@@ -69,6 +71,7 @@ function Todo() {
             Tags: tags,
             Recurrence: recur as "none"|"daily"|"weekly"|"monthly",
             RecurrenceEndDate: recurEnd || undefined,
+            Subtasks: subs,
             user: currentUser()?.id
         };
         await bk.collection('Todo').update(id, data);
@@ -164,6 +167,8 @@ function Todo() {
     const [selectedTags, setSelectedTags] = createSignal<string[]>([]);
     const [recurrence, setRecurrence] = createSignal('none');
     const [recurrenceEndDate, setRecurrenceEndDate] = createSignal('');
+    const [subtasks, setSubtasks] = createSignal<Subtask[]>([]);
+    const [newSubtaskTitle, setNewSubtaskTitle] = createSignal('');
 
     const [todoItems, setTodoItems] = createSignal([] as any[]);
     const [allTags, setAllTags] = createSignal([] as any[]);
@@ -207,6 +212,8 @@ function Todo() {
         setSelectedTags([]);
         setRecurrence('none');
         setRecurrenceEndDate('');
+        setSubtasks([]);
+        setNewSubtaskTitle('');
     }
 
     function startEditing(task: any) {
@@ -235,6 +242,8 @@ function Todo() {
         setSelectedTags(task.expand?.Tags?.map((t: any) => t.id) || []);
         setRecurrence(task.Recurrence || 'none');
         setRecurrenceEndDate(task.RecurrenceEndDate || '');
+        setSubtasks(task.Subtasks || []);
+        setNewSubtaskTitle('');
         setShowModal(true);
     }
 
@@ -480,6 +489,66 @@ function Todo() {
                                     <RepeatIcon class="w-3 h-3" /> {item().Recurrence}
                                 </span>
                             </Show>
+                        </div>
+                        <Show when={item().Subtasks && item().Subtasks.length > 0}>
+                            <div class="mt-2">
+                                <div class="flex items-center gap-2 mb-1.5">
+                                    <div class="flex-1 h-1.5 rounded-full overflow-hidden" style={{ "background-color": "var(--color-bg-tertiary)" }}>
+                                        <div 
+                                            class="h-full rounded-full transition-all duration-300"
+                                            style={{ 
+                                                "width": `${(item().Subtasks.filter((s: Subtask) => s.completed).length / item().Subtasks.length) * 100}%`,
+                                                "background-color": item().Subtasks.filter((s: Subtask) => s.completed).length === item().Subtasks.length ? "var(--color-success)" : "var(--color-accent)"
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <span class="text-xs shrink-0" style={{ "color": "var(--color-text-muted)" }}>
+                                        {item().Subtasks.filter((s: Subtask) => s.completed).length}/{item().Subtasks.length}
+                                    </span>
+                                </div>
+                                <div class="space-y-0.5">
+                                    <Index each={item().Subtasks}>
+                                        {(sub) => (
+                                            <div class="flex items-center gap-2 text-xs">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={sub().completed}
+                                                    onChange={async () => {
+                                                        const updated = item().Subtasks.map((s: Subtask) => 
+                                                            s.id === sub().id ? { ...s, completed: !s.completed } : s
+                                                        );
+                                                        await bk.collection('Todo').update(item().id, { Subtasks: updated });
+                                                        fetchTodos();
+                                                    }}
+                                                    class="w-3.5 h-3.5 rounded cursor-pointer shrink-0"
+                                                />
+                                                <span class={sub().completed ? 'line-through' : ''} style={{ "color": sub().completed ? "var(--color-text-muted)" : "var(--color-text-secondary)" }}>
+                                                    {sub().title}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </Index>
+                                </div>
+                            </div>
+                        </Show>
+                        <div class="mt-2">
+                            <input
+                                type="text"
+                                placeholder="+ Add subtask..."
+                                class="w-full bg-transparent text-xs focus:outline-none py-1 px-1 rounded transition-colors placeholder:opacity-50"
+                                style={{ "color": "var(--color-text-secondary)", "border-bottom": "1px solid transparent" }}
+                                onFocus={(e) => { e.currentTarget.style.borderBottomColor = 'var(--color-border)'; }}
+                                onBlur={(e) => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
+                                onKeyDown={async (e) => {
+                                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                        const newSub = { id: crypto.randomUUID().slice(0, 8), title: e.currentTarget.value.trim(), completed: false };
+                                        const updated = [...(item().Subtasks || []), newSub];
+                                        await bk.collection('Todo').update(item().id, { Subtasks: updated });
+                                        e.currentTarget.value = '';
+                                        fetchTodos();
+                                    }
+                                }}
+                            />
                         </div>
                         {item().Deadline && (
                             <p class="text-sm text-gray-500 mt-2 flex items-center gap-1.5">
@@ -840,7 +909,8 @@ function Todo() {
                                     TaskDeadlineTime(),
                                     selectedTags(),
                                     recurrence(),
-                                    recurrenceEndDate()
+                                    recurrenceEndDate(),
+                                    subtasks()
                                 );
                             } else {
                                 await createTask(
@@ -854,7 +924,8 @@ function Todo() {
                                     TaskDeadlineTime(),
                                     selectedTags(),
                                     recurrence(),
-                                    recurrenceEndDate()
+                                    recurrenceEndDate(),
+                                    subtasks()
                                 );
                             }
                             resetForm();
@@ -990,6 +1061,79 @@ function Todo() {
                                         <a href="/tags" class="text-sm text-gray-500 hover:text-gray-400 transition-colors duration-200">
                                             Create tags in Tags page →
                                         </a>
+                                    </Show>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Subtasks</label>
+                                <div class="rounded-lg p-2 space-y-1.5" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
+                                    <Index each={subtasks()}>
+                                        {(sub, idx) => (
+                                            <div class="flex items-center gap-2 group">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={sub().completed}
+                                                    onChange={() => {
+                                                        const updated = [...subtasks()];
+                                                        updated[idx] = { ...updated[idx], completed: !updated[idx].completed };
+                                                        setSubtasks(updated);
+                                                    }}
+                                                    class="w-4 h-4 rounded cursor-pointer shrink-0"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={sub().title}
+                                                    onInput={(e) => {
+                                                        const updated = [...subtasks()];
+                                                        updated[idx] = { ...updated[idx], title: e.currentTarget.value };
+                                                        setSubtasks(updated);
+                                                    }}
+                                                    class={`flex-1 bg-transparent text-sm focus:outline-none ${sub().completed ? 'line-through' : ''}`}
+                                                    style={{ "color": sub().completed ? "var(--color-text-muted)" : "var(--color-text)" }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSubtasks(subtasks().filter((_, i) => i !== idx))}
+                                                    class="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-all duration-200 text-sm px-1"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
+                                    </Index>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm shrink-0" style={{ "color": "var(--color-text-muted)" }}>+</span>
+                                        <input
+                                            type="text"
+                                            value={newSubtaskTitle()}
+                                            onInput={(e) => setNewSubtaskTitle(e.currentTarget.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && newSubtaskTitle().trim()) {
+                                                    e.preventDefault();
+                                                    setSubtasks([...subtasks(), { id: crypto.randomUUID().slice(0, 8), title: newSubtaskTitle().trim(), completed: false }]);
+                                                    setNewSubtaskTitle('');
+                                                }
+                                            }}
+                                            placeholder="Add subtask... (Enter to add)"
+                                            class="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-[var(--color-text-muted)]"
+                                            style={{ "color": "var(--color-text)" }}
+                                        />
+                                    </div>
+                                    <Show when={subtasks().length > 0}>
+                                        <div class="pt-1 mt-1" style={{ "border-top": "1px solid var(--color-border)" }}>
+                                            <div class="flex items-center justify-between text-xs" style={{ "color": "var(--color-text-muted)" }}>
+                                                <span>{subtasks().filter(s => s.completed).length}/{subtasks().length} done</span>
+                                                <div class="flex-1 mx-2 h-1 rounded-full overflow-hidden" style={{ "background-color": "var(--color-bg)" }}>
+                                                    <div 
+                                                        class="h-full rounded-full transition-all duration-300"
+                                                        style={{ 
+                                                            "width": `${subtasks().length > 0 ? (subtasks().filter(s => s.completed).length / subtasks().length) * 100 : 0}%`,
+                                                            "background-color": "var(--color-accent)" 
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </Show>
                                 </div>
                             </div>

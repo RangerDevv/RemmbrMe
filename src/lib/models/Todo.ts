@@ -2,6 +2,12 @@ import { Tags } from "./Tags.ts";
 import { User} from "./User.ts";
 import {objectModes, sqlRelation} from "../backend_types.ts";
 
+export interface Subtask {
+    id: string;
+    title: string;
+    completed: boolean;
+}
+
 export interface Todo<K extends objectModes> {
     id: string;
     Title: string;
@@ -12,6 +18,7 @@ export interface Todo<K extends objectModes> {
     Priority: `P${number}`;
     Deadline?: string;
     Tags?: sqlRelation<Tags<K>, K>[],
+    Subtasks?: Subtask[];
     Recurrence?: "none"|"daily"|"weekly"|"monthly";
     RecurrencePattern?: Object;
     RecurrenceEndDate?: string;

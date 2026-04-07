@@ -18,7 +18,7 @@ function Calendar() {
     const [currentDate, setCurrentDate] = createSignal(new Date());
     const [selectedDate, setSelectedDate] = createSignal<Date | null>(null);
     const [showEventModal, setShowEventModal] = createSignal(false);
-    const [viewMode, setViewMode] = createSignal<'month' | 'week'>('week');
+    const [viewMode, setViewMode] = createSignal<'month' | 'week'>(window.location.pathname === '/schedule' ? 'week' : 'month');
     const [hoveredEvent, setHoveredEvent] = createSignal<any>(null);
     const [quickViewEvent, setQuickViewEvent] = createSignal<any>(null);
     
@@ -52,6 +52,18 @@ function Calendar() {
     const [selectedDateTasks, setSelectedDateTasks] = createSignal<Date | null>(null);
     const [confirmDelete, setConfirmDelete] = createSignal({ show: false, eventId: '' });
     let isFetchingTodos = false;
+    
+    // Drag-to-move event state
+    const [isDraggingEvent, setIsDraggingEvent] = createSignal(false);
+    const [draggingEvent, setDraggingEvent] = createSignal<any>(null);
+    const [dragEventStart, setDragEventStart] = createSignal<{ day: Date, hour: number, minutes: number } | null>(null);
+    const [dragEventTarget, setDragEventTarget] = createSignal<{ day: Date, hour: number, minutes: number } | null>(null);
+    let eventDragMoved = false;
+    
+    // Drag-to-resize state
+    const [isResizing, setIsResizing] = createSignal(false);
+    const [resizingEvent, setResizingEvent] = createSignal<any>(null);
+    const [resizeEndTime, setResizeEndTime] = createSignal<{ hour: number, minutes: number } | null>(null);
     
     const colorPresets = [
         { name: 'Blue', value: '#3b82f6' },
@@ -577,6 +589,190 @@ function Calendar() {
         setCurrentDate(newDate);
     }
 
+    // --- Drag-to-move handlers ---
+    function getMinutesFromMouseY(e: MouseEvent, cellElement: HTMLElement): number {
+        const rect = cellElement.getBoundingClientRect();
+        const relativeY = e.clientY - rect.top;
+        const fraction = Math.max(0, Math.min(1, relativeY / rect.height));
+        return Math.round((fraction * 60) / 15) * 15;
+    }
+
+    function handleEventDragStart(e: MouseEvent, event: any) {
+        if (event.isBreak || event.isRecurringInstance) return;
+        e.preventDefault();
+        e.stopPropagation();
+        eventDragMoved = false;
+        const eventStart = new Date(event.Start);
+        const dayStart = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+        setDraggingEvent(event);
+        setDragEventStart({ day: dayStart, hour: eventStart.getHours(), minutes: eventStart.getMinutes() });
+        setDragEventTarget({ day: dayStart, hour: eventStart.getHours(), minutes: eventStart.getMinutes() });
+        setIsDraggingEvent(true);
+    }
+
+    function handleEventDragMoveWeek(e: MouseEvent, day: Date, hour: number) {
+        if (!isDraggingEvent() || !draggingEvent()) return;
+        const cell = e.currentTarget as HTMLElement;
+        const minutes = getMinutesFromMouseY(e, cell);
+        const start = dragEventStart();
+        if (start && (day.getTime() !== start.day.getTime() || hour !== start.hour || minutes !== start.minutes)) {
+            eventDragMoved = true;
+        }
+        setDragEventTarget({ day, hour, minutes });
+    }
+
+    function handleEventDragMoveMonth(day: Date) {
+        if (!isDraggingEvent() || !draggingEvent()) return;
+        const start = dragEventStart();
+        if (start && day.getTime() !== start.day.getTime()) {
+            eventDragMoved = true;
+        }
+        const eventStart = new Date(draggingEvent().Start);
+        setDragEventTarget({ day, hour: eventStart.getHours(), minutes: eventStart.getMinutes() });
+    }
+
+    async function handleEventDragEnd() {
+        if (!isDraggingEvent() || !draggingEvent()) {
+            setIsDraggingEvent(false);
+            setDraggingEvent(null);
+            setDragEventStart(null);
+            setDragEventTarget(null);
+            return;
+        }
+
+        const event = draggingEvent();
+        const start = dragEventStart();
+        const target = dragEventTarget();
+
+        if (!start || !target || !eventDragMoved) {
+            // No movement — treat as click
+            if (!event.isBreak) openEventModal(event.id);
+            setIsDraggingEvent(false);
+            setDraggingEvent(null);
+            setDragEventStart(null);
+            setDragEventTarget(null);
+            return;
+        }
+
+        const startTotalMin = start.hour * 60 + start.minutes;
+        const targetTotalMin = target.hour * 60 + target.minutes;
+        const minuteDelta = targetTotalMin - startTotalMin;
+        const dayDelta = Math.round((target.day.getTime() - start.day.getTime()) / (24 * 60 * 60 * 1000));
+
+        if (minuteDelta === 0 && dayDelta === 0) {
+            if (!event.isBreak) openEventModal(event.id);
+            setIsDraggingEvent(false);
+            setDraggingEvent(null);
+            setDragEventStart(null);
+            setDragEventTarget(null);
+            return;
+        }
+
+        const eventStart = new Date(event.Start);
+        const eventEnd = new Date(event.End);
+        const newStart = new Date(eventStart);
+        newStart.setDate(newStart.getDate() + dayDelta);
+        newStart.setMinutes(newStart.getMinutes() + minuteDelta);
+        const newEnd = new Date(eventEnd);
+        newEnd.setDate(newEnd.getDate() + dayDelta);
+        newEnd.setMinutes(newEnd.getMinutes() + minuteDelta);
+
+        const eventId = event.isRecurringInstance ? event.originalEventId : event.id;
+        if (!event.isRecurringInstance) {
+            await bk.collection('Calendar').update(eventId, {
+                Start: newStart.toISOString(),
+                End: newEnd.toISOString()
+            });
+            await fetchEvents();
+        }
+
+        setIsDraggingEvent(false);
+        setDraggingEvent(null);
+        setDragEventStart(null);
+        setDragEventTarget(null);
+    }
+
+    function getDragMovePreview(day: Date, hour: number): { show: boolean, top: number, height: number, color: string } | null {
+        if (!isDraggingEvent() || !draggingEvent() || !dragEventTarget() || !eventDragMoved) return null;
+        const target = dragEventTarget()!;
+        if (target.day.getTime() !== day.getTime() || target.hour !== hour) return null;
+        const event = draggingEvent();
+        const duration = new Date(event.End).getTime() - new Date(event.Start).getTime();
+        const durationMin = duration / (1000 * 60);
+        const top = (target.minutes / 60) * 60;
+        const h = Math.max(30, (durationMin / 60) * 60);
+        return {
+            show: true,
+            top,
+            height: h,
+            color: event.Color || '#3b82f6'
+        };
+    }
+
+    // --- Drag-to-resize handlers ---
+    function handleResizeStart(e: MouseEvent, event: any) {
+        e.stopPropagation();
+        e.preventDefault();
+        setIsResizing(true);
+        setResizingEvent(event);
+        const end = new Date(event.End);
+        setResizeEndTime({ hour: end.getHours(), minutes: end.getMinutes() });
+    }
+
+    function handleResizeMove(e: MouseEvent, _day: Date, hour: number) {
+        if (!isResizing() || !resizingEvent()) return;
+        const cell = e.currentTarget as HTMLElement;
+        const minutes = getMinutesFromMouseY(e, cell);
+        setResizeEndTime({ hour, minutes });
+    }
+
+    async function handleResizeEnd() {
+        if (!isResizing() || !resizingEvent() || !resizeEndTime()) {
+            setIsResizing(false);
+            setResizingEvent(null);
+            setResizeEndTime(null);
+            return;
+        }
+
+        const event = resizingEvent();
+        const endTime = resizeEndTime()!;
+        const eventStart = new Date(event.Start);
+        const startTotalMin = eventStart.getHours() * 60 + eventStart.getMinutes();
+        let endTotalMin = endTime.hour * 60 + endTime.minutes;
+        
+        // Ensure minimum 15 min duration
+        if (endTotalMin <= startTotalMin + 15) {
+            endTotalMin = startTotalMin + 30;
+        }
+
+        const newEnd = new Date(eventStart);
+        newEnd.setHours(Math.floor(endTotalMin / 60), endTotalMin % 60, 0, 0);
+
+        // Don't update recurring instances
+        const eventId = event.isRecurringInstance ? event.originalEventId : event.id;
+        if (!event.isRecurringInstance) {
+            await bk.collection('Calendar').update(eventId, {
+                End: newEnd.toISOString()
+            });
+            await fetchEvents();
+        }
+
+        setIsResizing(false);
+        setResizingEvent(null);
+        setResizeEndTime(null);
+    }
+
+    function getResizedHeight(event: any): number | null {
+        if (!isResizing() || !resizingEvent() || !resizeEndTime()) return null;
+        if (resizingEvent().id !== event.id) return null;
+        
+        const eventStart = new Date(event.Start);
+        const startTotalMin = eventStart.getHours() * 60 + eventStart.getMinutes();
+        const endTotalMin = resizeEndTime()!.hour * 60 + resizeEndTime()!.minutes;
+        const durationMin = Math.max(endTotalMin - startTotalMin, 15);
+        return (durationMin / 60) * 60; // 60px per hour
+    }
+
     onMount(async () => {
         console.log('Calendar mounted, fetching data...');
         setIsLoading(true);
@@ -585,13 +781,23 @@ function Calendar() {
         await fetchTags();
         setIsLoading(false);
 
+        // Global mouseup for drag-to-move and resize
+        const onMouseUp = () => {
+            handleEventDragEnd();
+            handleResizeEnd();
+        };
+        window.addEventListener('mouseup', onMouseUp);
+
         // Listen for items created via QuickAdd
         const handleItemCreated = async () => {
             await fetchEvents();
             await fetchTodos();
         };
         window.addEventListener('itemCreated', handleItemCreated);
-        onCleanup(() => window.removeEventListener('itemCreated', handleItemCreated));
+        onCleanup(() => {
+            window.removeEventListener('itemCreated', handleItemCreated);
+            window.removeEventListener('mouseup', onMouseUp);
+        });
     });
 
     return (
@@ -614,23 +820,35 @@ function Calendar() {
                 </div>
                 <div class="flex gap-2">
                     <button
-                        onClick={async () => {
-                            await fetchTodos();
-                            await fetchEvents();
-                        }}
-                        class="px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm"
+                        onClick={async () => { await fetchTodos(); await fetchEvents(); }}
+                        class="px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5"
                         style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
                         title="Refresh tasks and events"
                     >
                         <RepeatIcon class="w-4 h-4" />
                     </button>
-                    <button
-                        onClick={() => setViewMode(viewMode() === 'month' ? 'week' : 'month')}
-                        class="px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5"
-                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
-                    >
-                        {viewMode() === 'month' ? <><CalendarWeekIcon class="w-4 h-4" /> Week</> : <><CalendarMonthIcon class="w-4 h-4" /> Month</>}
-                    </button>
+                    <div class="flex rounded-lg overflow-hidden" style={{ "border": "1px solid var(--color-border)" }}>
+                        <button
+                            onClick={() => { setViewMode('month'); history.replaceState(null, '', '/calendar'); }}
+                            class="px-3 py-1.5 text-sm flex items-center gap-1.5 transition-all duration-200"
+                            style={{
+                                "background-color": viewMode() === 'month' ? "var(--color-accent)" : "var(--color-bg-tertiary)",
+                                "color": viewMode() === 'month' ? "var(--color-accent-text)" : "var(--color-text-secondary)"
+                            }}
+                        >
+                            <CalendarMonthIcon class="w-4 h-4" /> Calendar
+                        </button>
+                        <button
+                            onClick={() => { setViewMode('week'); history.replaceState(null, '', '/schedule'); }}
+                            class="px-3 py-1.5 text-sm flex items-center gap-1.5 transition-all duration-200"
+                            style={{
+                                "background-color": viewMode() === 'week' ? "var(--color-accent)" : "var(--color-bg-tertiary)",
+                                "color": viewMode() === 'week' ? "var(--color-accent-text)" : "var(--color-text-secondary)"
+                            }}
+                        >
+                            <CalendarWeekIcon class="w-4 h-4" /> Schedule
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -717,9 +935,9 @@ function Calendar() {
             </Show>
             <Show when={!isLoading()}>
             <Show when={viewMode() === 'month'}>
-                <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
+                <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 overflow-x-auto">
                     {/* Month Grid */}
-                    <div class="flex-1 overflow-x-auto">
+                    <div class="flex-1 min-w-0">
                         <div class="glass rounded-xl overflow-hidden">
                             {/* Day headers */}
                             <div class="grid grid-cols-7" style={{ "border-bottom": "1px solid var(--color-border)", "background-color": "var(--color-bg-tertiary)" }}>
@@ -749,12 +967,15 @@ function Calendar() {
                                                 style={{ 
                                                     "border-right": "1px solid var(--color-border)", 
                                                     "border-bottom": "1px solid var(--color-border)",
-                                                    "background-color": isCurrentMonth ? "var(--color-surface)" : "var(--color-bg)",
+                                                    "background-color": isDraggingEvent() && dragEventTarget()?.day.getTime() === day.getTime() && eventDragMoved
+                                                        ? "var(--color-accent-muted)" 
+                                                        : isCurrentMonth ? "var(--color-surface)" : "var(--color-bg)",
                                                     "opacity": isCurrentMonth ? 1 : 0.5
                                                 }}
                                                 onClick={() => {
-                                                    setSelectedDate(day);
+                                                    if (!isDraggingEvent()) setSelectedDate(day);
                                                 }}
+                                                onMouseMove={() => handleEventDragMoveMonth(day)}
                                             >
                                                 <div class="flex items-center justify-between mb-1">
                                                     <div class={`text-sm font-medium ${
@@ -790,14 +1011,14 @@ function Calendar() {
                                                             
                                                             return (
                                                                 <div
-                                                                    class="text-xs px-2 py-1 rounded transition-all duration-200 hover:opacity-80 cursor-pointer"
+                                                                    class="text-xs px-2 py-1 rounded transition-all duration-200 hover:opacity-80 cursor-grab"
                                                                     style={{ 
                                                                         'background-color': event.Color || '#3b82f6',
-                                                                        opacity: allTasksCompleted ? 0.6 : 0.9
+                                                                        opacity: isDraggingEvent() && draggingEvent()?.id === event.id ? 0.3 : (allTasksCompleted ? 0.6 : 0.9)
                                                                     }}
-                                                                    onClick={(e) => {
+                                                                    onMouseDown={(e) => {
                                                                         e.stopPropagation();
-                                                                        openEventModal(event.id);
+                                                                        handleEventDragStart(e, event);
                                                                     }}
                                                                     onMouseEnter={() => setHoveredEvent(event)}
                                                                     onMouseLeave={() => setHoveredEvent(null)}
@@ -1011,7 +1232,31 @@ function Calendar() {
                                                 const dayTasks = createMemo(() => getTasksForDate(day));
                                                 
                                                 return (
-                                                    <div class="relative min-h-[60px] transition-colors duration-200" style={{ "border-right": "1px solid var(--color-border)" }}>
+                                                    <div 
+                                                        class="relative min-h-[60px] transition-colors duration-200 select-none"
+                                                        style={{ "border-right": "1px solid var(--color-border)", "cursor": isResizing() ? "ns-resize" : isDraggingEvent() ? "grabbing" : "default" }}
+                                                        onMouseMove={(e) => {
+                                                            handleEventDragMoveWeek(e, day, hour);
+                                                            handleResizeMove(e, day, hour);
+                                                        }}
+                                                    >
+                                                        {/* Drag-to-move target preview */}
+                                                        {(() => {
+                                                            const preview = getDragMovePreview(day, hour);
+                                                            if (!preview) return null;
+                                                            return (
+                                                                <div
+                                                                    class="absolute left-0 right-0 mx-1 rounded z-20 pointer-events-none"
+                                                                    style={{
+                                                                        "top": `${preview.top}px`,
+                                                                        "height": `${preview.height}px`,
+                                                                        "background-color": preview.color,
+                                                                        "opacity": "0.35",
+                                                                        "border": `2px dashed ${preview.color}`
+                                                                    }}
+                                                                ></div>
+                                                            );
+                                                        })()}
                                                         {/* Render Events */}
                                                         <For each={dayEvents()}>
                                                             {(event) => {
@@ -1066,16 +1311,19 @@ function Calendar() {
                                                                     class={`absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 ${
                                                                         isBreak 
                                                                             ? 'border-dashed'
-                                                                            : 'cursor-pointer hover:opacity-80 transition-all duration-200'
+                                                                            : 'cursor-grab hover:opacity-80 transition-all duration-200'
                                                                     }`}
                                                                     style={{ 
                                                                         'background-color': isBreak ? 'transparent' : (event.Color || '#3b82f6'),
                                                                         'border': isBreak ? '1px dashed var(--color-border)' : 'none',
                                                                         'top': `${topOffset}px`,
-                                                                        'height': `${height}px`,
-                                                                        'opacity': isBreak ? 0.5 : (allTasksCompleted ? 0.6 : 0.9)
+                                                                        'height': `${getResizedHeight(event) ?? height}px`,
+                                                                        'opacity': isDraggingEvent() && draggingEvent()?.id === event.id ? 0.3 : (isBreak ? 0.5 : (allTasksCompleted ? 0.6 : 0.9))
                                                                     }}
-                                                                    onClick={() => !isBreak && openEventModal(event.id)}
+                                                                    onMouseDown={(e) => {
+                                                                        if (isBreak) return;
+                                                                        handleEventDragStart(e, event);
+                                                                    }}
                                                                 >
                     <div class={`font-medium truncate ${allTasksCompleted && !isBreak ? 'line-through' : ''} ${isBreak ? 'italic' : ''}`} style={{ "color": isBreak ? "var(--color-text-muted)" : "white" }}>
                                                                         {allTasksCompleted && !isBreak ? '✓ ' : ''}{event.EventName}
@@ -1118,6 +1366,14 @@ function Calendar() {
                                                                     <Show when={height > 60 && event.Description}>
                                                                         <div class="text-[10px] opacity-60 mt-1 line-clamp-2" style="white-space: pre-wrap;">
                                                                             {event.Description}
+                                                                        </div>
+                                                                    </Show>
+                                                                    <Show when={!isBreak && !event.isRecurringInstance}>
+                                                                        <div
+                                                                            class="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize hover:bg-white/20 transition-colors rounded-b z-20"
+                                                                            onMouseDown={(e) => handleResizeStart(e, event)}
+                                                                        >
+                                                                            <div class="w-6 h-0.5 rounded-full bg-white/40 mx-auto mt-1"></div>
                                                                         </div>
                                                                     </Show>
                                                                 </div>

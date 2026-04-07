@@ -5,6 +5,7 @@ import {
     DashboardIcon, 
     CheckCircleIcon, 
     CalendarIcon, 
+    CalendarWeekIcon,
     ClockIcon, 
     RobotIcon, 
     TagIcon, 
@@ -80,6 +81,7 @@ export default function Sidebar() {
     const navItems = [
         { path: '/', label: 'My Day', icon: DashboardIcon, count: () => taskCount() },
         { path: '/calendar', label: 'Calendar', icon: CalendarIcon, count: () => calendarCount() },
+        { path: '/schedule', label: 'Schedule', icon: CalendarWeekIcon, count: () => calendarCount() },
     ];
 
     const workspaceItems = [

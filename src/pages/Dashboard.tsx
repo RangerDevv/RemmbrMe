@@ -150,8 +150,20 @@ function Dashboard() {
     }
 
     function getActiveTasks() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
         return todos()
-            .filter(t => !t.Completed)
+            .filter(t => {
+                if (t.Completed) return false;
+                // Exclude tasks due today (they go in "Due Today") and overdue
+                if (t.Deadline) {
+                    const d = new Date(t.Deadline);
+                    if (d < tomorrow) return false; // due today or overdue
+                }
+                return true;
+            })
             .sort((a, b) => {
                 const po = { P1: 0, P2: 1, P3: 2 };
                 const ap = po[a.Priority as keyof typeof po] ?? 3;
@@ -163,6 +175,21 @@ function Dashboard() {
                 return 0;
             })
             .slice(0, 15);
+    }
+
+    function getTodayTasks() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return todos()
+            .filter(t => {
+                if (t.Completed) return false;
+                if (!t.Deadline) return false;
+                const d = new Date(t.Deadline);
+                return d >= today && d < tomorrow;
+            })
+            .sort((a, b) => new Date(a.Deadline).getTime() - new Date(b.Deadline).getTime());
     }
 
     function getOverdueTasks() {
@@ -324,7 +351,7 @@ function Dashboard() {
                         {/* Today's Schedule */}
                         <div>
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Today's Schedule</h3>
+                                <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Today's Events</h3>
                                 <A href="/calendar" class="text-xs font-medium hover:underline" style={{ "color": "var(--color-accent)" }}>
                                     View Calendar
                                 </A>
@@ -395,6 +422,64 @@ function Dashboard() {
 
                     {/* Right column: Tasks */}
                     <div class="space-y-5 lg:space-y-6">
+                        {/* Due Today */}
+                        <Show when={getTodayTasks().length > 0}>
+                            <div>
+                                <h3 class="text-sm font-semibold mb-2 flex items-center gap-1.5" style={{ "color": "var(--color-accent)" }}>
+                                    Due Today · {getTodayTasks().length}
+                                </h3>
+                                <div class="space-y-1.5">
+                                    <For each={getTodayTasks()}>
+                                        {(task) => {
+                                            const deadline = new Date(task.Deadline);
+                                            const hasTime = deadline.getHours() !== 0 || deadline.getMinutes() !== 0;
+                                            return (
+                                                <div class="glass flex items-center gap-2.5 py-2.5 px-3 rounded-xl group card-hover">
+                                                    <button
+                                                        onClick={() => quickCompleteTask(task.id)}
+                                                        class="w-[18px] h-[18px] rounded-full shrink-0 transition-colors hover:opacity-70"
+                                                        style={{ "border": "2px solid var(--color-accent)" }}
+                                                        title="Complete"
+                                                    ></button>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="text-sm truncate" style={{ "color": "var(--color-text)" }}>{task.Title}</div>
+                                                        <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
+                                                            {hasTime 
+                                                                ? deadline.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                                                                : 'Anytime today'
+                                                            }
+                                                            <Show when={task.Recurrence && task.Recurrence !== 'none'}>
+                                                                <span class="ml-1.5 inline-flex items-center gap-0.5">
+                                                                    <RepeatIcon class="w-3 h-3" /> {task.Recurrence}
+                                                                </span>
+                                                            </Show>
+                                                        </div>
+                                                        <Show when={task.Subtasks && task.Subtasks.length > 0}>
+                                                            <div class="flex items-center gap-1.5 mt-1">
+                                                                <div class="flex-1 h-1 rounded-full overflow-hidden" style={{ "background-color": "var(--color-bg-tertiary)" }}>
+                                                                    <div 
+                                                                        class="h-full rounded-full transition-all duration-300"
+                                                                        style={{ 
+                                                                            "width": `${(task.Subtasks.filter((s: any) => s.completed).length / task.Subtasks.length) * 100}%`,
+                                                                            "background-color": task.Subtasks.filter((s: any) => s.completed).length === task.Subtasks.length ? "var(--color-success)" : "var(--color-accent)"
+                                                                        }}
+                                                                    ></div>
+                                                                </div>
+                                                                <span class="text-[10px] shrink-0" style={{ "color": "var(--color-text-muted)" }}>
+                                                                    {task.Subtasks.filter((s: any) => s.completed).length}/{task.Subtasks.length}
+                                                                </span>
+                                                            </div>
+                                                        </Show>
+                                                    </div>
+                                                    <div class="w-2 h-2 rounded-full shrink-0" style={{ "background-color": priorityDot(task.Priority) }}></div>
+                                                </div>
+                                            );
+                                        }}
+                                    </For>
+                                </div>
+                            </div>
+                        </Show>
+
                         {/* Overdue */}
                         <Show when={getOverdueTasks().length > 0}>
                             <div>
@@ -428,7 +513,7 @@ function Dashboard() {
                         {/* Active Tasks */}
                         <div>
                             <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Tasks</h3>
+                                <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Upcoming Tasks</h3>
                                 <A href="/todo" class="text-xs font-medium hover:underline" style={{ "color": "var(--color-accent)" }}>
                                     View All
                                 </A>
@@ -454,6 +539,22 @@ function Dashboard() {
                                                                     <RepeatIcon class="w-3 h-3" /> {task.Recurrence}
                                                                 </span>
                                                             </Show>
+                                                        </div>
+                                                    </Show>
+                                                    <Show when={task.Subtasks && task.Subtasks.length > 0}>
+                                                        <div class="flex items-center gap-1.5 mt-1">
+                                                            <div class="flex-1 h-1 rounded-full overflow-hidden" style={{ "background-color": "var(--color-bg-tertiary)" }}>
+                                                                <div 
+                                                                    class="h-full rounded-full transition-all duration-300"
+                                                                    style={{ 
+                                                                        "width": `${(task.Subtasks.filter((s: any) => s.completed).length / task.Subtasks.length) * 100}%`,
+                                                                        "background-color": task.Subtasks.filter((s: any) => s.completed).length === task.Subtasks.length ? "var(--color-success)" : "var(--color-accent)"
+                                                                    }}
+                                                                ></div>
+                                                            </div>
+                                                            <span class="text-[10px] shrink-0" style={{ "color": "var(--color-text-muted)" }}>
+                                                                {task.Subtasks.filter((s: any) => s.completed).length}/{task.Subtasks.length}
+                                                            </span>
                                                         </div>
                                                     </Show>
                                                 </div>
