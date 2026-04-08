@@ -18,7 +18,7 @@ import {
 
 function Todo() {
 
-    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[], duration:number) {
+    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[], duration:number, recurDays:number[]) {
         // Combine date and time into ISO string
         let deadlineISO = undefined;
         if (deadlineDate && deadlineDate.trim()) {
@@ -37,7 +37,8 @@ function Todo() {
             Priority: priority as `P${number}`,
             Deadline: deadlineISO,
             Tags: tags,
-            Recurrence: recur as "none" | "daily" | "weekly" | "monthly",
+            Recurrence: recur as "none" | "daily" | "weekly" | "monthly" | "custom",
+            RecurrencePattern: recur === 'custom' ? { days: recurDays } : undefined,
             RecurrenceEndDate: recurEnd || undefined,
             Subtasks: subs,
             Duration: duration || undefined,
@@ -51,7 +52,7 @@ function Todo() {
         setTimeout(() => refreshNotifications(), 100);
     }
 
-    async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[], duration:number) {
+    async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[], duration:number, recurDays:number[]) {
         // Combine date and time into ISO string
         let deadlineISO = undefined;
         if (deadlineDate && deadlineDate.trim()) {
@@ -70,7 +71,8 @@ function Todo() {
             Priority: priority as `P${number}`,
             Deadline: deadlineISO,
             Tags: tags,
-            Recurrence: recur as "none"|"daily"|"weekly"|"monthly",
+            Recurrence: recur as "none"|"daily"|"weekly"|"monthly"|"custom",
+            RecurrencePattern: recur === 'custom' ? { days: recurDays } : undefined,
             RecurrenceEndDate: recurEnd || undefined,
             Subtasks: subs,
             Duration: duration || undefined,
@@ -119,6 +121,20 @@ function Todo() {
                     case 'monthly':
                         nextDeadline.setMonth(nextDeadline.getMonth() + 1);
                         break;
+                    case 'custom': {
+                        // Find next matching day of week
+                        const days = task.RecurrencePattern?.days || [];
+                        if (days.length === 0) break;
+                        for (let i = 1; i <= 7; i++) {
+                            const candidate = new Date(currentDeadline);
+                            candidate.setDate(candidate.getDate() + i);
+                            if (days.includes(candidate.getDay())) {
+                                nextDeadline = candidate;
+                                break;
+                            }
+                        }
+                        break;
+                    }
                 }
                 
                 console.log('Next deadline calculated:', nextDeadline.toISOString());
@@ -169,6 +185,7 @@ function Todo() {
     const [selectedTags, setSelectedTags] = createSignal<string[]>([]);
     const [recurrence, setRecurrence] = createSignal('none');
     const [recurrenceEndDate, setRecurrenceEndDate] = createSignal('');
+    const [recurrenceDays, setRecurrenceDays] = createSignal<number[]>([]);
     const [subtasks, setSubtasks] = createSignal<Subtask[]>([]);
     const [newSubtaskTitle, setNewSubtaskTitle] = createSignal('');
     const [taskDuration, setTaskDuration] = createSignal(0);
@@ -215,6 +232,7 @@ function Todo() {
         setSelectedTags([]);
         setRecurrence('none');
         setRecurrenceEndDate('');
+        setRecurrenceDays([]);
         setSubtasks([]);
         setNewSubtaskTitle('');
         setTaskDuration(0);
@@ -246,6 +264,7 @@ function Todo() {
         setSelectedTags(task.expand?.Tags?.map((t: any) => t.id) || []);
         setRecurrence(task.Recurrence || 'none');
         setRecurrenceEndDate(task.RecurrenceEndDate || '');
+        setRecurrenceDays(task.RecurrencePattern?.days || []);
         setSubtasks(task.Subtasks || []);
         setNewSubtaskTitle('');
         setTaskDuration(task.Duration || 0);
@@ -502,7 +521,7 @@ function Todo() {
                             </Show>
                             <Show when={item().Recurrence && item().Recurrence !== 'none'}>
                                 <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                                    <RepeatIcon class="w-3 h-3" /> {item().Recurrence}
+                                    <RepeatIcon class="w-3 h-3" /> {item().Recurrence === 'custom' ? (() => { const dayLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']; const days = item().RecurrencePattern?.days || []; return days.map((d: number) => dayLabels[d]).join(', '); })() : item().Recurrence}
                                 </span>
                             </Show>
                         </div>
@@ -927,7 +946,8 @@ function Todo() {
                                     recurrence(),
                                     recurrenceEndDate(),
                                     subtasks(),
-                                    taskDuration()
+                                    taskDuration(),
+                                    recurrenceDays()
                                 );
                             } else {
                                 await createTask(
@@ -943,7 +963,8 @@ function Todo() {
                                     recurrence(),
                                     recurrenceEndDate(),
                                     subtasks(),
-                                    taskDuration()
+                                    taskDuration(),
+                                    recurrenceDays()
                                 );
                             }
                             resetForm();
@@ -1023,7 +1044,7 @@ function Todo() {
                                 </div>
                             </div>
                             <div class="mb-4">
-                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Due Date</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Start / Due Date</label>
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
                                         <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
@@ -1189,7 +1210,10 @@ function Todo() {
                                 <div class="relative">
                                     <select
                                         value={recurrence()}
-                                        onChange={(e) => setRecurrence(e.currentTarget.value)}
+                                        onChange={(e) => {
+                                            setRecurrence(e.currentTarget.value);
+                                            if (e.currentTarget.value !== 'custom') setRecurrenceDays([]);
+                                        }}
                                         class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer appearance-none focus:outline-none transition-all duration-200"
                                         style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                     >
@@ -1197,9 +1221,39 @@ function Todo() {
                                         <option value="daily">Daily</option>
                                         <option value="weekly">Weekly</option>
                                         <option value="monthly">Monthly</option>
+                                        <option value="custom">Custom Days</option>
                                     </select>
                                 </div>
                             </div>
+                            <Show when={recurrence() === 'custom'}>
+                                <div class="mb-4">
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Repeat On</label>
+                                    <div class="flex gap-1.5">
+                                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, idx) => (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const days = recurrenceDays();
+                                                    setRecurrenceDays(days.includes(idx) ? days.filter(d => d !== idx) : [...days, idx].sort());
+                                                }}
+                                                class="w-9 h-9 rounded-full text-xs font-semibold transition-all duration-200 flex items-center justify-center"
+                                                style={{
+                                                    "background-color": recurrenceDays().includes(idx) ? "var(--color-accent)" : "var(--color-bg-tertiary)",
+                                                    "color": recurrenceDays().includes(idx) ? "var(--color-accent-text)" : "var(--color-text-muted)",
+                                                    "border": `1px solid ${recurrenceDays().includes(idx) ? "var(--color-accent)" : "var(--color-border)"}`,
+                                                }}
+                                            >
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div class="flex gap-2 mt-2">
+                                        <button type="button" onClick={() => setRecurrenceDays([1,2,3,4,5])} class="text-xs px-2 py-1 rounded-md transition-colors duration-200" style={{ "color": "var(--color-accent)", "background-color": "var(--color-bg-tertiary)" }}>Weekdays</button>
+                                        <button type="button" onClick={() => setRecurrenceDays([0,6])} class="text-xs px-2 py-1 rounded-md transition-colors duration-200" style={{ "color": "var(--color-accent)", "background-color": "var(--color-bg-tertiary)" }}>Weekends</button>
+                                        <button type="button" onClick={() => setRecurrenceDays([0,1,2,3,4,5,6])} class="text-xs px-2 py-1 rounded-md transition-colors duration-200" style={{ "color": "var(--color-accent)", "background-color": "var(--color-bg-tertiary)" }}>Every Day</button>
+                                    </div>
+                                </div>
+                            </Show>
                             <Show when={recurrence() !== 'none'}>
                                 <div class="mb-4">
                                     <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Repeat Until</label>

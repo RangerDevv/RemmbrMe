@@ -1,7 +1,8 @@
 import {bk, currentUser} from '../lib/backend.ts';
 
 export interface RecurrenceOptions {
-    frequency: 'daily' | 'weekly' | 'monthly' | 'none';
+    frequency: 'daily' | 'weekly' | 'monthly' | 'custom' | 'none';
+    days?: number[]; // For custom: 0=Sun, 1=Mon, ..., 6=Sat
     endDate?: Date;
     count?: number; // Max instances to create
 }
@@ -52,6 +53,22 @@ export async function generateRecurringTasks(
                 nextDate.setFullYear(targetYear, actualMonth, Math.min(originalDay, daysInTargetMonth));
                 break;
             }
+            case 'custom': {
+                const days = options.days || [];
+                if (days.length === 0) { currentDate = new Date(endDate.getTime() + 1); continue; }
+                let found = false;
+                for (let i = 1; i <= 7; i++) {
+                    const candidate = new Date(currentDate);
+                    candidate.setDate(candidate.getDate() + i);
+                    if (days.includes(candidate.getDay())) {
+                        nextDate.setTime(candidate.getTime());
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) { currentDate = new Date(endDate.getTime() + 1); continue; }
+                break;
+            }
         }
         currentDate = nextDate;
 
@@ -74,7 +91,7 @@ export async function generateRecurringTasks(
             Priority: parentTask.Priority,
             Deadline: deadlineDate.toISOString(),
             Tags: parentTask.Tags || [],
-            Recurrence: options.frequency as "none"|"daily"|"weekly"|"monthly",
+            Recurrence: options.frequency as "none"|"daily"|"weekly"|"monthly"|"custom",
             ParentTaskId: parentTaskId,
             URL: parentTask.URL || '',
         };
@@ -139,6 +156,22 @@ export async function generateRecurringEvents(
                 nextStart.setFullYear(targetYear, actualMonth, Math.min(originalDay, daysInTargetMonth));
                 break;
             }
+            case 'custom': {
+                const days = options.days || [];
+                if (days.length === 0) { currentStart = new Date(endDate.getTime() + 1); continue; }
+                let found = false;
+                for (let i = 1; i <= 7; i++) {
+                    const candidate = new Date(currentStart);
+                    candidate.setDate(candidate.getDate() + i);
+                    if (days.includes(candidate.getDay())) {
+                        nextStart.setTime(candidate.getTime());
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) { currentStart = new Date(endDate.getTime() + 1); continue; }
+                break;
+            }
         }
         currentStart = nextStart;
 
@@ -154,10 +187,9 @@ export async function generateRecurringEvents(
             AllDay: parentEvent.AllDay || false,
             Start: currentStart.toISOString(),
             End: currentEnd.toISOString(),
-            Location: parentEvent.Location || { lat: 0, lon: 0 },
             Color: parentEvent.Color || '#3b82f6',
             Tags: parentEvent.Tags || [],
-            Recurrence: options.frequency as "none"|"daily"|"weekly"|"monthly",
+            Recurrence: options.frequency as "none"|"daily"|"weekly"|"monthly"|"custom",
             ParentEventId: parentEventId,
             Tasks: [], // Don't duplicate tasks for recurring events
         };

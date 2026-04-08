@@ -20,8 +20,8 @@ export interface Todo<K extends objectModes> {
     Duration?: number;
     Tags?: sqlRelation<Tags<K>, K>[],
     Subtasks?: Subtask[];
-    Recurrence?: "none"|"daily"|"weekly"|"monthly";
-    RecurrencePattern?: Object;
+    Recurrence?: "none"|"daily"|"weekly"|"monthly"|"custom";
+    RecurrencePattern?: { days: number[] };
     RecurrenceEndDate?: string;
     user: sqlRelation<User<K>, K>;
     created: string;

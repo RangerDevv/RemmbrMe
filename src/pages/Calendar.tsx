@@ -46,6 +46,7 @@ function Calendar() {
     const [selectedTags, setSelectedTags] = createSignal<string[]>([]);
     const [recurrence, setRecurrence] = createSignal('none');
     const [recurrenceEndDate, setRecurrenceEndDate] = createSignal('');
+    const [recurrenceDays, setRecurrenceDays] = createSignal<number[]>([]);
     const [allTags, setAllTags] = createSignal([] as any[]);
     const [showTasksModal, setShowTasksModal] = createSignal(false);
     const [selectedDateTasks, setSelectedDateTasks] = createSignal<Date | null>(null);
@@ -121,6 +122,21 @@ function Calendar() {
                                 nextMonth.setMonth(nextMonth.getMonth() + 1);
                                 currentDate = nextMonth;
                                 break;
+                            case 'custom': {
+                                const days = event.RecurrencePattern?.days || [];
+                                if (days.length === 0) { currentDate = new Date(endEventDate.getTime() + 1); break; }
+                                let found = false;
+                                for (let i = 1; i <= 7; i++) {
+                                    const candidate = new Date(currentDate.getTime() + i * 24 * 60 * 60 * 1000);
+                                    if (days.includes(candidate.getDay())) {
+                                        currentDate = candidate;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) currentDate = new Date(endEventDate.getTime() + 1);
+                                break;
+                            }
                         }
                         
                         if (currentDate > endEventDate || currentDate > viewEndDate) break;
@@ -255,7 +271,8 @@ function Calendar() {
             Tasks: allTaskIds,
             Color: eventColor() || '#3b82f6',
             Tags: selectedTags() || [],
-            Recurrence: recurrence() as "none"|"daily"|"weekly"|"monthly",
+            Recurrence: recurrence() as "none"|"daily"|"weekly"|"monthly"|"custom",
+            RecurrencePattern: recurrence() === 'custom' ? { days: recurrenceDays() } : undefined,
             RecurrenceEndDate: recurrenceEndDate() || undefined,
             user: currentUser()?.id
         };
@@ -309,7 +326,8 @@ function Calendar() {
             Tasks: allTaskIds,
             Color: eventColor() || '#3b82f6',
             Tags: selectedTags() || [],
-            Recurrence: recurrence() as "none"|"daily"|"weekly"|"monthly",
+            Recurrence: recurrence() as "none"|"daily"|"weekly"|"monthly"|"custom",
+            RecurrencePattern: recurrence() === 'custom' ? { days: recurrenceDays() } : undefined,
             RecurrenceEndDate: recurrenceEndDate() || undefined,
             user: currentUser()?.id
         };
@@ -360,6 +378,7 @@ function Calendar() {
         setSelectedTags([]);
         setRecurrence('none');
         setRecurrenceEndDate('');
+        setRecurrenceDays([]);
     }
 
     async function toggleTaskCompletion(taskId: string, currentStatus: boolean) {
@@ -412,6 +431,7 @@ function Calendar() {
             setSelectedTags(event.expand?.Tags?.map((t: any) => t.id) || []);
             setRecurrence(event.Recurrence || 'none');
             setRecurrenceEndDate(event.RecurrenceEndDate || '');
+            setRecurrenceDays(event.RecurrencePattern?.days || []);
             
             setQuickViewEvent(event);
         } catch (error) {
@@ -1718,15 +1738,49 @@ function Calendar() {
                                 <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Recurrence:</label>
                                 <select
                                     value={recurrence()}
-                                    onInput={(e) => setRecurrence(e.currentTarget.value)}
+                                    onInput={(e) => {
+                                        setRecurrence(e.currentTarget.value);
+                                        if (e.currentTarget.value !== 'custom') setRecurrenceDays([]);
+                                    }}
                                     class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                 >
                                     <option value="none">No Recurrence</option>
                                     <option value="daily">Daily</option>
                                     <option value="weekly">Weekly</option>
                                     <option value="monthly">Monthly</option>
+                                    <option value="custom">Custom Days</option>
                                 </select>
                             </div>
+
+                            <Show when={recurrence() === 'custom'}>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Repeat On:</label>
+                                    <div class="flex gap-1.5">
+                                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, idx) => (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const days = recurrenceDays();
+                                                    setRecurrenceDays(days.includes(idx) ? days.filter(d => d !== idx) : [...days, idx].sort());
+                                                }}
+                                                class="w-9 h-9 rounded-full text-xs font-semibold transition-all duration-200 flex items-center justify-center"
+                                                style={{
+                                                    "background-color": recurrenceDays().includes(idx) ? "var(--color-accent)" : "var(--color-bg-tertiary)",
+                                                    "color": recurrenceDays().includes(idx) ? "var(--color-accent-text)" : "var(--color-text-muted)",
+                                                    "border": `1px solid ${recurrenceDays().includes(idx) ? "var(--color-accent)" : "var(--color-border)"}`,
+                                                }}
+                                            >
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div class="flex gap-2 mt-2">
+                                        <button type="button" onClick={() => setRecurrenceDays([1,2,3,4,5])} class="text-xs px-2 py-1 rounded-md transition-colors duration-200" style={{ "color": "var(--color-accent)", "background-color": "var(--color-bg-tertiary)" }}>Weekdays</button>
+                                        <button type="button" onClick={() => setRecurrenceDays([0,6])} class="text-xs px-2 py-1 rounded-md transition-colors duration-200" style={{ "color": "var(--color-accent)", "background-color": "var(--color-bg-tertiary)" }}>Weekends</button>
+                                        <button type="button" onClick={() => setRecurrenceDays([0,1,2,3,4,5,6])} class="text-xs px-2 py-1 rounded-md transition-colors duration-200" style={{ "color": "var(--color-accent)", "background-color": "var(--color-bg-tertiary)" }}>Every Day</button>
+                                    </div>
+                                </div>
+                            </Show>
 
                             <Show when={recurrence() !== 'none'}>
                                 <div class="mb-4">
@@ -1958,15 +2012,49 @@ function Calendar() {
                                 <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Recurrence:</label>
                                 <select
                                     value={recurrence()}
-                                    onInput={(e) => setRecurrence(e.currentTarget.value)}
+                                    onInput={(e) => {
+                                        setRecurrence(e.currentTarget.value);
+                                        if (e.currentTarget.value !== 'custom') setRecurrenceDays([]);
+                                    }}
                                     class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                 >
                                     <option value="none">No Recurrence</option>
                                     <option value="daily">Daily</option>
                                     <option value="weekly">Weekly</option>
                                     <option value="monthly">Monthly</option>
+                                    <option value="custom">Custom Days</option>
                                 </select>
                             </div>
+
+                            <Show when={recurrence() === 'custom'}>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Repeat On:</label>
+                                    <div class="flex gap-1.5">
+                                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, idx) => (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const days = recurrenceDays();
+                                                    setRecurrenceDays(days.includes(idx) ? days.filter(d => d !== idx) : [...days, idx].sort());
+                                                }}
+                                                class="w-9 h-9 rounded-full text-xs font-semibold transition-all duration-200 flex items-center justify-center"
+                                                style={{
+                                                    "background-color": recurrenceDays().includes(idx) ? "var(--color-accent)" : "var(--color-bg-tertiary)",
+                                                    "color": recurrenceDays().includes(idx) ? "var(--color-accent-text)" : "var(--color-text-muted)",
+                                                    "border": `1px solid ${recurrenceDays().includes(idx) ? "var(--color-accent)" : "var(--color-border)"}`,
+                                                }}
+                                            >
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div class="flex gap-2 mt-2">
+                                        <button type="button" onClick={() => setRecurrenceDays([1,2,3,4,5])} class="text-xs px-2 py-1 rounded-md transition-colors duration-200" style={{ "color": "var(--color-accent)", "background-color": "var(--color-bg-tertiary)" }}>Weekdays</button>
+                                        <button type="button" onClick={() => setRecurrenceDays([0,6])} class="text-xs px-2 py-1 rounded-md transition-colors duration-200" style={{ "color": "var(--color-accent)", "background-color": "var(--color-bg-tertiary)" }}>Weekends</button>
+                                        <button type="button" onClick={() => setRecurrenceDays([0,1,2,3,4,5,6])} class="text-xs px-2 py-1 rounded-md transition-colors duration-200" style={{ "color": "var(--color-accent)", "background-color": "var(--color-bg-tertiary)" }}>Every Day</button>
+                                    </div>
+                                </div>
+                            </Show>
 
                             <Show when={recurrence() !== 'none'}>
                                 <div class="mb-4">

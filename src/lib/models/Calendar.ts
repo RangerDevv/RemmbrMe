@@ -13,8 +13,8 @@ export interface Calendar<K extends objectModes> {
     Color: string;
     Tasks: sqlRelation<Todo<K>, K>[];
     Tags?: sqlRelation<Tags<K>, K>[];
-    Recurrence?: "none"|"daily"|"weekly"|"monthly";
-    RecurrencePattern?: Object;
+    Recurrence?: "none"|"daily"|"weekly"|"monthly"|"custom";
+    RecurrencePattern?: { days: number[] };
     RecurrenceEndDate?: string;
     user: sqlRelation<User<K>, K>;
     created: string;
