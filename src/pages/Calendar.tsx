@@ -2,7 +2,9 @@ import { createSignal, onMount, onCleanup, For, Show, createMemo, createEffect }
 import { useLocation } from '@solidjs/router';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
+import TagSelector from '../components/TagSelector';
 import ConfirmModal from '../components/ConfirmModal';
+import CustomSelect from '../components/CustomSelect';
 import {Todo} from "../lib/models/Todo.ts";
 import { 
     CalendarIcon, 
@@ -65,6 +67,14 @@ function Calendar() {
     const [isResizing, setIsResizing] = createSignal(false);
     const [resizingEvent, setResizingEvent] = createSignal<any>(null);
     const [resizeEndTime, setResizeEndTime] = createSignal<{ hour: number, minutes: number } | null>(null);
+    
+    // Recurrence edit choice dialog
+    const [recurrenceChoice, setRecurrenceChoice] = createSignal<{
+        show: boolean;
+        event: any;
+        action: 'edit' | 'drag' | 'resize' | 'delete';
+        payload?: any;
+    }>({ show: false, event: null, action: 'edit' });
     
     // Sync viewMode with URL when navigating via sidebar
     createEffect(() => {
@@ -142,14 +152,34 @@ function Calendar() {
                         
                         if (currentDate > endEventDate || currentDate > viewEndDate) break;
                         
-                        // Create instance
+                        // Check for exceptions on this date
+                        const exceptions = event.RecurrenceExceptions || [];
+                        const instanceDateStr = currentDate.toISOString().split('T')[0];
+                        const exception = exceptions.find((ex: any) => ex.date === instanceDateStr);
+                        
+                        // Skip deleted instances
+                        if (exception?.deleted) {
+                            instanceCount++;
+                            continue;
+                        }
+                        
+                        // Create instance, applying any overrides
+                        const instanceStart = exception?.Start ? new Date(exception.Start) : currentDate;
+                        const instanceEnd = exception?.End ? new Date(exception.End) : new Date(currentDate.getTime() + eventDuration);
+                        
                         const instance = {
                             ...event,
                             id: `${event.id}-recur-${instanceCount}`,
-                            Start: currentDate.toISOString(),
-                            End: new Date(currentDate.getTime() + eventDuration).toISOString(),
+                            Start: instanceStart.toISOString(),
+                            End: instanceEnd.toISOString(),
+                            EventName: exception?.EventName || event.EventName,
+                            Description: exception?.Description !== undefined ? exception.Description : event.Description,
+                            Color: exception?.Color || event.Color,
+                            AllDay: exception?.AllDay !== undefined ? exception.AllDay : event.AllDay,
                             isRecurringInstance: true,
-                            originalEventId: event.id
+                            originalEventId: event.id,
+                            instanceDate: instanceDateStr,
+                            hasException: !!exception
                         };
                         
                         expandedEvents.push(instance);
@@ -318,6 +348,24 @@ function Calendar() {
         // Combine created tasks with linked tasks
         const allTaskIds = [...createdTaskIds, ...linkedTaskIds()];
 
+        // If editing a single instance of a recurring event, detach it
+        if (editingEvent()._editingInstance) {
+            const parentId = editingEvent().id;
+            const instanceDate = editingEvent()._instanceDate;
+            await detachRecurringInstance(parentId, instanceDate, {
+                EventName: eventName(),
+                Description: description(),
+                AllDay: allDay(),
+                Start: start,
+                End: end,
+                Color: eventColor() || '#3b82f6',
+            });
+            resetForm();
+            setQuickViewEvent(null);
+            setEditingEvent(null);
+            return;
+        }
+
         const data = {
             EventName: eventName(),
             Description: description(),
@@ -346,6 +394,12 @@ function Calendar() {
     }
 
     async function deleteEvent(id: string) {
+        // Check if this is a recurring instance being deleted from quick view
+        const qv = quickViewEvent();
+        if (qv && qv._editingInstance) {
+            setRecurrenceChoice({ show: true, event: { ...qv, originalEventId: qv.id, instanceDate: qv._instanceDate }, action: 'delete', payload: null });
+            return;
+        }
         setConfirmDelete({ show: true, eventId: id });
     }
 
@@ -380,6 +434,133 @@ function Calendar() {
         setRecurrence('none');
         setRecurrenceEndDate('');
         setRecurrenceDays([]);
+    }
+
+    // --- Recurrence exception helpers ---
+    async function addRecurrenceException(eventId: string, exception: any) {
+        const event: any = await bk.collection('Calendar').getOne(eventId, {});
+        const exceptions = event.RecurrenceExceptions || [];
+        // Replace existing exception for same date, or add new
+        const existing = exceptions.findIndex((ex: any) => ex.date === exception.date);
+        if (existing >= 0) {
+            exceptions[existing] = { ...exceptions[existing], ...exception };
+        } else {
+            exceptions.push(exception);
+        }
+        await bk.collection('Calendar').update(eventId, { RecurrenceExceptions: exceptions });
+        await fetchEvents();
+    }
+
+    // Detach a recurring instance into a standalone event and mark it deleted on the parent
+    async function detachRecurringInstance(parentId: string, instanceDate: string, overrides: Record<string, any>) {
+        const parent: any = await bk.collection('Calendar').getOne(parentId, { expand: 'Tasks,Tags' });
+        // Create a standalone event with the instance's data + any overrides
+        await bk.collection('Calendar').create({
+            EventName: overrides.EventName ?? parent.EventName,
+            Description: overrides.Description ?? (parent.Description || ''),
+            AllDay: overrides.AllDay ?? parent.AllDay,
+            Start: overrides.Start ?? parent.Start,
+            End: overrides.End ?? parent.End,
+            Color: overrides.Color ?? (parent.Color || '#3b82f6'),
+            Tasks: parent.Tasks || [],
+            Tags: parent.Tags || [],
+            Recurrence: 'none',
+            user: parent.user,
+        });
+        // Mark this date as deleted on the parent so the series skips it
+        await addRecurrenceException(parentId, { date: instanceDate, deleted: true });
+    }
+
+    async function handleRecurrenceChoice(choice: 'this' | 'all') {
+        const { event, action, payload } = recurrenceChoice();
+        const parentId = event.originalEventId || event.id;
+        const instanceDate = event.instanceDate;
+
+        if (action === 'edit') {
+            if (choice === 'this') {
+                // Detach this instance into a standalone event, then open it for editing
+                await detachRecurringInstance(parentId, instanceDate, {
+                    EventName: event.EventName,
+                    Description: event.Description,
+                    AllDay: event.AllDay,
+                    Start: event.Start,
+                    End: event.End,
+                    Color: event.Color,
+                });
+                // Find the newly created standalone event and open it
+                const allEvents = events();
+                const detached = allEvents.find((e: any) =>
+                    !e.isRecurringInstance && e.EventName === event.EventName &&
+                    e.Start === event.Start && e.End === event.End
+                );
+                if (detached) {
+                    openEventModal(detached.id);
+                }
+            } else {
+                // Edit all — open modal for parent event
+                openEventModal(parentId);
+            }
+        } else if (action === 'drag') {
+            const { dayDelta, minuteDelta } = payload;
+            if (choice === 'this') {
+                const newStart = new Date(event.Start);
+                newStart.setDate(newStart.getDate() + dayDelta);
+                newStart.setMinutes(newStart.getMinutes() + minuteDelta);
+                const newEnd = new Date(event.End);
+                newEnd.setDate(newEnd.getDate() + dayDelta);
+                newEnd.setMinutes(newEnd.getMinutes() + minuteDelta);
+                await detachRecurringInstance(parentId, instanceDate, {
+                    EventName: event.EventName,
+                    Description: event.Description,
+                    AllDay: event.AllDay,
+                    Start: newStart.toISOString(),
+                    End: newEnd.toISOString(),
+                    Color: event.Color,
+                });
+            } else {
+                const parentEvent: any = await bk.collection('Calendar').getOne(parentId, {});
+                const parentStart = new Date(parentEvent.Start);
+                const parentEnd = new Date(parentEvent.End);
+                parentStart.setDate(parentStart.getDate() + dayDelta);
+                parentStart.setMinutes(parentStart.getMinutes() + minuteDelta);
+                parentEnd.setDate(parentEnd.getDate() + dayDelta);
+                parentEnd.setMinutes(parentEnd.getMinutes() + minuteDelta);
+                await bk.collection('Calendar').update(parentId, {
+                    Start: parentStart.toISOString(),
+                    End: parentEnd.toISOString()
+                });
+                await fetchEvents();
+            }
+        } else if (action === 'resize') {
+            const { newEndISO } = payload;
+            if (choice === 'this') {
+                await detachRecurringInstance(parentId, instanceDate, {
+                    EventName: event.EventName,
+                    Description: event.Description,
+                    AllDay: event.AllDay,
+                    Start: event.Start,
+                    End: newEndISO,
+                    Color: event.Color,
+                });
+            } else {
+                await bk.collection('Calendar').update(parentId, { End: newEndISO });
+                await fetchEvents();
+            }
+        } else if (action === 'delete') {
+            if (choice === 'this') {
+                // Just hide this occurrence — no standalone needed
+                await addRecurrenceException(parentId, {
+                    date: instanceDate,
+                    deleted: true
+                });
+            } else {
+                await bk.collection('Calendar').delete(parentId);
+                await fetchEvents();
+                await fetchTodos();
+            }
+        }
+
+        setRecurrenceChoice({ show: false, event: null, action: 'edit' });
     }
 
     async function toggleTaskCompletion(taskId: string, currentStatus: boolean) {
@@ -606,7 +787,7 @@ function Calendar() {
     }
 
     function handleEventDragStart(e: MouseEvent, event: any, isTask: boolean = false) {
-        if (event.isBreak || event.isRecurringInstance) return;
+        if (event.isBreak) return;
         e.preventDefault();
         e.stopPropagation();
         eventDragMoved = false;
@@ -660,6 +841,8 @@ function Calendar() {
             if (isTask) {
                 setSelectedDateTasks(start?.day || null);
                 setShowTasksModal(true);
+            } else if (event.isRecurringInstance) {
+                setRecurrenceChoice({ show: true, event, action: 'edit', payload: null });
             } else if (!event.isBreak) {
                 openEventModal(event.id);
             }
@@ -680,6 +863,8 @@ function Calendar() {
             if (isTask) {
                 setSelectedDateTasks(start?.day || null);
                 setShowTasksModal(true);
+            } else if (event.isRecurringInstance) {
+                setRecurrenceChoice({ show: true, event, action: 'edit', payload: null });
             } else if (!event.isBreak) {
                 openEventModal(event.id);
             }
@@ -702,6 +887,12 @@ function Calendar() {
                 Deadline: newDeadline.toISOString()
             });
             await fetchTodos();
+        } else if (event.isRecurringInstance) {
+            // Show recurrence choice for drag
+            setRecurrenceChoice({
+                show: true, event, action: 'drag',
+                payload: { dayDelta, minuteDelta }
+            });
         } else {
             const eventStart = new Date(event.Start);
             const eventEnd = new Date(event.End);
@@ -712,14 +903,11 @@ function Calendar() {
             newEnd.setDate(newEnd.getDate() + dayDelta);
             newEnd.setMinutes(newEnd.getMinutes() + minuteDelta);
 
-            const eventId = event.isRecurringInstance ? event.originalEventId : event.id;
-            if (!event.isRecurringInstance) {
-                await bk.collection('Calendar').update(eventId, {
-                    Start: newStart.toISOString(),
-                    End: newEnd.toISOString()
-                });
-                await fetchEvents();
-            }
+            await bk.collection('Calendar').update(event.id, {
+                Start: newStart.toISOString(),
+                End: newEnd.toISOString()
+            });
+            await fetchEvents();
         }
 
         setIsDraggingEvent(false);
@@ -795,10 +983,14 @@ function Calendar() {
         const newEnd = new Date(eventStart);
         newEnd.setHours(Math.floor(endTotalMin / 60), endTotalMin % 60, 0, 0);
 
-        // Don't update recurring instances
-        const eventId = event.isRecurringInstance ? event.originalEventId : event.id;
-        if (!event.isRecurringInstance) {
-            await bk.collection('Calendar').update(eventId, {
+        if (event.isRecurringInstance) {
+            // Show recurrence choice for resize
+            setRecurrenceChoice({
+                show: true, event, action: 'resize',
+                payload: { newEndISO: newEnd.toISOString() }
+            });
+        } else {
+            await bk.collection('Calendar').update(event.id, {
                 End: newEnd.toISOString()
             });
             await fetchEvents();
@@ -1158,7 +1350,14 @@ function Calendar() {
                                                 'border': isBreak ? '1px dashed var(--color-border)' : '1px solid var(--color-border)',
                                                 opacity: isBreak ? 0.6 : (allTasksCompleted ? 0.7 : 1) 
                                             }}
-                                            onClick={() => !isBreak && openEventModal(event.id)}
+                                            onClick={() => {
+                                                if (isBreak) return;
+                                                if (event.isRecurringInstance) {
+                                                    setRecurrenceChoice({ show: true, event, action: 'edit', payload: null });
+                                                } else {
+                                                    openEventModal(event.id);
+                                                }
+                                            }}
                                         >
                                             <div class="flex items-start gap-2">
                                                 <div 
@@ -1443,7 +1642,7 @@ function Calendar() {
                                                                             {event.Description}
                                                                         </div>
                                                                     </Show>
-                                                                    <Show when={!isBreak && !event.isRecurringInstance}>
+                                                                    <Show when={!isBreak}>
                                                                         <div
                                                                             class="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize hover:bg-white/20 transition-colors rounded-b z-20"
                                                                             onMouseDown={(e) => handleResizeStart(e, event)}
@@ -1566,50 +1765,52 @@ function Calendar() {
             {/* Event Detail/Edit Modal */}
             <Show when={quickViewEvent()}>
                 <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => { setQuickViewEvent(null); resetForm(); }}>
-                    <div class="glass-modal rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div class="flex items-center justify-between mb-5">
+                    <div class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
                             <div class="flex items-center gap-3">
                                 <div 
                                     class="w-4 h-4 rounded-full flex-shrink-0"
                                     style={{ 'background-color': eventColor() }}
                                 ></div>
-                                <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>Event Details</h2>
+                                <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>
+                                    {quickViewEvent()?._editingInstance ? 'Edit Occurrence' : 'Event Details'}
+                                </h2>
                             </div>
                             <button
                                 onClick={() => { setQuickViewEvent(null); resetForm(); }}
-                                class="transition-colors duration-200 text-2xl" style={{ "color": "var(--color-text-muted)" }}
+                                class="transition-colors duration-200 text-xl w-8 h-8 flex items-center justify-center rounded-lg" style={{ "color": "var(--color-text-muted)" }}
                             >
                                 ×
                             </button>
                         </div>
-
+                        <div class="p-5">
                         <form onSubmit={(e) => {
                             e.preventDefault();
                             updateEvent();
                         }}>
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Event Name:</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Event Name</label>
                                 <input
                                     type="text"
                                     value={eventName()}
                                     onInput={(e) => setEventName(e.currentTarget.value)}
                                     required
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                 />
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Description:</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Description</label>
                                 <textarea
                                     value={description()}
                                     onInput={(e) => setDescription(e.currentTarget.value)}
                                     rows="3"
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200 resize-none" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 resize-none" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                 ></textarea>
                             </div>
 
                             <div class="mb-4">
-                                <label class="flex items-center text-sm font-medium" style={{ "color": "var(--color-text-secondary)" }}>
+                                <label class="flex items-center text-xs font-medium" style={{ "color": "var(--color-text-secondary)" }}>
                                     <input
                                         type="checkbox"
                                         checked={allDay()}
@@ -1620,56 +1821,62 @@ function Calendar() {
                                 </label>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Start Date:</label>
-                                    <input
-                                        type="date"
-                                        value={startDate()}
-                                        onInput={(e) => setStartDate(e.currentTarget.value)}
-                                        required
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                    />
-                                </div>
-                                <Show when={!allDay()}>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Start Date / Time</label>
+                                <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Start Time:</label>
+                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
                                         <input
-                                            type="time"
-                                            value={startTime()}
-                                            onInput={(e) => setStartTime(e.currentTarget.value)}
-                                            class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                            type="date"
+                                            value={startDate()}
+                                            onInput={(e) => setStartDate(e.currentTarget.value)}
+                                            required
+                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                         />
                                     </div>
-                                </Show>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>End Date:</label>
-                                    <input
-                                        type="date"
-                                        value={endDate()}
-                                        onInput={(e) => setEndDate(e.currentTarget.value)}
-                                        required
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                    />
+                                    <Show when={!allDay()}>
+                                        <div>
+                                            <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Time</label>
+                                            <input
+                                                type="time"
+                                                value={startTime()}
+                                                onInput={(e) => setStartTime(e.currentTarget.value)}
+                                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                            />
+                                        </div>
+                                    </Show>
                                 </div>
-                                <Show when={!allDay()}>
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>End Time:</label>
-                                        <input
-                                            type="time"
-                                            value={endTime()}
-                                            onInput={(e) => setEndTime(e.currentTarget.value)}
-                                            class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                        />
-                                    </div>
-                                </Show>
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Event Color:</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>End Date / Time</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
+                                        <input
+                                            type="date"
+                                            value={endDate()}
+                                            onInput={(e) => setEndDate(e.currentTarget.value)}
+                                            required
+                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        />
+                                    </div>
+                                    <Show when={!allDay()}>
+                                        <div>
+                                            <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Time</label>
+                                            <input
+                                                type="time"
+                                                value={endTime()}
+                                                onInput={(e) => setEndTime(e.currentTarget.value)}
+                                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                            />
+                                        </div>
+                                    </Show>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Event Color</label>
                                 <div class="flex gap-2 flex-wrap">
                                     <For each={colorPresets}>
                                         {(color) => (
@@ -1718,7 +1925,7 @@ function Calendar() {
                             </Show>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Quick Add Tasks:</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Quick Add Tasks</label>
                                 <div class="space-y-2">
                                     <For each={quickAddTasks()}>
                                         {(task, index) => (
@@ -1732,7 +1939,7 @@ function Calendar() {
                                                         setQuickAddTasks(updated);
                                                     }}
                                                     placeholder="Enter task title..."
-                                                    class="flex-1 rounded-lg px-4 py-2 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                                    class="flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                                 />
                                                 <button
                                                     type="button"
@@ -1750,7 +1957,7 @@ function Calendar() {
                                     <button
                                         type="button"
                                         onClick={() => setQuickAddTasks([...quickAddTasks(), ''])}
-                                        class="w-full border border-dashed rounded-lg px-4 py-2 transition-all duration-200" style={{ "color": "var(--color-text-secondary)", "border-color": "var(--color-border)" }}
+                                        class="w-full border border-dashed rounded-lg px-3 py-2 text-sm transition-all duration-200" style={{ "color": "var(--color-text-secondary)", "border-color": "var(--color-border)" }}
                                     >
                                         + Add Task
                                     </button>
@@ -1758,7 +1965,7 @@ function Calendar() {
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Link Existing Tasks:</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Link Existing Tasks</label>
                                 <div class="max-h-32 overflow-y-auto space-y-2 rounded-lg p-2" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
                                     <For each={todoItems()}>
                                         {(todo) => !todo.Completed && (
@@ -1782,27 +1989,28 @@ function Calendar() {
                                 </div>
                             </div>
 
+                            <Show when={!quickViewEvent()?._editingInstance}>
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Recurrence:</label>
-                                <select
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Recurrence</label>
+                                <CustomSelect
                                     value={recurrence()}
-                                    onInput={(e) => {
-                                        setRecurrence(e.currentTarget.value);
-                                        if (e.currentTarget.value !== 'custom') setRecurrenceDays([]);
+                                    onChange={(v) => {
+                                        setRecurrence(v);
+                                        if (v !== 'custom') setRecurrenceDays([]);
                                     }}
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                >
-                                    <option value="none">No Recurrence</option>
-                                    <option value="daily">Daily</option>
-                                    <option value="weekly">Weekly</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="custom">Custom Days</option>
-                                </select>
+                                    options={[
+                                        { value: "none", label: "No Recurrence" },
+                                        { value: "daily", label: "Daily" },
+                                        { value: "weekly", label: "Weekly" },
+                                        { value: "monthly", label: "Monthly" },
+                                        { value: "custom", label: "Custom Days" },
+                                    ]}
+                                />
                             </div>
 
                             <Show when={recurrence() === 'custom'}>
                                 <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Repeat On:</label>
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Repeat On</label>
                                     <div class="flex gap-1.5">
                                         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, idx) => (
                                             <button
@@ -1832,33 +2040,44 @@ function Calendar() {
 
                             <Show when={recurrence() !== 'none'}>
                                 <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Recurrence End Date (Optional):</label>
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Repeat Until</label>
                                     <input
                                         type="date"
                                         value={recurrenceEndDate()}
                                         onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                     />
                                 </div>
                             </Show>
+                            </Show>
+
+                            <div class="mb-4">
+                                <TagSelector
+                                    allTags={allTags}
+                                    selectedTags={selectedTags}
+                                    setSelectedTags={setSelectedTags}
+                                    onTagCreated={fetchTags}
+                                />
+                            </div>
 
                             <div class="flex gap-2">
                                 <button
                                     type="submit"
-                                    class="flex-1 font-semibold py-3 rounded-lg active:scale-95 transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
+                                    class="flex-1 font-semibold py-2.5 rounded-lg transition-all duration-300 text-sm" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                                 >
-                                    Save Changes
+                                    Save {quickViewEvent()?._editingInstance ? 'Occurrence' : 'Changes'}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => deleteEvent(quickViewEvent()!.id)}
-                                    class="px-4 py-3 font-semibold rounded-lg active:scale-95 transition-all duration-200"
+                                    class="px-3 py-2.5 font-semibold rounded-lg transition-all duration-300 text-sm"
                                     style={{ "background-color": "var(--color-danger)", "color": "white" }}
                                 >
                                     🗑️ Delete
                                 </button>
                             </div>
                         </form>
+                        </div>
                     </div>
                 </div>
             </Show>
@@ -1866,47 +2085,47 @@ function Calendar() {
             {/* Event Creation Modal */}
             <Show when={showEventModal()}>
                 <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => setShowEventModal(false)}>
-                    <div class="glass-modal rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div class="flex items-center justify-between mb-5">
+                    <div class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
                             <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>Create Event</h2>
                             <button
                                 onClick={() => {
                                     setShowEventModal(false);
                                     resetForm();
                                 }}
-                                class="transition-colors duration-200 text-2xl" style={{ "color": "var(--color-text-muted)" }}
+                                class="transition-colors duration-200 text-xl w-8 h-8 flex items-center justify-center rounded-lg" style={{ "color": "var(--color-text-muted)" }}
                             >
                                 ×
                             </button>
                         </div>
-
+                        <div class="p-5">
                         <form onSubmit={(e) => {
                             e.preventDefault();
                             createEvent();
                         }}>
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Event Name:</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Event Name</label>
                                 <input
                                     type="text"
                                     value={eventName()}
                                     onInput={(e) => setEventName(e.currentTarget.value)}
                                     required
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                 />
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Description:</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Description</label>
                                 <textarea
                                     value={description()}
                                     onInput={(e) => setDescription(e.currentTarget.value)}
                                     rows="3"
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200 resize-none" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 resize-none" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                 ></textarea>
                             </div>
 
                             <div class="mb-4">
-                                <label class="flex items-center text-sm font-medium" style={{ "color": "var(--color-text-secondary)" }}>
+                                <label class="flex items-center text-xs font-medium" style={{ "color": "var(--color-text-secondary)" }}>
                                     <input
                                         type="checkbox"
                                         checked={allDay()}
@@ -1917,56 +2136,62 @@ function Calendar() {
                                 </label>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Start Date:</label>
-                                    <input
-                                        type="date"
-                                        value={startDate()}
-                                        onInput={(e) => setStartDate(e.currentTarget.value)}
-                                        required
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                    />
-                                </div>
-                                <Show when={!allDay()}>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Start Date / Time</label>
+                                <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Start Time:</label>
+                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
                                         <input
-                                            type="time"
-                                            value={startTime()}
-                                            onInput={(e) => setStartTime(e.currentTarget.value)}
-                                            class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                            type="date"
+                                            value={startDate()}
+                                            onInput={(e) => setStartDate(e.currentTarget.value)}
+                                            required
+                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                         />
                                     </div>
-                                </Show>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>End Date:</label>
-                                    <input
-                                        type="date"
-                                        value={endDate()}
-                                        onInput={(e) => setEndDate(e.currentTarget.value)}
-                                        required
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                    />
+                                    <Show when={!allDay()}>
+                                        <div>
+                                            <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Time</label>
+                                            <input
+                                                type="time"
+                                                value={startTime()}
+                                                onInput={(e) => setStartTime(e.currentTarget.value)}
+                                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                            />
+                                        </div>
+                                    </Show>
                                 </div>
-                                <Show when={!allDay()}>
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>End Time:</label>
-                                        <input
-                                            type="time"
-                                            value={endTime()}
-                                            onInput={(e) => setEndTime(e.currentTarget.value)}
-                                            class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                        />
-                                    </div>
-                                </Show>
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Event Color:</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>End Date / Time</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
+                                        <input
+                                            type="date"
+                                            value={endDate()}
+                                            onInput={(e) => setEndDate(e.currentTarget.value)}
+                                            required
+                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        />
+                                    </div>
+                                    <Show when={!allDay()}>
+                                        <div>
+                                            <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Time</label>
+                                            <input
+                                                type="time"
+                                                value={endTime()}
+                                                onInput={(e) => setEndTime(e.currentTarget.value)}
+                                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                            />
+                                        </div>
+                                    </Show>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Event Color</label>
                                 <div class="flex gap-2 flex-wrap">
                                     <For each={colorPresets}>
                                         {(color) => (
@@ -1992,7 +2217,7 @@ function Calendar() {
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Quick Add Tasks:</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Quick Add Tasks</label>
                                 <div class="space-y-2">
                                     <For each={quickAddTasks()}>
                                         {(task, index) => (
@@ -2006,7 +2231,7 @@ function Calendar() {
                                                         setQuickAddTasks(updated);
                                                     }}
                                                     placeholder="Enter task title..."
-                                                    class="flex-1 rounded-lg px-4 py-2 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                                    class="flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                                 />
                                                 <button
                                                     type="button"
@@ -2024,7 +2249,7 @@ function Calendar() {
                                     <button
                                         type="button"
                                         onClick={() => setQuickAddTasks([...quickAddTasks(), ''])}
-                                        class="w-full border border-dashed rounded-lg px-4 py-2 transition-all duration-200" style={{ "color": "var(--color-text-secondary)", "border-color": "var(--color-border)" }}
+                                        class="w-full border border-dashed rounded-lg px-3 py-2 text-sm transition-all duration-200" style={{ "color": "var(--color-text-secondary)", "border-color": "var(--color-border)" }}
                                     >
                                         + Add Task
                                     </button>
@@ -2032,7 +2257,7 @@ function Calendar() {
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Link Existing Tasks:</label>
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Link Existing Tasks</label>
                                 <div class="max-h-32 overflow-y-auto space-y-2 rounded-lg p-2" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
                                     <For each={todoItems()}>
                                         {(todo) => !todo.Completed && (
@@ -2057,26 +2282,26 @@ function Calendar() {
                             </div>
 
                             <div class="mb-4">
-                                <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Recurrence:</label>
-                                <select
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Recurrence</label>
+                                <CustomSelect
                                     value={recurrence()}
-                                    onInput={(e) => {
-                                        setRecurrence(e.currentTarget.value);
-                                        if (e.currentTarget.value !== 'custom') setRecurrenceDays([]);
+                                    onChange={(v) => {
+                                        setRecurrence(v);
+                                        if (v !== 'custom') setRecurrenceDays([]);
                                     }}
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                >
-                                    <option value="none">No Recurrence</option>
-                                    <option value="daily">Daily</option>
-                                    <option value="weekly">Weekly</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="custom">Custom Days</option>
-                                </select>
+                                    options={[
+                                        { value: "none", label: "No Recurrence" },
+                                        { value: "daily", label: "Daily" },
+                                        { value: "weekly", label: "Weekly" },
+                                        { value: "monthly", label: "Monthly" },
+                                        { value: "custom", label: "Custom Days" },
+                                    ]}
+                                />
                             </div>
 
                             <Show when={recurrence() === 'custom'}>
                                 <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Repeat On:</label>
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Repeat On</label>
                                     <div class="flex gap-1.5">
                                         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, idx) => (
                                             <button
@@ -2106,23 +2331,33 @@ function Calendar() {
 
                             <Show when={recurrence() !== 'none'}>
                                 <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Recurrence End Date (Optional):</label>
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Repeat Until</label>
                                     <input
                                         type="date"
                                         value={recurrenceEndDate()}
                                         onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
-                                        class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                     />
                                 </div>
                             </Show>
 
+                            <div class="mb-4">
+                                <TagSelector
+                                    allTags={allTags}
+                                    selectedTags={selectedTags}
+                                    setSelectedTags={setSelectedTags}
+                                    onTagCreated={fetchTags}
+                                />
+                            </div>
+
                             <button
                                 type="submit"
-                                class="w-full font-semibold py-3 rounded-lg active:scale-95 transition-all duration-200" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
+                                class="w-full font-semibold py-2.5 rounded-lg transition-all duration-300 text-sm" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                             >
                                 Create Event
                             </button>
                         </form>
+                        </div>
                     </div>
                 </div>
             </Show>
@@ -2241,6 +2476,52 @@ function Calendar() {
                                     }}
                                 </For>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </Show>
+
+            {/* Recurrence Edit Choice Dialog */}
+            <Show when={recurrenceChoice().show}>
+                <div class="fixed inset-0 glass-overlay flex items-center justify-center z-[60]" onClick={() => setRecurrenceChoice({ show: false, event: null, action: 'edit' })}>
+                    <div class="glass-modal rounded-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+                        <h3 class="text-lg font-bold mb-2" style={{ color: 'var(--color-text)' }}>
+                            {recurrenceChoice().action === 'delete' ? 'Delete Recurring Event' : 'Edit Recurring Event'}
+                        </h3>
+                        <p class="text-sm mb-5" style={{ color: 'var(--color-text-secondary)' }}>
+                            {recurrenceChoice().action === 'delete'
+                                ? 'Do you want to delete this occurrence or all events in the series?'
+                                : 'Do you want to change this occurrence or all events in the series?'}
+                        </p>
+                        <div class="flex flex-col gap-2">
+                            <button
+                                onClick={() => handleRecurrenceChoice('this')}
+                                class="w-full px-4 py-3 rounded-lg font-semibold text-sm transition-all duration-200 active:scale-95"
+                                style={{
+                                    'background-color': 'var(--color-accent)',
+                                    color: 'var(--color-accent-text)'
+                                }}
+                            >
+                                This event only
+                            </button>
+                            <button
+                                onClick={() => handleRecurrenceChoice('all')}
+                                class="w-full px-4 py-3 rounded-lg font-semibold text-sm transition-all duration-200 active:scale-95"
+                                style={{
+                                    'background-color': 'var(--color-surface)',
+                                    color: 'var(--color-text)',
+                                    border: '1px solid var(--color-border)'
+                                }}
+                            >
+                                All events
+                            </button>
+                            <button
+                                onClick={() => setRecurrenceChoice({ show: false, event: null, action: 'edit' })}
+                                class="w-full px-4 py-3 rounded-lg font-semibold text-sm transition-all duration-200 active:scale-95"
+                                style={{ color: 'var(--color-text-muted)' }}
+                            >
+                                Cancel
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -4,6 +4,8 @@ import { generateRecurringTasks } from '../utils/recurrence';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
+import TagSelector from '../components/TagSelector';
+import CustomSelect from '../components/CustomSelect';
 import { Subtask } from '../lib/models/Todo.ts';
 import { 
     SearchIcon, 
@@ -635,29 +637,27 @@ function Todo() {
                         />
                     </div>
                     <div class="relative">
-                        <select
+                        <CustomSelect
                             value={filterPriority()}
-                            onChange={(e) => setFilterPriority(e.currentTarget.value)}
-                            class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer appearance-none focus:outline-none transition-all duration-200"
-                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                        >
-                            <option value="all">All Priorities</option>
-                            <option value="P1">P1 - High</option>
-                            <option value="P2">P2 - Medium</option>
-                            <option value="P3">P3 - Low</option>
-                        </select>
+                            onChange={(v) => setFilterPriority(v)}
+                            options={[
+                                { value: "all", label: "All Priorities" },
+                                { value: "P1", label: "P1 - High" },
+                                { value: "P2", label: "P2 - Medium" },
+                                { value: "P3", label: "P3 - Low" },
+                            ]}
+                        />
                     </div>
                     <div class="relative">
-                        <select
+                        <CustomSelect
                             value={filterStatus()}
-                            onChange={(e) => setFilterStatus(e.currentTarget.value)}
-                            class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer appearance-none focus:outline-none transition-all duration-200"
-                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                        >
-                            <option value="all">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="completed">Completed</option>
-                        </select>
+                            onChange={(v) => setFilterStatus(v)}
+                            options={[
+                                { value: "all", label: "All Status" },
+                                { value: "active", label: "Active" },
+                                { value: "completed", label: "Completed" },
+                            ]}
+                        />
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5 mt-3 text-xs">
@@ -1030,18 +1030,15 @@ function Todo() {
                             </div>
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Priority</label>
-                                <div class="relative">
-                                    <select
-                                        value={TaskPriority()}
-                                        onChange={(e) => setTaskPriority(e.currentTarget.value)}
-                                        class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer appearance-none focus:outline-none transition-all duration-200"
-                                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                    >
-                                        <option value="P1">P1 - High Priority</option>
-                                        <option value="P2">P2 - Medium Priority</option>
-                                        <option value="P3">P3 - Low Priority</option>
-                                    </select>
-                                </div>
+                                <CustomSelect
+                                    value={TaskPriority()}
+                                    onChange={(v) => setTaskPriority(v)}
+                                    options={[
+                                        { value: "P1", label: "P1 - High Priority" },
+                                        { value: "P2", label: "P2 - Medium Priority" },
+                                        { value: "P3", label: "P3 - Low Priority" },
+                                    ]}
+                                />
                             </div>
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Start / Due Date</label>
@@ -1096,41 +1093,12 @@ function Todo() {
                                 <p class="text-xs mt-1" style={{ "color": "var(--color-text-muted)" }}>Shows as a time block on the calendar</p>
                             </div>
                             <div class="mb-4">
-                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Tags</label>
-                                <div class="flex flex-wrap gap-1.5 p-2 rounded-lg min-h-[36px]" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
-                                    <Index each={allTags()}>
-                                        {(tag) => (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const tagId = tag().id;
-                                                    if (selectedTags().includes(tagId)) {
-                                                        setSelectedTags(selectedTags().filter(id => id !== tagId));
-                                                    } else {
-                                                        setSelectedTags([...selectedTags(), tagId]);
-                                                    }
-                                                }}
-                                                class={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white transition-all duration-200 ${
-                                                    selectedTags().includes(tag().id)
-                                                        ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-105'
-                                                        : 'hover:opacity-80'
-                                                }`}
-                                                style={{ 'background-color': `${tag().color}${selectedTags().includes(tag().id) ? '' : '40'}`, 'border': `1px solid ${tag().color}60` }}
-                                            >
-                                                <div
-                                                    class="w-2 h-2 rounded-full"
-                                                    style={{ 'background-color': tag().color }}
-                                                />
-                                                {tag().name}
-                                            </button>
-                                        )}
-                                    </Index>
-                                    <Show when={allTags().length === 0}>
-                                        <a href="/tags" class="text-sm text-gray-500 hover:text-gray-400 transition-colors duration-200">
-                                            Create tags in Tags page →
-                                        </a>
-                                    </Show>
-                                </div>
+                                <TagSelector
+                                    allTags={allTags}
+                                    selectedTags={selectedTags}
+                                    setSelectedTags={setSelectedTags}
+                                    onTagCreated={fetchTags}
+                                />
                             </div>
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Subtasks</label>
@@ -1207,23 +1175,20 @@ function Todo() {
                             </div>
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Recurrence</label>
-                                <div class="relative">
-                                    <select
-                                        value={recurrence()}
-                                        onChange={(e) => {
-                                            setRecurrence(e.currentTarget.value);
-                                            if (e.currentTarget.value !== 'custom') setRecurrenceDays([]);
-                                        }}
-                                        class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer appearance-none focus:outline-none transition-all duration-200"
-                                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                    >
-                                        <option value="none">None</option>
-                                        <option value="daily">Daily</option>
-                                        <option value="weekly">Weekly</option>
-                                        <option value="monthly">Monthly</option>
-                                        <option value="custom">Custom Days</option>
-                                    </select>
-                                </div>
+                                <CustomSelect
+                                    value={recurrence()}
+                                    onChange={(v) => {
+                                        setRecurrence(v);
+                                        if (v !== 'custom') setRecurrenceDays([]);
+                                    }}
+                                    options={[
+                                        { value: "none", label: "None" },
+                                        { value: "daily", label: "Daily" },
+                                        { value: "weekly", label: "Weekly" },
+                                        { value: "monthly", label: "Monthly" },
+                                        { value: "custom", label: "Custom Days" },
+                                    ]}
+                                />
                             </div>
                             <Show when={recurrence() === 'custom'}>
                                 <div class="mb-4">

@@ -8,7 +8,6 @@ import {
     CalendarWeekIcon,
     ClockIcon, 
     RobotIcon, 
-    TagIcon, 
     PlusIcon, 
     SettingsIcon, 
     MenuIcon,
@@ -94,12 +93,14 @@ export default function Sidebar() {
             {/* Mobile Menu Button */}
             <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen())}
-                class={`lg:hidden fixed top-3 left-3 z-[60] p-2.5 rounded-xl transition-all duration-200 active:scale-95 ${mobileMenuOpen() ? '' : 'glass'}`}
+                class={`lg:hidden fixed left-3 z-[60] p-2.5 rounded-xl transition-all duration-200 active:scale-95 ${mobileMenuOpen() ? '' : 'glass'}`}
                 style={{
+                    top: "calc(32px + 0.75rem)",
                     "background-color": mobileMenuOpen() ? "transparent" : undefined,
                     "border": mobileMenuOpen() ? "none" : undefined,
                     "color": "var(--color-text)",
                 }}
+
             >
                 {mobileMenuOpen() ? <XIcon class="w-5 h-5" /> : <MenuIcon class="w-5 h-5" />}
             </button>
@@ -107,7 +108,8 @@ export default function Sidebar() {
             {/* Mobile Overlay */}
             <Show when={mobileMenuOpen()}>
                 <div 
-                    class="lg:hidden fixed inset-0 z-[50] transition-opacity duration-300 glass-overlay"
+                    class="lg:hidden fixed inset-x-0 bottom-0 z-[50] transition-opacity duration-300 glass-overlay"
+                    style={{ top: "32px" }}
                     onClick={() => setMobileMenuOpen(false)}
                 />
             </Show>
@@ -115,7 +117,8 @@ export default function Sidebar() {
             {/* Sidebar */}
             <aside class={`
                 flex flex-col
-                fixed lg:sticky top-0 left-0 h-screen
+                fixed lg:sticky left-0
+                top-[32px] h-[calc(100vh-32px)]
                 w-[280px] lg:w-[260px]
                 z-[55] lg:z-auto
                 transition-transform duration-300 ease-out
@@ -255,17 +258,15 @@ export default function Sidebar() {
                     <nav class="px-2 space-y-0.5">
                         <For each={tags().slice(0, 5)}>
                             {(tag) => (
-                                <a
-                                    href="/tags"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                                <div
+                                    class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium"
                                     style={{ "color": "var(--color-text-secondary)" }}
                                 >
                                     <div class="w-[18px] h-[18px] flex items-center justify-center">
                                         <span class="text-base" style={{ "color": tag.color }}>#</span>
                                     </div>
                                     <span class="flex-1 truncate">{tag.name}</span>
-                                </a>
+                                </div>
                             )}
                         </For>
                     </nav>
@@ -296,18 +297,6 @@ export default function Sidebar() {
                     >
                         <RobotIcon class="w-[18px] h-[18px]" />
                         <span>AI Assistant</span>
-                    </a>
-                    <a
-                        href="/tags"
-                        onClick={() => setMobileMenuOpen(false)}
-                        class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-                        style={{
-                            "background-color": isActive('/tags') ? "var(--color-bg-tertiary)" : "transparent",
-                            "color": isActive('/tags') ? "var(--color-text)" : "var(--color-text-secondary)",
-                        }}
-                    >
-                        <TagIcon class="w-[18px] h-[18px]" />
-                        <span>Tags</span>
                     </a>
 
                     {/* New List button */}

@@ -33,10 +33,9 @@ export default function KeyboardShortcuts() {
     }
 
     function navigate(path: string) {
-        // Use location.assign to trigger SolidJS router
-        window.location.hash = '';
         if (window.location.pathname !== path) {
-            window.location.pathname = path;
+            window.history.pushState({}, '', path);
+            window.dispatchEvent(new PopStateEvent('popstate'));
         }
     }
 
@@ -44,10 +43,10 @@ export default function KeyboardShortcuts() {
         if (window.location.pathname === path) {
             document.dispatchEvent(new CustomEvent(eventName));
         } else {
-            // Navigate first, then dispatch after page loads
-            window.location.pathname = path;
-            // The page's onMount will run; we queue the event for after mount
-            setTimeout(() => document.dispatchEvent(new CustomEvent(eventName)), 300);
+            window.history.pushState({}, '', path);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+            // Queue the event for after the route component mounts
+            setTimeout(() => document.dispatchEvent(new CustomEvent(eventName)), 100);
         }
     }
 
