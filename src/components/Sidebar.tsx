@@ -325,6 +325,18 @@ export default function Sidebar() {
                             <span>Settings</span>
                         </a>
                     </div>
+
+                    {/* Keyboard shortcuts hint */}
+                    <div class="pt-2 mt-auto">
+                        <button
+                            onClick={() => document.dispatchEvent(new CustomEvent('kb:show-help'))}
+                            class="flex items-center gap-2 px-3 py-1.5 text-xs transition-colors duration-200 w-full"
+                            style={{ "color": "var(--color-text-muted)" }}
+                        >
+                            <kbd class="inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-mono" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)", "color": "var(--color-text-muted)" }}>?</kbd>
+                            <span>Shortcuts</span>
+                        </button>
+                    </div>
                 </div>
             </aside>
         </>

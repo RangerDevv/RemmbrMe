@@ -781,9 +781,36 @@ function Calendar() {
             await fetchTodos();
         };
         window.addEventListener('itemCreated', handleItemCreated);
+
+        // Listen for keyboard shortcut events
+        const handleNewEvent = () => {
+            const today = new Date();
+            setStartDate(today.toISOString().split('T')[0]);
+            setEndDate(today.toISOString().split('T')[0]);
+            setShowEventModal(true);
+        };
+        const handlePrev = () => previousMonth();
+        const handleNext = () => nextMonth();
+        const handleToday = () => goToToday();
+        const handleMonthView = () => setViewMode('month');
+        const handleWeekView = () => setViewMode('week');
+
+        document.addEventListener('kb:new-event', handleNewEvent);
+        document.addEventListener('kb:calendar-prev', handlePrev);
+        document.addEventListener('kb:calendar-next', handleNext);
+        document.addEventListener('kb:calendar-today', handleToday);
+        document.addEventListener('kb:calendar-month', handleMonthView);
+        document.addEventListener('kb:calendar-week', handleWeekView);
+
         onCleanup(() => {
             window.removeEventListener('itemCreated', handleItemCreated);
             window.removeEventListener('mouseup', onMouseUp);
+            document.removeEventListener('kb:new-event', handleNewEvent);
+            document.removeEventListener('kb:calendar-prev', handlePrev);
+            document.removeEventListener('kb:calendar-next', handleNext);
+            document.removeEventListener('kb:calendar-today', handleToday);
+            document.removeEventListener('kb:calendar-month', handleMonthView);
+            document.removeEventListener('kb:calendar-week', handleWeekView);
         });
     });
 

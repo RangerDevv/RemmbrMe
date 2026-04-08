@@ -9,6 +9,7 @@ import Tags from './pages/Tags';
 import Settings from './pages/Settings';
 import QuickAdd from "./components/QuickAdd";
 import Sidebar from "./components/Sidebar";
+import KeyboardShortcuts from "./components/KeyboardShortcuts";
 import { applyThemeToDOM, currentTheme } from "./lib/theme";
 import { initNotifications, updateNotificationSchedule, stopNotificationChecker } from "./lib/notifications";
 
@@ -48,6 +49,7 @@ export default function App() {
         </div>
         
         <QuickAdd />
+        <KeyboardShortcuts />
       </div>
     </main>
   );

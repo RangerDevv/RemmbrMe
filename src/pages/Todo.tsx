@@ -1,5 +1,5 @@
 import { UploadFile, fileUploader } from '@solid-primitives/upload';
-import { Index, Show, createSignal, onMount } from 'solid-js';
+import { Index, Show, createSignal, onMount, onCleanup } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
@@ -255,6 +255,17 @@ function Todo() {
     onMount(() => {
         fetchTodos();
         fetchTags();
+
+        // Listen for keyboard shortcut events
+        const handleNewTask = () => {
+            resetForm();
+            setEditingTask(null);
+            setShowModal(true);
+        };
+        document.addEventListener('kb:new-task', handleNewTask);
+        onCleanup(() => {
+            document.removeEventListener('kb:new-task', handleNewTask);
+        });
     });
 
     function getFilteredTodos() {
