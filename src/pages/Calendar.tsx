@@ -56,6 +56,7 @@ function Calendar() {
     // Drag-to-move event state
     const [isDraggingEvent, setIsDraggingEvent] = createSignal(false);
     const [draggingEvent, setDraggingEvent] = createSignal<any>(null);
+    const [draggingIsTask, setDraggingIsTask] = createSignal(false);
     const [dragEventStart, setDragEventStart] = createSignal<{ day: Date, hour: number, minutes: number } | null>(null);
     const [dragEventTarget, setDragEventTarget] = createSignal<{ day: Date, hour: number, minutes: number } | null>(null);
     let eventDragMoved = false;
@@ -604,14 +605,15 @@ function Calendar() {
         return Math.round((fraction * 60) / 15) * 15;
     }
 
-    function handleEventDragStart(e: MouseEvent, event: any) {
+    function handleEventDragStart(e: MouseEvent, event: any, isTask: boolean = false) {
         if (event.isBreak || event.isRecurringInstance) return;
         e.preventDefault();
         e.stopPropagation();
         eventDragMoved = false;
-        const eventStart = new Date(event.Start);
+        const eventStart = isTask ? new Date(event.Deadline) : new Date(event.Start);
         const dayStart = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
         setDraggingEvent(event);
+        setDraggingIsTask(isTask);
         setDragEventStart({ day: dayStart, hour: eventStart.getHours(), minutes: eventStart.getMinutes() });
         setDragEventTarget({ day: dayStart, hour: eventStart.getHours(), minutes: eventStart.getMinutes() });
         setIsDraggingEvent(true);
@@ -642,20 +644,28 @@ function Calendar() {
         if (!isDraggingEvent() || !draggingEvent()) {
             setIsDraggingEvent(false);
             setDraggingEvent(null);
+            setDraggingIsTask(false);
             setDragEventStart(null);
             setDragEventTarget(null);
             return;
         }
 
         const event = draggingEvent();
+        const isTask = draggingIsTask();
         const start = dragEventStart();
         const target = dragEventTarget();
 
         if (!start || !target || !eventDragMoved) {
             // No movement — treat as click
-            if (!event.isBreak) openEventModal(event.id);
+            if (isTask) {
+                setSelectedDateTasks(start?.day || null);
+                setShowTasksModal(true);
+            } else if (!event.isBreak) {
+                openEventModal(event.id);
+            }
             setIsDraggingEvent(false);
             setDraggingEvent(null);
+            setDraggingIsTask(false);
             setDragEventStart(null);
             setDragEventTarget(null);
             return;
@@ -667,34 +677,54 @@ function Calendar() {
         const dayDelta = Math.round((target.day.getTime() - start.day.getTime()) / (24 * 60 * 60 * 1000));
 
         if (minuteDelta === 0 && dayDelta === 0) {
-            if (!event.isBreak) openEventModal(event.id);
+            if (isTask) {
+                setSelectedDateTasks(start?.day || null);
+                setShowTasksModal(true);
+            } else if (!event.isBreak) {
+                openEventModal(event.id);
+            }
             setIsDraggingEvent(false);
             setDraggingEvent(null);
+            setDraggingIsTask(false);
             setDragEventStart(null);
             setDragEventTarget(null);
             return;
         }
 
-        const eventStart = new Date(event.Start);
-        const eventEnd = new Date(event.End);
-        const newStart = new Date(eventStart);
-        newStart.setDate(newStart.getDate() + dayDelta);
-        newStart.setMinutes(newStart.getMinutes() + minuteDelta);
-        const newEnd = new Date(eventEnd);
-        newEnd.setDate(newEnd.getDate() + dayDelta);
-        newEnd.setMinutes(newEnd.getMinutes() + minuteDelta);
+        if (isTask) {
+            // Update task's Deadline
+            const taskDeadline = new Date(event.Deadline);
+            const newDeadline = new Date(taskDeadline);
+            newDeadline.setDate(newDeadline.getDate() + dayDelta);
+            newDeadline.setMinutes(newDeadline.getMinutes() + minuteDelta);
 
-        const eventId = event.isRecurringInstance ? event.originalEventId : event.id;
-        if (!event.isRecurringInstance) {
-            await bk.collection('Calendar').update(eventId, {
-                Start: newStart.toISOString(),
-                End: newEnd.toISOString()
+            await bk.collection('Todo').update(event.id, {
+                Deadline: newDeadline.toISOString()
             });
-            await fetchEvents();
+            await fetchTodos();
+        } else {
+            const eventStart = new Date(event.Start);
+            const eventEnd = new Date(event.End);
+            const newStart = new Date(eventStart);
+            newStart.setDate(newStart.getDate() + dayDelta);
+            newStart.setMinutes(newStart.getMinutes() + minuteDelta);
+            const newEnd = new Date(eventEnd);
+            newEnd.setDate(newEnd.getDate() + dayDelta);
+            newEnd.setMinutes(newEnd.getMinutes() + minuteDelta);
+
+            const eventId = event.isRecurringInstance ? event.originalEventId : event.id;
+            if (!event.isRecurringInstance) {
+                await bk.collection('Calendar').update(eventId, {
+                    Start: newStart.toISOString(),
+                    End: newEnd.toISOString()
+                });
+                await fetchEvents();
+            }
         }
 
         setIsDraggingEvent(false);
         setDraggingEvent(null);
+        setDraggingIsTask(false);
         setDragEventStart(null);
         setDragEventTarget(null);
     }
@@ -704,15 +734,25 @@ function Calendar() {
         const target = dragEventTarget()!;
         if (target.day.getTime() !== day.getTime() || target.hour !== hour) return null;
         const event = draggingEvent();
-        const duration = new Date(event.End).getTime() - new Date(event.Start).getTime();
-        const durationMin = duration / (1000 * 60);
+        const isTask = draggingIsTask();
+        let durationMin: number;
+        let color: string;
+        if (isTask) {
+            durationMin = event.Duration || 30;
+            const priorityColor = event.Priority === 'P1' ? '#ef4444' : event.Priority === 'P2' ? '#f97316' : '#22c55e';
+            color = priorityColor;
+        } else {
+            const duration = new Date(event.End).getTime() - new Date(event.Start).getTime();
+            durationMin = duration / (1000 * 60);
+            color = event.Color || '#3b82f6';
+        }
         const top = (target.minutes / 60) * 60;
         const h = Math.max(30, (durationMin / 60) * 60);
         return {
             show: true,
             top,
             height: h,
-            color: event.Color || '#3b82f6'
+            color
         };
     }
 
@@ -1352,7 +1392,8 @@ function Calendar() {
                                                                         'border': isBreak ? '1px dashed var(--color-border)' : 'none',
                                                                         'top': `${topOffset}px`,
                                                                         'height': `${getResizedHeight(event) ?? height}px`,
-                                                                        'opacity': isDraggingEvent() && draggingEvent()?.id === event.id ? 0.3 : (isBreak ? 0.5 : (allTasksCompleted ? 0.6 : 0.9))
+                                                                        'opacity': isDraggingEvent() && draggingEvent()?.id === event.id ? 0.3 : (isBreak ? 0.5 : (allTasksCompleted ? 0.6 : 0.9)),
+                                                                        'pointer-events': isBreak || isDraggingEvent() || isResizing() ? 'none' : 'auto'
                                                                     }}
                                                                     onMouseDown={(e) => {
                                                                         if (isBreak) return;
@@ -1432,19 +1473,26 @@ function Calendar() {
                                                             const hasDuration = task.Duration && task.Duration > 0;
                                                             const height = hasDuration ? Math.max(30, (task.Duration / 60) * 60) : 30;
                                                             const priorityColor = task.Priority === 'P1' ? '#ef4444' : task.Priority === 'P2' ? '#f97316' : '#22c55e';
+                                                            const isDraggable = hasDuration && !task.Completed;
                                                             
                                                             // Calculate end time for display
                                                             const endTime = hasDuration ? new Date(deadline.getTime() + task.Duration * 60000) : null;
                                                             
                                                             return (
                                                                 <div
-                                                                    class={`absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 cursor-pointer hover:opacity-80 transition-all duration-200 ${hasDuration ? '' : 'border-l-2'}`}
+                                                                    class={`absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 ${isDraggable ? 'cursor-grab' : 'cursor-pointer'} hover:opacity-80 transition-all duration-200 ${hasDuration ? '' : 'border-l-2'}`}
                                                                     style={{ 
                                                                         'background-color': hasDuration ? priorityColor : (task.Priority === 'P1' ? '#ef444420' : task.Priority === 'P2' ? '#f9731620' : '#22c55e20'),
                                                                         'border-left-color': hasDuration ? undefined : priorityColor,
                                                                         'top': `${topOffset}px`,
                                                                         'height': `${height}px`,
-                                                                        'opacity': task.Completed ? 0.5 : 0.9
+                                                                        'opacity': isDraggingEvent() && draggingEvent()?.id === task.id ? 0.3 : (task.Completed ? 0.5 : 0.9),
+                                                                        'pointer-events': isDraggingEvent() || isResizing() ? 'none' : 'auto'
+                                                                    }}
+                                                                    onMouseDown={(e) => {
+                                                                        if (isDraggable) {
+                                                                            handleEventDragStart(e, task, true);
+                                                                        }
                                                                     }}
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
