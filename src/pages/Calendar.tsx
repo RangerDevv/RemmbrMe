@@ -849,8 +849,8 @@ function Calendar() {
             setEndDate(today.toISOString().split('T')[0]);
             setShowEventModal(true);
         };
-        const handlePrev = () => previousMonth();
-        const handleNext = () => nextMonth();
+        const handlePrev = () => viewMode() === 'week' ? previousWeek() : previousMonth();
+        const handleNext = () => viewMode() === 'week' ? nextWeek() : nextMonth();
         const handleToday = () => goToToday();
         const handleMonthView = () => setViewMode('month');
         const handleWeekView = () => setViewMode('week');
