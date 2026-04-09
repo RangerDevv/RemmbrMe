@@ -691,7 +691,10 @@ export default function FocusTimer() {
             <Show when={fullscreen()}>
                 <div
                     class="fixed inset-0 z-200 flex"
-                    style={{ "background": theme().background }}
+                    style={{
+                        "background": theme().background,
+                        "transition": "none",
+                    }}
                 >
                     {/* Ambient glow */}
                     <div
@@ -956,8 +959,15 @@ export default function FocusTimer() {
             ════════════════════════════════════ */}
             <Show when={!fullscreen()}>
                 <div
-                    class="fixed bottom-6 right-6 z-50 glass rounded-2xl shadow-2xl overflow-hidden"
-                    style={{ "border": "1px solid var(--color-border-hover)", "width": "236px" }}
+                    class="fixed bottom-6 right-6 z-50 rounded-2xl shadow-2xl overflow-hidden"
+                    style={{
+                        "background": theme().panelBg,
+                        "border": `1px solid ${theme().arcColor}22`,
+                        "width": "236px",
+                        "backdrop-filter": "blur(16px)",
+                        "-webkit-backdrop-filter": "blur(16px)",
+                        "transition": "none",
+                    }}
                 >
                     {/* Progress bar */}
                     <div
@@ -979,7 +989,7 @@ export default function FocusTimer() {
                                 <button
                                     onClick={() => setFullscreen(true)}
                                     class="p-1.5 rounded-lg hover:opacity-70 transition-opacity"
-                                    style={{ "color": "var(--color-text-muted)" }}
+                                    style={{ "color": theme().labelColor }}
                                     title="Expand (F)"
                                 >
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -992,7 +1002,7 @@ export default function FocusTimer() {
                                 <button
                                     onClick={handleStop}
                                     class="p-1.5 rounded-lg hover:opacity-70 transition-opacity"
-                                    style={{ "color": "var(--color-text-muted)" }}
+                                    style={{ "color": theme().labelColor }}
                                     title="End session"
                                 >
                                     <XIcon class="w-3.5 h-3.5" />
@@ -1024,7 +1034,7 @@ export default function FocusTimer() {
                                 </svg>
                                 <div class="absolute inset-0 flex flex-col items-center justify-center">
                                     <Show when={!isDone()}>
-                                        <span class="text-base font-bold tabular-nums leading-none" style={{ "color": "var(--color-text)" }}>
+                                <span class="text-base font-bold tabular-nums leading-none" style={{ "color": theme().titleColor }}>
                                             {timeStr()}
                                         </span>
                                     </Show>
@@ -1036,10 +1046,10 @@ export default function FocusTimer() {
 
                             {/* Info + control */}
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium leading-tight truncate mb-0.5" style={{ "color": "var(--color-text)" }}>
+                                <p class="text-sm font-medium leading-tight truncate mb-0.5" style={{ "color": theme().titleColor }}>
                                     {session()?.title}
                                 </p>
-                                <p class="text-[11px] mb-2.5" style={{ "color": "var(--color-text-muted)" }}>
+                                <p class="text-[11px] mb-2.5" style={{ "color": theme().labelColor }}>
                                     {session()?.status === 'paused'
                                         ? 'Paused'
                                         : isDone()
@@ -1050,7 +1060,7 @@ export default function FocusTimer() {
                                     <button
                                         onClick={() => session()?.status === 'active' ? pauseFocus() : resumeFocus()}
                                         class="w-full py-1.5 rounded-lg text-xs font-semibold transition-all"
-                                        style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
+                                        style={{ "background-color": arcColor(), "color": "#ffffff" }}
                                     >
                                         {session()?.status === 'active' ? '⏸  Pause' : '▶  Resume'}
                                     </button>
@@ -1068,7 +1078,7 @@ export default function FocusTimer() {
                                     <button
                                         onClick={handleStop}
                                         class="w-full py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-75"
-                                        style={{ "background": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)" }}
+                                        style={{ "background": theme().arcTrackColor, "color": theme().labelColor }}
                                     >
                                         Dismiss
                                     </button>
