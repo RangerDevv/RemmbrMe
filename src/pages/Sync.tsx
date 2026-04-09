@@ -105,12 +105,23 @@ export default function Sync() {
             }
         } catch { /* not in Tauri */ }
 
-        // Listen for data uploaded by phone
+        // Listen for data uploaded by phone — auto-import silently
         try {
             unlisten = await listen<string>('sync:data-received', (event) => {
-                setIncomingData(event.payload);
-                setLanStatusType('ok');
-                setLanStatus('📥 Data received from your phone — click Import below');
+                try {
+                    importAllData(event.payload);
+                    setIncomingData('imported');
+                    setLanStatusType('ok');
+                    setLanStatus('✓ Phone changes synced to desktop');
+                    // Clear after 4s
+                    setTimeout(() => {
+                        if (lanStatus() === '✓ Phone changes synced to desktop') setLanStatus('');
+                    }, 4000);
+                } catch {
+                    setIncomingData(event.payload);
+                    setLanStatusType('err');
+                    setLanStatus('⚠ Could not auto-import — click Import below');
+                }
             });
         } catch { /* not in Tauri */ }
     });
@@ -299,11 +310,11 @@ export default function Sync() {
                 >
                     <div>
                         <h2 class="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
-                            Scan to Connect
+                            Use RemmbrMe on your phone
                         </h2>
                         <p class="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                            Your desktop runs a temporary local server. Scan the QR from your phone
-                            (same WiFi) to transfer data — no internet required.
+                            Starts a local WiFi server — scan the QR code, then add tasks, events
+                            and notes from your phone. Changes sync back automatically.
                         </p>
                     </div>
 
@@ -342,24 +353,34 @@ export default function Sync() {
 
                     {/* QR + instructions (when server is running) */}
                     <Show when={serverRunning() && serverInfo()}>
-                        <div class="flex flex-col sm:flex-row gap-5 items-start">
-                            {/* QR code */}
+                        <div class="flex flex-col sm:flex-row gap-6 items-start">
+                            {/* QR code — constrained box so SVG never overflows */}
                             <div
-                                class="rounded-xl p-2 flex-shrink-0"
-                                style={{ background: '#f9fafb', border: '3px solid var(--color-border)' }}
+                                class="rounded-xl p-2.5 flex-shrink-0 overflow-hidden"
+                                style={{
+                                    background: '#f9fafb',
+                                    border: '3px solid var(--color-border)',
+                                    width: '208px',
+                                    height: '208px',
+                                }}
                             >
                                 <Show
                                     when={qrSvg()}
                                     fallback={
-                                        <div class="w-48 h-48 flex items-center justify-center text-gray-400 text-sm">
+                                        <div class="w-full h-full flex items-center justify-center"
+                                            style={{ color: '#94a3b8', 'font-size': '.8rem' }}>
                                             Generating…
                                         </div>
                                     }
                                 >
                                     <div
-                                        class="w-48 h-48"
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            'line-height': '0',
+                                            display: 'block',
+                                        }}
                                         innerHTML={qrSvg()}
-                                        style={{ 'line-height': '0' }}
                                     />
                                 </Show>
                             </div>
@@ -372,9 +393,10 @@ export default function Sync() {
                                         How to connect
                                     </p>
                                     <ol class="space-y-1.5">
-                                        {(['Connect your phone to the same WiFi network',
-                                          'Open your camera and scan the QR code',
-                                          'Download your data or upload a backup'] as const).map((step, i) => (
+                                        {(['Connect your phone to the same WiFi',
+                                          'Scan the QR code with your camera',
+                                          'Add tasks, events and notes from your phone',
+                                          'Changes auto-sync back to your desktop'] as const).map((step, i) => (
                                             <li class="flex items-start gap-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                                                 <span
                                                     class="text-xs font-bold rounded-full w-5 h-5 flex-shrink-0 flex items-center justify-center mt-0.5"
@@ -410,8 +432,8 @@ export default function Sync() {
                             </div>
                         </div>
 
-                        {/* Incoming data banner */}
-                        <Show when={incomingData()}>
+                        {/* Incoming data banner — only shown if auto-import failed */}
+                        <Show when={incomingData() && incomingData() !== 'imported'}>
                             <div
                                 class="flex items-center justify-between gap-3 rounded-xl px-4 py-3"
                                 style={{
@@ -420,7 +442,7 @@ export default function Sync() {
                                 }}
                             >
                                 <p class="text-sm font-medium" style={{ color: 'var(--color-accent)' }}>
-                                    📥 Your phone uploaded data
+                                    📥 Phone changes received
                                 </p>
                                 <button
                                     class="text-sm font-semibold px-3 py-1 rounded-lg transition-all hover:opacity-80"
@@ -430,7 +452,7 @@ export default function Sync() {
                                     }}
                                     onClick={importIncoming}
                                 >
-                                    Import it
+                                    Import
                                 </button>
                             </div>
                         </Show>

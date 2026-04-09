@@ -11,6 +11,8 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 
+static PHONE_APP: &str = include_str!("phone_app.html");
+
 // ─── Shared axum state ───────────────────────────────────────────────────────
 
 #[derive(Clone)]
@@ -55,7 +57,7 @@ async fn handle_root(
         )
         .into_response();
     }
-    Html(sync_phone_page()).into_response()
+    Html(PHONE_APP).into_response()
 }
 
 async fn handle_get_data(
@@ -219,171 +221,35 @@ fn generate_qr_svg(text: String) -> Result<String, String> {
 
     let svg_str = code
         .render::<svg::Color<'_>>()
-        .min_dimensions(256, 256)
+        .min_dimensions(200, 200)
         .dark_color(svg::Color("#111827"))
         .light_color(svg::Color("#f9fafb"))
         .quiet_zone(true)
         .build();
 
-    Ok(svg_str)
+    // Strip fixed pixel dimensions so the SVG scales with CSS;
+    // the qrcode crate already includes a viewBox so this is safe.
+    let svg_responsive = make_svg_responsive(&svg_str);
+    Ok(svg_responsive)
 }
 
-// ─── Phone sync page (served over LAN to mobile browsers) ───────────────────
-
-fn sync_phone_page() -> &'static str {
-    r###"<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>RemmbrMe Sync</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-      background:#0f172a;color:#e2e8f0;min-height:100vh;
-      display:flex;align-items:center;justify-content:center;padding:1.25rem}
-    .card{background:#1e293b;border-radius:1.25rem;padding:1.75rem;
-      width:100%;max-width:420px;border:1px solid #334155;
-      box-shadow:0 25px 50px rgba(0,0,0,0.4)}
-    .header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem}
-    .logo{width:2.5rem;height:2.5rem;background:#6366f1;border-radius:.625rem;
-      display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
-    h1{font-size:1.2rem;font-weight:700;color:#f1f5f9}
-    .badge{display:inline-flex;align-items:center;gap:.375rem;background:#0c4a6e;
-      color:#7dd3fc;font-size:.72rem;font-weight:600;padding:.25rem .75rem;
-      border-radius:9999px;margin-bottom:1.5rem}
-    .dot{width:.45rem;height:.45rem;background:#38bdf8;border-radius:50%;
-      animation:pulse 2s ease-in-out infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-    .section{margin-bottom:1.25rem}
-    .label{font-size:.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;
-      letter-spacing:.06em;margin-bottom:.625rem}
-    .btn{width:100%;padding:.75rem 1rem;border-radius:.75rem;border:none;
-      font-size:.875rem;font-weight:600;cursor:pointer;
-      transition:background .15s,transform .1s;
-      display:flex;align-items:center;justify-content:center;gap:.5rem}
-    .btn:active{transform:scale(.98)}
-    .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
-    .btn-primary{background:#6366f1;color:#fff}
-    .btn-primary:hover:not(:disabled){background:#4f46e5}
-    .btn-ghost{background:transparent;color:#e2e8f0;
-      border:1px solid #334155;margin-top:.5rem}
-    .btn-ghost:hover:not(:disabled){background:#334155}
-    .drop-zone{width:100%;padding:.875rem;background:#0f172a;
-      border:1.5px dashed #475569;border-radius:.75rem;
-      text-align:center;cursor:pointer;font-size:.825rem;color:#94a3b8;
-      transition:border-color .15s,color .15s;margin-bottom:.5rem}
-    .drop-zone:hover{border-color:#6366f1;color:#c7d2fe}
-    .drop-zone input{display:none}
-    .file-name{font-size:.72rem;color:#818cf8;text-align:center;
-      min-height:.9rem;margin-bottom:.25rem;word-break:break-all}
-    #status{margin-top:1.1rem;padding:.7rem 1rem;border-radius:.75rem;
-      font-size:.825rem;display:none;text-align:center;font-weight:500;line-height:1.4}
-    .ok{background:#14532d;color:#86efac;display:block!important}
-    .err{background:#7f1d1d;color:#fca5a5;display:block!important}
-    .divider{border:none;border-top:1px solid #334155;margin:1.25rem 0}
-  </style>
-</head>
-<body>
-<div class="card">
-  <div class="header">
-    <div class="logo">&#128203;</div>
-    <h1>RemmbrMe Sync</h1>
-  </div>
-  <div class="badge"><span class="dot"></span>Connected to your desktop</div>
-
-  <div class="section">
-    <div class="label">Download to this device</div>
-    <button class="btn btn-primary" id="dlBtn">&#8595; Download Data</button>
-  </div>
-
-  <hr class="divider"/>
-
-  <div class="section">
-    <div class="label">Upload from this device</div>
-    <label class="drop-zone">
-      &#128193; Choose backup file (.json)
-      <input type="file" id="fileInput" accept=".json"/>
-    </label>
-    <div class="file-name" id="fileName"></div>
-    <button class="btn btn-ghost" id="ulBtn" disabled>&#8593; Upload to Desktop</button>
-  </div>
-
-  <div id="status"></div>
-</div>
-
-<script>
-  var params = new URLSearchParams(location.search);
-  var token = params.get('token') || '';
-  var selectedFile = null;
-
-  function showStatus(msg, ok) {
-    var el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = ok ? 'ok' : 'err';
-  }
-
-  document.getElementById('dlBtn').onclick = function() {
-    var btn = document.getElementById('dlBtn');
-    btn.disabled = true;
-    btn.textContent = 'Downloading...';
-    fetch('/api/data?token=' + token)
-      .then(function(res) {
-        if (!res.ok) throw new Error('Server error ' + res.status);
-        return res.text();
-      })
-      .then(function(text) {
-        var blob = new Blob([text], {type: 'application/json'});
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'remmbrme-backup-' + new Date().toISOString().slice(0,10) + '.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showStatus('\u2713 Data downloaded successfully!', true);
-      })
-      .catch(function(e) { showStatus('\u2717 Download failed: ' + e.message, false); })
-      .finally(function() { btn.disabled = false; btn.textContent = '\u2193 Download Data'; });
-  };
-
-  document.getElementById('fileInput').onchange = function(e) {
-    selectedFile = e.target.files[0];
-    var btn = document.getElementById('ulBtn');
-    var nameEl = document.getElementById('fileName');
-    if (selectedFile) {
-      nameEl.textContent = selectedFile.name;
-      btn.disabled = false;
-    } else {
-      nameEl.textContent = '';
-      btn.disabled = true;
-    }
-  };
-
-  document.getElementById('ulBtn').onclick = function() {
-    if (!selectedFile) return;
-    var btn = document.getElementById('ulBtn');
-    btn.disabled = true;
-    btn.textContent = 'Uploading...';
-    selectedFile.text()
-      .then(function(text) {
-        return fetch('/api/data?token=' + token, {
-          method: 'POST',
-          body: text,
-          headers: {'Content-Type': 'application/json'}
-        });
-      })
-      .then(function(res) {
-        if (!res.ok) throw new Error('Server error ' + res.status);
-        showStatus('\u2713 Data uploaded to desktop!', true);
-      })
-      .catch(function(e) { showStatus('\u2717 Upload failed: ' + e.message, false); })
-      .finally(function() { btn.disabled = false; btn.textContent = '\u2191 Upload to Desktop'; });
-  };
-</script>
-</body>
-</html>"###
+fn make_svg_responsive(svg: &str) -> String {
+    // Replace the first width="NNN" / width="NNNpx" on the <svg> element with 100%
+    let replace_attr = |s: &str, attr: &str| -> String {
+        let needle = format!(" {}=\"", attr);
+        if let Some(pos) = s.find(&needle) {
+            let start = pos + needle.len();
+            if let Some(end) = s[start..].find('"') {
+                let mut out = s.to_string();
+                out.replace_range(pos..pos + needle.len() + end + 1,
+                    &format!(" {}=\"100%\"", attr));
+                return out;
+            }
+        }
+        s.to_string()
+    };
+    let s = replace_attr(svg, "width");
+    replace_attr(&s, "height")
 }
 
 // ─── App entry point ─────────────────────────────────────────────────────────
