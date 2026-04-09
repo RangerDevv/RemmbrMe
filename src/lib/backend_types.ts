@@ -4,6 +4,7 @@ import {Calendar} from "./models/Calendar";
 import {Tags} from "./models/Tags";
 import PocketBase from "pocketbase";
 import {FutureNotes} from "./models/FutureNotes.ts";
+import {Note} from "./models/Note.ts";
 
 /**
  * Editable types; these should be changed when a new table is added in the db or a new dependency for IoC.
@@ -14,6 +15,7 @@ export interface collectionMapping<K extends objectModes="read"> {
     Calendar: Calendar<K>;
     Tags: Tags<K>;
     FutureNotes: FutureNotes<K>;
+    Notes: Note<K>;
 }
 
 export interface dependencies {

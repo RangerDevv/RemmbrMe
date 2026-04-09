@@ -6,12 +6,14 @@ import Calendar from "./pages/Calendar";
 import TimeMachine from "./pages/TimeMachine";
 import AIAssistant from "./pages/AIAssistant";
 import Settings from './pages/Settings';
+import Sync from './pages/Sync';
 import QuickAdd from "./components/QuickAdd";
 import Sidebar from "./components/Sidebar";
 import KeyboardShortcuts from "./components/KeyboardShortcuts";
 import TitleBar from "./components/TitleBar";
 import { applyThemeToDOM, currentTheme } from "./lib/theme";
 import { initNotifications, updateNotificationSchedule, stopNotificationChecker } from "./lib/notifications";
+import FocusTimer from "./components/FocusTimer";
 
 export default function App() {
   // Apply theme on mount
@@ -46,11 +48,13 @@ export default function App() {
             <Route path="/timemachine" component={TimeMachine} />
             <Route path="/ai" component={AIAssistant} />
             <Route path="/settings" component={Settings} />
+            <Route path="/sync" component={Sync} />
           </Router>
         </div>
         
         <QuickAdd />
         <KeyboardShortcuts />
+        <FocusTimer />
       </div>
     </main>
     </>

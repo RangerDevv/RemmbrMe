@@ -2,6 +2,7 @@ import { UploadFile, fileUploader } from '@solid-primitives/upload';
 import { Index, Show, createSignal, onMount, onCleanup } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
 import { bk, currentUser } from '../lib/backend.ts';
+import { startFocus } from '../lib/focusTimer';
 import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
 import TagSelector from '../components/TagSelector';
@@ -14,7 +15,8 @@ import {
     CalendarIcon, 
     CheckCircleIcon, 
     RepeatIcon,
-    ChevronDownIcon
+    ChevronDownIcon,
+    PlayIcon,
 } from '../components/Icons';
 
 
@@ -483,6 +485,15 @@ function Todo() {
                                 }`}>
                                     {item().Priority}
                                 </span>
+                                <button
+                                    onClick={() => startFocus(item().id, item().Title, item().Duration || 25, 'task')}
+                                    class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80"
+                                    style={{ "background": "var(--color-accent-muted)", "color": "var(--color-accent)" }}
+                                    title={`Start focus session: ${item().Duration ? item().Duration + ' min' : '25 min'}`}
+                                >
+                                    <PlayIcon class="w-3 h-3" />
+                                    Focus
+                                </button>
                                 <button
                                     onClick={() => startEditing(item())}
                                     class="px-2 py-1 text-blue-400 hover:text-blue-300 transition-colors duration-200"

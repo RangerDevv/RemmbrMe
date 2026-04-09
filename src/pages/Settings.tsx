@@ -2,6 +2,7 @@ import { createSignal, onMount, createEffect, For } from 'solid-js';
 import { A } from '@solidjs/router';
 import ConfirmModal from '../components/ConfirmModal';
 import { themes, currentThemeId, setTheme, getUserName, setUserName } from '../lib/theme';
+import { timerThemes, currentTimerThemeId, setTimerTheme } from '../lib/timerThemes';
 import { getStorageMode, setStorageMode, getPocketBaseUrl, setPocketBaseUrl, reinitBackend } from '../lib/backend';
 import { 
     DashboardIcon, 
@@ -200,6 +201,41 @@ function Settings() {
                                 >
                                     <div class="w-5 h-5 rounded-full mx-auto mb-1.5" style={{ "background-color": theme.colors.accent }}></div>
                                     <span class="text-[10px] font-medium" style={{ "color": theme.colors.text }}>{theme.name}</span>
+                                </button>
+                            )}
+                        </For>
+                    </div>
+                </div>
+
+                {/* Focus Timer Theme Section */}
+                <div class="glass rounded-xl p-5">
+                    <h2 class="text-base font-bold mb-1" style={{ "color": "var(--color-text)" }}>Focus Timer Theme</h2>
+                    <p class="text-xs mb-3" style={{ "color": "var(--color-text-muted)" }}>
+                        Applied to the fullscreen focus session overlay. Can also be changed live during a session.
+                    </p>
+                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        <For each={timerThemes}>
+                            {(t) => (
+                                <button
+                                    onClick={() => setTimerTheme(t.id)}
+                                    class="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200"
+                                    style={{
+                                        "background": currentTimerThemeId() === t.id
+                                            ? `${t.preview}18`
+                                            : "var(--color-bg-tertiary)",
+                                        "border": currentTimerThemeId() === t.id
+                                            ? `2px solid ${t.preview}`
+                                            : "2px solid var(--color-border)",
+                                        "box-shadow": currentTimerThemeId() === t.id ? `0 0 10px ${t.preview}40` : "none",
+                                    }}
+                                >
+                                    <span
+                                        class="w-7 h-7 rounded-full shrink-0"
+                                        style={{ "background-color": t.preview }}
+                                    />
+                                    <span class="text-[10px] font-medium text-center leading-tight" style={{ "color": "var(--color-text-secondary)" }}>
+                                        {t.name}
+                                    </span>
                                 </button>
                             )}
                         </For>

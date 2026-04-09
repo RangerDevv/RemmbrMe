@@ -23,6 +23,16 @@ const iconProps = (props: IconProps): JSX.SvgSVGAttributes<SVGSVGElement> => ({
     'stroke-linejoin': 'round' as const,
 });
 
+// Sync / two-arrows icon
+export const SyncIcon = (props: IconProps) => (
+    <svg {...iconProps(props)}>
+        <path d="M23 4v6h-6" />
+        <path d="M1 20v-6h6" />
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" />
+        <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+);
+
 // Dashboard / Chart icon
 export const DashboardIcon = (props: IconProps) => (
     <svg {...iconProps(props)}>
@@ -314,5 +324,12 @@ export const SuccessIcon = (props: IconProps) => (
     <svg {...iconProps(props)}>
         <circle cx="12" cy="12" r="10" fill="#22c55e" stroke="none" />
         <polyline points="8 12 11 15 16 9" fill="none" stroke="white" stroke-width="2" />
+    </svg>
+);
+
+// Play icon (focus / start)
+export const PlayIcon = (props: IconProps) => (
+    <svg {...iconProps(props)}>
+        <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none" />
     </svg>
 );

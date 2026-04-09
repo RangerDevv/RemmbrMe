@@ -1,11 +1,10 @@
 import { createSignal, onMount, onCleanup, For, Show, createMemo } from 'solid-js';
 import { A } from '@solidjs/router';
 import { bk, currentUser } from '../lib/backend.ts';
+import { startFocus } from '../lib/focusTimer';
 import {
-    CheckCircleIcon,
-    CalendarIcon,
-    ClockIcon,
     RepeatIcon,
+    PlayIcon,
 } from '../components/Icons';
 
 function Dashboard() {
@@ -128,24 +127,16 @@ function Dashboard() {
     }
 
     // --- Task/Event getters ---
-    function getTodayEvents() {
+    function getUpcomingEvents() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        return events().filter(e => {
-            const d = new Date(e.Start);
-            return d >= today && d < tomorrow;
-        }).sort((a, b) => new Date(a.Start).getTime() - new Date(b.Start).getTime());
-    }
-
-    function getUpcomingEvents() {
-        const now = new Date();
-        const weekLater = new Date(now);
+        const weekLater = new Date(today);
         weekLater.setDate(weekLater.getDate() + 7);
         return events().filter(e => {
             const d = new Date(e.Start);
-            return d > now && d <= weekLater;
+            return d >= tomorrow && d <= weekLater;
         }).sort((a, b) => new Date(a.Start).getTime() - new Date(b.Start).getTime()).slice(0, 8);
     }
 
@@ -177,21 +168,6 @@ function Dashboard() {
             .slice(0, 15);
     }
 
-    function getTodayTasks() {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        return todos()
-            .filter(t => {
-                if (t.Completed) return false;
-                if (!t.Deadline) return false;
-                const d = new Date(t.Deadline);
-                return d >= today && d < tomorrow;
-            })
-            .sort((a, b) => new Date(a.Deadline).getTime() - new Date(b.Deadline).getTime());
-    }
-
     function getOverdueTasks() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -199,6 +175,53 @@ function Dashboard() {
             if (!t.Deadline || t.Completed) return false;
             return new Date(t.Deadline) < today;
         });
+    }
+
+    // --- Today View helpers ---
+    function getTodayTimeline() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const items: Array<{
+            type: 'event' | 'task';
+            time: Date | null;
+            hasTime: boolean;
+            data: any;
+        }> = [];
+
+        events().forEach(e => {
+            const start = new Date(e.Start);
+            if (start >= today && start < tomorrow) {
+                items.push({ type: 'event', time: e.AllDay ? null : start, hasTime: !e.AllDay, data: e });
+            }
+        });
+
+        todos().filter(t => !t.Completed && t.Deadline).forEach(t => {
+            const d = new Date(t.Deadline);
+            if (d >= today && d < tomorrow) {
+                const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
+                items.push({ type: 'task', time: hasTime ? d : null, hasTime, data: t });
+            }
+        });
+
+        return items.sort((a, b) => {
+            if (a.hasTime && b.hasTime) return a.time!.getTime() - b.time!.getTime();
+            if (a.hasTime) return -1;
+            if (b.hasTime) return 1;
+            return 0;
+        });
+    }
+
+    function getDayProgress() {
+        const now = new Date();
+        return Math.round((now.getHours() * 60 + now.getMinutes()) / (24 * 60) * 100);
+    }
+
+    function getEventDurationMins(event: any): number {
+        if (!event.Start || !event.End) return 25;
+        return Math.max(1, Math.round((new Date(event.End).getTime() - new Date(event.Start).getTime()) / 60000));
     }
 
     onMount(() => {
@@ -231,7 +254,7 @@ function Dashboard() {
     });
 
     return (
-        <div class="flex-1 w-full max-w-5xl mx-auto">
+        <div class="flex-1 w-full max-w-5xl mx-auto pt-6 lg:pt-8">
             {/* Header */}
             <div class="mb-6 lg:mb-8">
                 <h1 class="text-xl lg:text-2xl font-semibold" style={{ "color": "var(--color-text)" }}>{greeting}</h1>
@@ -247,8 +270,134 @@ function Dashboard() {
             </Show>
 
             <Show when={!isLoading()}>
+                {/* ── TODAY VIEW ── */}
+                <div class="mb-6 lg:mb-8">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Today</h2>
+                        <div class="flex items-center gap-2">
+                            <Show when={getOverdueTasks().length > 0}>
+                                <span class="text-xs font-medium px-2 py-0.5 rounded-full" style={{ "background-color": "var(--color-danger-muted)", "color": "var(--color-danger)" }}>
+                                    {getOverdueTasks().length} overdue
+                                </span>
+                            </Show>
+                            <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>{getDayProgress()}% of day</span>
+                        </div>
+                    </div>
+                    {/* Day progress bar */}
+                    <div class="h-0.5 rounded-full mb-4 overflow-hidden" style={{ "background-color": "var(--color-bg-tertiary)" }}>
+                        <div
+                            class="h-full rounded-full"
+                            style={{ "width": `${getDayProgress()}%`, "background-color": "var(--color-accent)" }}
+                        />
+                    </div>
+
+                    <div class="space-y-1.5">
+                        {/* Overdue items */}
+                        <Show when={getOverdueTasks().length > 0}>
+                            <For each={getOverdueTasks().slice(0, 3)}>
+                                {(task) => (
+                                    <div class="group glass flex items-center gap-3 py-2.5 px-3 rounded-xl card-hover">
+                                        <span class="w-12 text-[10px] font-semibold shrink-0 text-right" style={{ "color": "var(--color-danger)" }}>overdue</span>
+                                        <div class="w-1 h-8 rounded-full shrink-0" style={{ "background-color": priorityDot(task.Priority) }} />
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-sm font-medium truncate" style={{ "color": "var(--color-text)" }}>{task.Title}</div>
+                                            <div class="text-xs" style={{ "color": "var(--color-danger)" }}>
+                                                {new Date(task.Deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {task.Priority}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => startFocus(task.id, task.Title, task.Duration || 25, 'task')}
+                                            class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80 shrink-0"
+                                            style={{ "background": "var(--color-accent-muted)", "color": "var(--color-accent)" }}
+                                            title={`Start focus session: ${task.Duration || 25} min`}
+                                        >
+                                            <PlayIcon class="w-3 h-3" />
+                                            Focus
+                                        </button>
+                                        <button
+                                            onClick={() => quickCompleteTask(task.id)}
+                                            class="w-[18px] h-[18px] rounded-full shrink-0 hover:opacity-70 transition-opacity"
+                                            style={{ "border": "2px solid var(--color-danger)" }}
+                                            title="Complete"
+                                        />
+                                    </div>
+                                )}
+                            </For>
+                            <Show when={getOverdueTasks().length > 3}>
+                                <A href="/todo" class="block text-center text-xs py-1" style={{ "color": "var(--color-text-muted)" }}>
+                                    +{getOverdueTasks().length - 3} more overdue
+                                </A>
+                            </Show>
+                        </Show>
+
+                        {/* Today's timeline: events + tasks sorted chronologically */}
+                        <For each={getTodayTimeline()}>
+                            {(item) => (
+                                <div class="group glass flex items-center gap-3 py-2.5 px-3 rounded-xl card-hover">
+                                    <span class="w-12 text-[10px] font-medium shrink-0 text-right tabular-nums" style={{ "color": "var(--color-text-muted)" }}>
+                                        {item.hasTime
+                                            ? item.time!.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                                            : '—'
+                                        }
+                                    </span>
+                                    <div
+                                        class="w-1 h-8 rounded-full shrink-0"
+                                        style={{
+                                            "background-color": item.type === 'event'
+                                                ? (item.data.Color || 'var(--color-accent)')
+                                                : priorityDot(item.data.Priority)
+                                        }}
+                                    />
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium truncate" style={{ "color": "var(--color-text)" }}>
+                                            {item.type === 'event' ? item.data.EventName : item.data.Title}
+                                        </div>
+                                        <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
+                                            {item.type === 'event'
+                                                ? (item.data.AllDay ? 'All day' : (() => {
+                                                    const dur = getEventDurationMins(item.data);
+                                                    return dur < 60 ? `${dur}m` : `${Math.floor(dur / 60)}h${dur % 60 > 0 ? ` ${dur % 60}m` : ''}`;
+                                                })())
+                                                : `${item.data.Priority}${item.data.Duration ? ` · ${item.data.Duration}min` : ''}`
+                                            }
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => item.type === 'event'
+                                            ? startFocus(item.data.id, item.data.EventName, getEventDurationMins(item.data), 'event')
+                                            : startFocus(item.data.id, item.data.Title, item.data.Duration || 25, 'task')
+                                        }
+                                        class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80 shrink-0"
+                                        style={{ "background": "var(--color-accent-muted)", "color": "var(--color-accent)" }}
+                                        title="Start focus session"
+                                    >
+                                        <PlayIcon class="w-3 h-3" />
+                                        Focus
+                                    </button>
+                                    <Show when={item.type === 'task'}>
+                                        <button
+                                            onClick={() => quickCompleteTask(item.data.id)}
+                                            class="w-[18px] h-[18px] rounded-full shrink-0 hover:opacity-70 transition-opacity"
+                                            style={{ "border": "2px solid var(--color-accent)" }}
+                                            title="Complete"
+                                        />
+                                    </Show>
+                                </div>
+                            )}
+                        </For>
+
+                        <Show when={getTodayTimeline().length === 0 && getOverdueTasks().length === 0}>
+                            <div class="glass py-6 text-center rounded-xl">
+                                <p class="text-sm" style={{ "color": "var(--color-text-muted)" }}>Nothing scheduled for today</p>
+                                <p class="text-xs mt-1" style={{ "color": "var(--color-text-muted)", "opacity": "0.6" }}>Enjoy your free day</p>
+                            </div>
+                        </Show>
+                    </div>
+                </div>
+
+                {/* ── LOWER GRID ── */}
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
-                    {/* Left column: Calendar + Events */}
+                    {/* Left column: Calendar + Upcoming Events */}
                     <div class="lg:col-span-2 space-y-5 lg:space-y-6">
                         {/* Mini Calendar */}
                         <div class="glass rounded-xl p-4 lg:p-5">
@@ -296,7 +445,7 @@ function Dashboard() {
                                 </For>
                             </div>
 
-                            {/* Calendar grid */}
+                            {/* Month view */}
                             <Show when={calView() === 'month'}>
                                 <div class="grid grid-cols-7">
                                     <For each={getMonthDays()}>
@@ -323,6 +472,7 @@ function Dashboard() {
                                 </div>
                             </Show>
 
+                            {/* Week view */}
                             <Show when={calView() === 'week'}>
                                 <div class="grid grid-cols-7">
                                     <For each={getWeekDays()}>
@@ -348,61 +498,34 @@ function Dashboard() {
                             </Show>
                         </div>
 
-                        {/* Today's Schedule */}
-                        <div>
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Today's Events</h3>
-                                <A href="/calendar" class="text-xs font-medium hover:underline" style={{ "color": "var(--color-accent)" }}>
-                                    View Calendar
-                                </A>
-                            </div>
-                            <div class="space-y-2">
-                                <Show when={getTodayEvents().length > 0}>
-                                    <For each={getTodayEvents()}>
-                                        {(event) => (
-                                            <div class="glass flex items-start gap-3 p-3 rounded-xl transition-colors card-hover">
-                                                <div class="w-1 self-stretch rounded-full shrink-0 mt-0.5" style={{ "background-color": event.Color || 'var(--color-accent)' }}></div>
-                                                <div class="flex-1 min-w-0">
-                                                    <div class="text-sm font-medium truncate" style={{ "color": "var(--color-text)" }}>{event.EventName}</div>
-                                                    <Show when={!event.AllDay}>
-                                                        <div class="text-xs mt-0.5 flex items-center gap-1" style={{ "color": "var(--color-text-muted)" }}>
-                                                            <ClockIcon class="w-3 h-3" />
-                                                            {new Date(event.Start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                                                            {' – '}
-                                                            {new Date(event.End).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                                                        </div>
-                                                    </Show>
-                                                    <Show when={event.AllDay}>
-                                                        <div class="text-xs mt-0.5" style={{ "color": "var(--color-text-muted)" }}>All day</div>
-                                                    </Show>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </For>
-                                </Show>
-                                <Show when={getTodayEvents().length === 0}>
-                                    <div class="glass py-8 text-center rounded-xl">
-                                        <p class="text-sm" style={{ "color": "var(--color-text-muted)" }}>No events today</p>
-                                        <p class="text-xs mt-1" style={{ "color": "var(--color-text-muted)", "opacity": "0.6" }}>Enjoy your free time</p>
-                                    </div>
-                                </Show>
-                            </div>
-                        </div>
-
-                        {/* Upcoming Events */}
+                        {/* Upcoming Events (tomorrow onward) */}
                         <Show when={getUpcomingEvents().length > 0}>
                             <div>
-                                <h3 class="text-sm font-semibold mb-3" style={{ "color": "var(--color-text)" }}>Upcoming</h3>
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Upcoming</h3>
+                                    <A href="/calendar" class="text-xs font-medium hover:underline" style={{ "color": "var(--color-accent)" }}>
+                                        View Calendar
+                                    </A>
+                                </div>
                                 <div class="space-y-1.5">
                                     <For each={getUpcomingEvents()}>
                                         {(event) => {
                                             const eventDate = new Date(event.Start);
                                             return (
-                                                <div class="glass flex items-center gap-3 py-2.5 px-3 rounded-xl card-hover">
+                                                <div class="group glass flex items-center gap-3 py-2.5 px-3 rounded-xl card-hover">
                                                     <div class="w-1 h-8 rounded-full shrink-0" style={{ "background-color": event.Color || 'var(--color-accent)' }}></div>
                                                     <div class="flex-1 min-w-0">
                                                         <div class="text-sm font-medium truncate" style={{ "color": "var(--color-text)" }}>{event.EventName}</div>
                                                     </div>
+                                                    <button
+                                                        onClick={() => startFocus(event.id, event.EventName, getEventDurationMins(event), 'event')}
+                                                        class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80 shrink-0"
+                                                        style={{ "background": "var(--color-accent-muted)", "color": "var(--color-accent)" }}
+                                                        title="Start focus session"
+                                                    >
+                                                        <PlayIcon class="w-3 h-3" />
+                                                        Focus
+                                                    </button>
                                                     <div class="text-xs shrink-0" style={{ "color": "var(--color-text-muted)" }}>
                                                         {eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                                                         <Show when={!event.AllDay}>
@@ -420,97 +543,8 @@ function Dashboard() {
                         </Show>
                     </div>
 
-                    {/* Right column: Tasks */}
+                    {/* Right column: Upcoming Tasks */}
                     <div class="space-y-5 lg:space-y-6">
-                        {/* Due Today */}
-                        <Show when={getTodayTasks().length > 0}>
-                            <div>
-                                <h3 class="text-sm font-semibold mb-2 flex items-center gap-1.5" style={{ "color": "var(--color-accent)" }}>
-                                    Due Today · {getTodayTasks().length}
-                                </h3>
-                                <div class="space-y-1.5">
-                                    <For each={getTodayTasks()}>
-                                        {(task) => {
-                                            const deadline = new Date(task.Deadline);
-                                            const hasTime = deadline.getHours() !== 0 || deadline.getMinutes() !== 0;
-                                            return (
-                                                <div class="glass flex items-center gap-2.5 py-2.5 px-3 rounded-xl group card-hover">
-                                                    <button
-                                                        onClick={() => quickCompleteTask(task.id)}
-                                                        class="w-[18px] h-[18px] rounded-full shrink-0 transition-colors hover:opacity-70"
-                                                        style={{ "border": "2px solid var(--color-accent)" }}
-                                                        title="Complete"
-                                                    ></button>
-                                                    <div class="flex-1 min-w-0">
-                                                        <div class="text-sm truncate" style={{ "color": "var(--color-text)" }}>{task.Title}</div>
-                                                        <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
-                                                            {hasTime 
-                                                                ? deadline.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-                                                                : 'Anytime today'
-                                                            }
-                                                            <Show when={task.Recurrence && task.Recurrence !== 'none'}>
-                                                                <span class="ml-1.5 inline-flex items-center gap-0.5">
-                                                                    <RepeatIcon class="w-3 h-3" /> {task.Recurrence}
-                                                                </span>
-                                                            </Show>
-                                                        </div>
-                                                        <Show when={task.Subtasks && task.Subtasks.length > 0}>
-                                                            <div class="flex items-center gap-1.5 mt-1">
-                                                                <div class="flex-1 h-1 rounded-full overflow-hidden" style={{ "background-color": "var(--color-bg-tertiary)" }}>
-                                                                    <div 
-                                                                        class="h-full rounded-full transition-all duration-300"
-                                                                        style={{ 
-                                                                            "width": `${(task.Subtasks.filter((s: any) => s.completed).length / task.Subtasks.length) * 100}%`,
-                                                                            "background-color": task.Subtasks.filter((s: any) => s.completed).length === task.Subtasks.length ? "var(--color-success)" : "var(--color-accent)"
-                                                                        }}
-                                                                    ></div>
-                                                                </div>
-                                                                <span class="text-[10px] shrink-0" style={{ "color": "var(--color-text-muted)" }}>
-                                                                    {task.Subtasks.filter((s: any) => s.completed).length}/{task.Subtasks.length}
-                                                                </span>
-                                                            </div>
-                                                        </Show>
-                                                    </div>
-                                                    <div class="w-2 h-2 rounded-full shrink-0" style={{ "background-color": priorityDot(task.Priority) }}></div>
-                                                </div>
-                                            );
-                                        }}
-                                    </For>
-                                </div>
-                            </div>
-                        </Show>
-
-                        {/* Overdue */}
-                        <Show when={getOverdueTasks().length > 0}>
-                            <div>
-                                <h3 class="text-sm font-semibold mb-2 flex items-center gap-1.5" style={{ "color": "var(--color-danger)" }}>
-                                    Overdue · {getOverdueTasks().length}
-                                </h3>
-                                <div class="space-y-1.5">
-                                    <For each={getOverdueTasks().slice(0, 5)}>
-                                        {(task) => (
-                                            <div class="glass flex items-center gap-2.5 py-2.5 px-3 rounded-xl group card-hover">
-                                                <button
-                                                    onClick={() => quickCompleteTask(task.id)}
-                                                    class="w-[18px] h-[18px] rounded-full shrink-0 transition-colors hover:opacity-70"
-                                                    style={{ "border": `2px solid var(--color-danger)` }}
-                                                    title="Complete"
-                                                ></button>
-                                                <div class="flex-1 min-w-0">
-                                                    <div class="text-sm truncate" style={{ "color": "var(--color-text)" }}>{task.Title}</div>
-                                                    <div class="text-xs" style={{ "color": "var(--color-danger)" }}>
-                                                        {new Date(task.Deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                                    </div>
-                                                </div>
-                                                <div class="w-2 h-2 rounded-full shrink-0" style={{ "background-color": priorityDot(task.Priority) }}></div>
-                                            </div>
-                                        )}
-                                    </For>
-                                </div>
-                            </div>
-                        </Show>
-
-                        {/* Active Tasks */}
                         <div>
                             <div class="flex items-center justify-between mb-2">
                                 <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Upcoming Tasks</h3>
@@ -522,13 +556,13 @@ function Dashboard() {
                                 <Show when={getActiveTasks().length > 0}>
                                     <For each={getActiveTasks()}>
                                         {(task) => (
-                                            <div class="glass flex items-center gap-2.5 py-2.5 px-3 rounded-xl group card-hover">
+                                            <div class="group glass flex items-center gap-2.5 py-2.5 px-3 rounded-xl card-hover">
                                                 <button
                                                     onClick={() => quickCompleteTask(task.id)}
-                                                    class="w-[18px] h-[18px] rounded-full shrink-0 transition-colors hover:opacity-70"
+                                                    class="w-[18px] h-[18px] rounded-full shrink-0 hover:opacity-70 transition-opacity"
                                                     style={{ "border": "2px solid var(--color-border-hover)" }}
                                                     title="Complete"
-                                                ></button>
+                                                />
                                                 <div class="flex-1 min-w-0">
                                                     <div class="text-sm truncate" style={{ "color": "var(--color-text)" }}>{task.Title}</div>
                                                     <Show when={task.Deadline}>
@@ -544,13 +578,13 @@ function Dashboard() {
                                                     <Show when={task.Subtasks && task.Subtasks.length > 0}>
                                                         <div class="flex items-center gap-1.5 mt-1">
                                                             <div class="flex-1 h-1 rounded-full overflow-hidden" style={{ "background-color": "var(--color-bg-tertiary)" }}>
-                                                                <div 
+                                                                <div
                                                                     class="h-full rounded-full transition-all duration-300"
-                                                                    style={{ 
+                                                                    style={{
                                                                         "width": `${(task.Subtasks.filter((s: any) => s.completed).length / task.Subtasks.length) * 100}%`,
                                                                         "background-color": task.Subtasks.filter((s: any) => s.completed).length === task.Subtasks.length ? "var(--color-success)" : "var(--color-accent)"
                                                                     }}
-                                                                ></div>
+                                                                />
                                                             </div>
                                                             <span class="text-[10px] shrink-0" style={{ "color": "var(--color-text-muted)" }}>
                                                                 {task.Subtasks.filter((s: any) => s.completed).length}/{task.Subtasks.length}
@@ -558,6 +592,15 @@ function Dashboard() {
                                                         </div>
                                                     </Show>
                                                 </div>
+                                                <button
+                                                    onClick={() => startFocus(task.id, task.Title, task.Duration || 25, 'task')}
+                                                    class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80 shrink-0"
+                                                    style={{ "background": "var(--color-accent-muted)", "color": "var(--color-accent)" }}
+                                                    title={`Start focus session: ${task.Duration || 25} min`}
+                                                >
+                                                    <PlayIcon class="w-3 h-3" />
+                                                    Focus
+                                                </button>
                                                 <div class="w-2 h-2 rounded-full shrink-0" style={{ "background-color": priorityDot(task.Priority) }}></div>
                                             </div>
                                         )}
