@@ -7,6 +7,7 @@ import { refreshNotifications } from '../lib/notifications';
 import ConfirmModal from '../components/ConfirmModal';
 import TagSelector from '../components/TagSelector';
 import CustomSelect from '../components/CustomSelect';
+import DateTimePicker, { DatePicker } from '../components/DateTimePicker';
 import { Subtask } from '../lib/models/Todo.ts';
 import { 
     SearchIcon, 
@@ -1053,28 +1054,12 @@ function Todo() {
                             </div>
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Start / Due Date</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
-                                        <input
-                                            type="date"
-                                            value={TaskDeadlineDate()}
-                                            onInput={(e) => setTaskDeadlineDate(e.currentTarget.value)}
-                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer"
-                                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Time</label>
-                                        <input
-                                            type="time"
-                                            value={TaskDeadlineTime()}
-                                            onInput={(e) => setTaskDeadlineTime(e.currentTarget.value)}
-                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer"
-                                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                        />
-                                    </div>
-                                </div>
+                                <DateTimePicker
+                                    date={TaskDeadlineDate()}
+                                    time={TaskDeadlineTime()}
+                                    onDateChange={setTaskDeadlineDate}
+                                    onTimeChange={setTaskDeadlineTime}
+                                />
                             </div>
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Duration</label>
@@ -1233,12 +1218,9 @@ function Todo() {
                             <Show when={recurrence() !== 'none'}>
                                 <div class="mb-4">
                                     <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Repeat Until</label>
-                                    <input
-                                        type="date"
-                                        value={recurrenceEndDate()}
-                                        onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
-                                        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer"
-                                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    <DatePicker
+                                        date={recurrenceEndDate()}
+                                        onDateChange={setRecurrenceEndDate}
                                     />
                                 </div>
                             </Show>

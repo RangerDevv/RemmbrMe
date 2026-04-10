@@ -5,6 +5,7 @@ import { refreshNotifications } from '../lib/notifications';
 import TagSelector from '../components/TagSelector';
 import ConfirmModal from '../components/ConfirmModal';
 import CustomSelect from '../components/CustomSelect';
+import DateTimePicker, { DatePicker } from '../components/DateTimePicker';
 import {Todo} from "../lib/models/Todo.ts";
 import { 
     CalendarIcon, 
@@ -1823,56 +1824,28 @@ function Calendar() {
 
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Start Date / Time</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
-                                        <input
-                                            type="date"
-                                            value={startDate()}
-                                            onInput={(e) => setStartDate(e.currentTarget.value)}
-                                            required
-                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                        />
-                                    </div>
-                                    <Show when={!allDay()}>
-                                        <div>
-                                            <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Time</label>
-                                            <input
-                                                type="time"
-                                                value={startTime()}
-                                                onInput={(e) => setStartTime(e.currentTarget.value)}
-                                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                            />
-                                        </div>
-                                    </Show>
-                                </div>
+                                <DateTimePicker
+                                    date={startDate()}
+                                    time={startTime()}
+                                    onDateChange={(d) => { setStartDate(d); if (!endDate() || endDate() < d) setEndDate(d); }}
+                                    onTimeChange={setStartTime}
+                                    showTime={!allDay()}
+                                    required
+                                />
                             </div>
 
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>End Date / Time</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
-                                        <input
-                                            type="date"
-                                            value={endDate()}
-                                            onInput={(e) => setEndDate(e.currentTarget.value)}
-                                            required
-                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                        />
-                                    </div>
-                                    <Show when={!allDay()}>
-                                        <div>
-                                            <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Time</label>
-                                            <input
-                                                type="time"
-                                                value={endTime()}
-                                                onInput={(e) => setEndTime(e.currentTarget.value)}
-                                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                            />
-                                        </div>
-                                    </Show>
-                                </div>
+                                <DateTimePicker
+                                    date={endDate()}
+                                    time={endTime()}
+                                    onDateChange={setEndDate}
+                                    onTimeChange={setEndTime}
+                                    showTime={!allDay()}
+                                    required
+                                    minDate={startDate()}
+                                    minTime={startDate() === endDate() ? startTime() : undefined}
+                                />
                             </div>
 
                             <div class="mb-4">
@@ -2041,11 +2014,9 @@ function Calendar() {
                             <Show when={recurrence() !== 'none'}>
                                 <div class="mb-4">
                                     <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Repeat Until</label>
-                                    <input
-                                        type="date"
-                                        value={recurrenceEndDate()}
-                                        onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
-                                        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    <DatePicker
+                                        date={recurrenceEndDate()}
+                                        onDateChange={setRecurrenceEndDate}
                                     />
                                 </div>
                             </Show>
@@ -2138,56 +2109,28 @@ function Calendar() {
 
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Start Date / Time</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
-                                        <input
-                                            type="date"
-                                            value={startDate()}
-                                            onInput={(e) => setStartDate(e.currentTarget.value)}
-                                            required
-                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                        />
-                                    </div>
-                                    <Show when={!allDay()}>
-                                        <div>
-                                            <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Time</label>
-                                            <input
-                                                type="time"
-                                                value={startTime()}
-                                                onInput={(e) => setStartTime(e.currentTarget.value)}
-                                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                            />
-                                        </div>
-                                    </Show>
-                                </div>
+                                <DateTimePicker
+                                    date={startDate()}
+                                    time={startTime()}
+                                    onDateChange={(d) => { setStartDate(d); if (!endDate() || endDate() < d) setEndDate(d); }}
+                                    onTimeChange={setStartTime}
+                                    showTime={!allDay()}
+                                    required
+                                />
                             </div>
 
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>End Date / Time</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Date</label>
-                                        <input
-                                            type="date"
-                                            value={endDate()}
-                                            onInput={(e) => setEndDate(e.currentTarget.value)}
-                                            required
-                                            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                        />
-                                    </div>
-                                    <Show when={!allDay()}>
-                                        <div>
-                                            <label class="block text-xs mb-1" style={{ "color": "var(--color-text-muted)" }}>Time</label>
-                                            <input
-                                                type="time"
-                                                value={endTime()}
-                                                onInput={(e) => setEndTime(e.currentTarget.value)}
-                                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
-                                            />
-                                        </div>
-                                    </Show>
-                                </div>
+                                <DateTimePicker
+                                    date={endDate()}
+                                    time={endTime()}
+                                    onDateChange={setEndDate}
+                                    onTimeChange={setEndTime}
+                                    showTime={!allDay()}
+                                    required
+                                    minDate={startDate()}
+                                    minTime={startDate() === endDate() ? startTime() : undefined}
+                                />
                             </div>
 
                             <div class="mb-4">
@@ -2332,11 +2275,9 @@ function Calendar() {
                             <Show when={recurrence() !== 'none'}>
                                 <div class="mb-4">
                                     <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Repeat Until</label>
-                                    <input
-                                        type="date"
-                                        value={recurrenceEndDate()}
-                                        onInput={(e) => setRecurrenceEndDate(e.currentTarget.value)}
-                                        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    <DatePicker
+                                        date={recurrenceEndDate()}
+                                        onDateChange={setRecurrenceEndDate}
                                     />
                                 </div>
                             </Show>

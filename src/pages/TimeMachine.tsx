@@ -2,6 +2,7 @@ import { createSignal, onMount, For, Show } from 'solid-js';
 import { bk, currentUser } from '../lib/backend.ts';
 import NotificationModal from '../components/NotificationModal';
 import { ClockIcon, DashboardIcon, CalendarIcon, WarningIcon } from '../components/Icons';
+import { DatePicker } from '../components/DateTimePicker';
 
 function TimeMachine() {
     const [events, setEvents] = createSignal([] as any[]);
@@ -414,13 +415,10 @@ function TimeMachine() {
 
                             <div class="mb-6">
                                 <label class="block text-sm font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Delivery Date:</label>
-                                <input
-                                    type="date"
-                                    value={noteDate()}
-                                    onInput={(e) => setNoteDate(e.currentTarget.value)}
+                                <DatePicker
+                                    date={noteDate()}
+                                    onDateChange={setNoteDate}
                                     required
-                                    min={new Date().toISOString().split('T')[0]}
-                                    class="w-full rounded-lg px-4 py-2.5 focus:outline-none transition-colors duration-200" style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                                 />
                             </div>
 
