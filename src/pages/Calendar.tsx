@@ -81,6 +81,12 @@ function Calendar() {
     const [resizingEvent, setResizingEvent] = createSignal<any>(null);
     const [resizeEndTime, setResizeEndTime] = createSignal<{ hour: number, minutes: number } | null>(null);
     
+    // Drag-to-create state
+    const [isDragCreating, setIsDragCreating] = createSignal(false);
+    const [dragCreateStart, setDragCreateStart] = createSignal<{ day: Date, hour: number, minutes: number } | null>(null);
+    const [dragCreateEnd, setDragCreateEnd] = createSignal<{ day: Date, hour: number, minutes: number } | null>(null);
+    let dragCreateMoved = false;
+    
     // Recurrence edit choice dialog
     const [recurrenceChoice, setRecurrenceChoice] = createSignal<{
         show: boolean;
@@ -1031,6 +1037,104 @@ function Calendar() {
         return (durationMin / 60) * 60; // 60px per hour
     }
 
+    // --- Drag-to-create handlers ---
+    function handleDragCreateStart(e: MouseEvent, day: Date, hour: number) {
+        // Only start drag-create on left click on the background cell
+        if (e.button !== 0) return;
+        if (isDraggingEvent() || isResizing()) return;
+        const cell = e.currentTarget as HTMLElement;
+        const minutes = getMinutesFromMouseY(e, cell);
+        dragCreateMoved = false;
+        setDragCreateStart({ day, hour, minutes });
+        setDragCreateEnd({ day, hour, minutes });
+        setIsDragCreating(true);
+    }
+
+    function handleDragCreateMove(e: MouseEvent, day: Date, hour: number) {
+        if (!isDragCreating()) return;
+        const cell = e.currentTarget as HTMLElement;
+        const minutes = getMinutesFromMouseY(e, cell);
+        const start = dragCreateStart();
+        if (start && (day.getTime() !== start.day.getTime() || hour !== start.hour || minutes !== start.minutes)) {
+            dragCreateMoved = true;
+        }
+        // Only allow dragging on the same day
+        if (start) {
+            setDragCreateEnd({ day: start.day, hour, minutes });
+        }
+    }
+
+    function handleDragCreateEnd() {
+        if (!isDragCreating()) return;
+        const start = dragCreateStart();
+        const end = dragCreateEnd();
+        setIsDragCreating(false);
+        setDragCreateStart(null);
+        setDragCreateEnd(null);
+
+        if (!start || !end) return;
+
+        // Compute actual start/end times (user may drag up)
+        const startMin = start.hour * 60 + start.minutes;
+        const endMin = end.hour * 60 + end.minutes;
+        const actualStartMin = Math.min(startMin, endMin);
+        let actualEndMin = Math.max(startMin, endMin);
+
+        // If just a click (no drag), default to 1 hour block
+        if (!dragCreateMoved || actualEndMin - actualStartMin < 15) {
+            actualEndMin = actualStartMin + 60;
+        }
+
+        const day = start.day;
+        const pad2 = (n: number) => String(n).padStart(2, '0');
+        const dateStr = day.toLocaleString('sv-SE').split(' ')[0];
+        const startH = Math.floor(actualStartMin / 60);
+        const startM = actualStartMin % 60;
+        const endH = Math.floor(actualEndMin / 60);
+        const endM = actualEndMin % 60;
+
+        setEditingEvent(null);
+        setEventName('');
+        setDescription('');
+        setAllDay(false);
+        setStartDate(dateStr);
+        setEndDate(dateStr);
+        setStartTime(`${pad2(startH)}:${pad2(startM)}`);
+        setEndTime(`${pad2(endH)}:${pad2(endM)}`);
+        setEventColor('#3b82f6');
+        setLinkedTaskIds([]);
+        setQuickAddTasks([]);
+        setSelectedTags([]);
+        setRecurrence('none');
+        setRecurrenceEndDate('');
+        setRecurrenceDays([]);
+        setShowEventModal(true);
+    }
+
+    function getDragCreatePreview(day: Date, hour: number): { top: number, height: number } | null {
+        if (!isDragCreating() || !dragCreateStart() || !dragCreateEnd()) return null;
+        const start = dragCreateStart()!;
+        const end = dragCreateEnd()!;
+        // Only show on the same day
+        if (day.toDateString() !== start.day.toDateString()) return null;
+
+        const startMin = start.hour * 60 + start.minutes;
+        const endMin = end.hour * 60 + end.minutes;
+        const actualStartMin = Math.min(startMin, endMin);
+        let actualEndMin = Math.max(startMin, endMin);
+        if (actualEndMin - actualStartMin < 15) {
+            actualEndMin = actualStartMin + 60;
+        }
+
+        // Only render in the hour row where the block starts
+        const blockStartHour = Math.floor(actualStartMin / 60);
+        if (hour !== blockStartHour) return null;
+
+        const topOffset = (actualStartMin % 60 / 60) * 60;
+        const heightPx = ((actualEndMin - actualStartMin) / 60) * 60;
+        return { top: topOffset, height: heightPx };
+    }
+
     onMount(async () => {
         console.log('Calendar mounted, fetching data...');
         setIsLoading(true);
@@ -1039,10 +1143,11 @@ function Calendar() {
         await fetchTags();
         setIsLoading(false);
 
-        // Global mouseup for drag-to-move and resize
+        // Global mouseup for drag-to-move, resize, and drag-to-create
         const onMouseUp = () => {
             handleEventDragEnd();
             handleResizeEnd();
+            handleDragCreateEnd();
         };
         window.addEventListener('mouseup', onMouseUp);
 
@@ -1545,10 +1650,14 @@ function Calendar() {
                                                 return (
                                                     <div 
                                                         class="relative min-h-[60px] transition-colors duration-200 select-none"
-                                                        style={{ "border-right": "1px solid var(--color-border)", "cursor": isResizing() ? "ns-resize" : isDraggingEvent() ? "grabbing" : "default" }}
+                                                        style={{ "border-right": "1px solid var(--color-border)", "cursor": isResizing() ? "ns-resize" : isDraggingEvent() ? "grabbing" : isDragCreating() ? "crosshair" : "crosshair" }}
+                                                        onMouseDown={(e) => {
+                                                            handleDragCreateStart(e, day, hour);
+                                                        }}
                                                         onMouseMove={(e) => {
                                                             handleEventDragMoveWeek(e, day, hour);
                                                             handleResizeMove(e, day, hour);
+                                                            handleDragCreateMove(e, day, hour);
                                                         }}
                                                     >
                                                         {/* Drag-to-move target preview */}
@@ -1564,6 +1673,23 @@ function Calendar() {
                                                                         "background-color": preview.color,
                                                                         "opacity": "0.35",
                                                                         "border": `2px dashed ${preview.color}`
+                                                                    }}
+                                                                ></div>
+                                                            );
+                                                        })()}
+                                                        {/* Drag-to-create preview */}
+                                                        {(() => {
+                                                            const preview = getDragCreatePreview(day, hour);
+                                                            if (!preview) return null;
+                                                            return (
+                                                                <div
+                                                                    class="absolute left-0 right-0 mx-1 rounded z-20 pointer-events-none"
+                                                                    style={{
+                                                                        "top": `${preview.top}px`,
+                                                                        "height": `${preview.height}px`,
+                                                                        "background-color": "var(--color-accent)",
+                                                                        "opacity": "0.3",
+                                                                        "border": "2px dashed var(--color-accent)"
                                                                     }}
                                                                 ></div>
                                                             );
@@ -1630,7 +1756,7 @@ function Calendar() {
                                                                         'top': `${topOffset}px`,
                                                                         'height': `${getResizedHeight(event) ?? height}px`,
                                                                         'opacity': isDraggingEvent() && draggingEvent()?.id === event.id ? 0.3 : (isBreak ? 0.5 : (allTasksCompleted ? 0.6 : 0.9)),
-                                                                        'pointer-events': isBreak || isDraggingEvent() || isResizing() ? 'none' : 'auto'
+                                                                        'pointer-events': isBreak || isDraggingEvent() || isResizing() || isDragCreating() ? 'none' : 'auto'
                                                                     }}
                                                                     onMouseDown={(e) => {
                                                                         if (isBreak) return;
@@ -1718,9 +1844,10 @@ function Calendar() {
                                                                         'top': `${topOffset}px`,
                                                                         'height': `${height}px`,
                                                                         'opacity': isDraggingEvent() && draggingEvent()?.id === task.id ? 0.3 : (task.Completed ? 0.5 : 0.9),
-                                                                        'pointer-events': isDraggingEvent() || isResizing() ? 'none' : 'auto'
+                                                                        'pointer-events': isDraggingEvent() || isResizing() || isDragCreating() ? 'none' : 'auto'
                                                                     }}
                                                                     onMouseDown={(e) => {
+                                                                        e.stopPropagation();
                                                                         if (isDraggable) {
                                                                             handleEventDragStart(e, task, true);
                                                                         }
