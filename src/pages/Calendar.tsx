@@ -54,6 +54,7 @@ function Calendar() {
     const [showTasksModal, setShowTasksModal] = createSignal(false);
     const [selectedDateTasks, setSelectedDateTasks] = createSignal<Date | null>(null);
     const [confirmDelete, setConfirmDelete] = createSignal({ show: false, eventId: '' });
+    const [currentTime, setCurrentTime] = createSignal(new Date());
     let isFetchingTodos = false;
     
     // Drag-to-move event state
@@ -63,6 +64,16 @@ function Calendar() {
     const [dragEventStart, setDragEventStart] = createSignal<{ day: Date, hour: number, minutes: number } | null>(null);
     const [dragEventTarget, setDragEventTarget] = createSignal<{ day: Date, hour: number, minutes: number } | null>(null);
     let eventDragMoved = false;
+    let weekScrollRef: HTMLDivElement | undefined;
+
+    // Scroll week view to current time when switching to it
+    createEffect(() => {
+        if (viewMode() === 'week' && weekScrollRef) {
+            const now = new Date();
+            const scrollTop = Math.max(0, now.getHours() * 60 + now.getMinutes() - 120);
+            weekScrollRef.scrollTop = scrollTop;
+        }
+    });
     
     // Drag-to-resize state
     const [isResizing, setIsResizing] = createSignal(false);
@@ -1055,7 +1066,10 @@ function Calendar() {
         document.addEventListener('kb:calendar-month', handleMonthView);
         document.addEventListener('kb:calendar-week', handleWeekView);
 
+        const timeInterval = setInterval(() => setCurrentTime(new Date()), 60000);
+
         onCleanup(() => {
+            clearInterval(timeInterval);
             window.removeEventListener('itemCreated', handleItemCreated);
             window.removeEventListener('mouseup', onMouseUp);
             document.removeEventListener('kb:new-event', handleNewEvent);
@@ -1491,8 +1505,30 @@ function Calendar() {
                     </div>
 
                     {/* Time slots with scaled events */}
-                    <div class="max-h-[600px] overflow-y-auto overflow-x-auto relative">
-                        <div class="min-w-[800px]">
+                    <div ref={weekScrollRef} class="max-h-[600px] overflow-y-auto overflow-x-auto relative">
+                        <div class="min-w-[800px] relative">
+                            {/* Current time indicator */}
+                            {(() => {
+                                const now = currentTime();
+                                const isCurrentWeek = getWeekDays().some(d => d.toDateString() === now.toDateString());
+                                if (!isCurrentWeek) return null;
+                                const topPx = now.getHours() * 60 + now.getMinutes();
+                                return (
+                                    <div
+                                        class="absolute z-30 pointer-events-none"
+                                        style={{
+                                            top: `${topPx}px`,
+                                            left: 'calc(100% / 8)',
+                                            right: '0'
+                                        }}
+                                    >
+                                        <div class="relative flex items-center">
+                                            <div class="w-2.5 h-2.5 rounded-full -ml-1.5 shrink-0" style={{ "background-color": "var(--color-accent)" }}></div>
+                                            <div class="flex-1 h-0.5" style={{ "background-color": "var(--color-accent)" }}></div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                             <For each={Array.from({ length: 24 }, (_, i) => i)}>
                                 {(hour) => (
                                     <div class="grid grid-cols-8" style={{ "border-bottom": "1px solid var(--color-border)" }}>
