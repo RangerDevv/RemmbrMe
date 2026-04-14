@@ -327,6 +327,7 @@ function Calendar() {
         fetchEvents();
         fetchTodos();
         setTimeout(() => refreshNotifications(), 100);
+        window.dispatchEvent(new Event('dataChanged'));
         resetForm();
         setShowEventModal(false);
     }
@@ -402,6 +403,7 @@ function Calendar() {
         resetForm();
         await fetchEvents();
         await fetchTodos();
+        window.dispatchEvent(new Event('dataChanged'));
         setQuickViewEvent(null);
         setEditingEvent(null);
     }
@@ -423,6 +425,7 @@ function Calendar() {
             setQuickViewEvent(null);
             await fetchEvents();
             await fetchTodos();
+            window.dispatchEvent(new Event('dataChanged'));
             setTimeout(() => refreshNotifications(), 100);
         }
         setConfirmDelete({ show: false, eventId: '' });
@@ -900,6 +903,7 @@ function Calendar() {
                 Deadline: newDeadline.toISOString()
             });
             await fetchTodos();
+            window.dispatchEvent(new Event('dataChanged'));
         } else if (event.isRecurringInstance) {
             // Show recurrence choice for drag
             setRecurrenceChoice({
@@ -921,6 +925,7 @@ function Calendar() {
                 End: newEnd.toISOString()
             });
             await fetchEvents();
+            window.dispatchEvent(new Event('dataChanged'));
         }
 
         setIsDraggingEvent(false);
@@ -1007,6 +1012,7 @@ function Calendar() {
                 End: newEnd.toISOString()
             });
             await fetchEvents();
+            window.dispatchEvent(new Event('dataChanged'));
         }
 
         setIsResizing(false);

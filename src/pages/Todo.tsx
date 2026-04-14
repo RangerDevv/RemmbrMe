@@ -54,6 +54,7 @@ function Todo() {
         console.log('Task created:', record);
         
         fetchTodos();
+        window.dispatchEvent(new Event('dataChanged'));
         setTimeout(() => refreshNotifications(), 100);
     }
 
@@ -86,6 +87,7 @@ function Todo() {
         await bk.collection('Todo').update(id, data);
         console.log('Task updated');
         fetchTodos();
+        window.dispatchEvent(new Event('dataChanged'));
         setTimeout(() => refreshNotifications(), 100);
         resetForm();
         setEditingTask(null);
@@ -100,6 +102,7 @@ function Todo() {
         if (taskId) {
             await bk.collection('Todo').delete(taskId);
             fetchTodos();
+            window.dispatchEvent(new Event('dataChanged'));
             setTimeout(() => refreshNotifications(), 100);
         }
         setConfirmDelete({ show: false, taskId: '' });
@@ -153,6 +156,7 @@ function Todo() {
                             Completed: true
                         });
                         fetchTodos();
+                        window.dispatchEvent(new Event('dataChanged'));
                         setTimeout(() => refreshNotifications(), 100);
                         return;
                     }
@@ -166,6 +170,7 @@ function Todo() {
                 });
                 console.log('Task updated successfully');
                 fetchTodos();
+                window.dispatchEvent(new Event('dataChanged'));
                 setTimeout(() => refreshNotifications(), 100);
                 return;
             }
@@ -176,6 +181,7 @@ function Todo() {
             Completed: !currentStatus
         });
         fetchTodos();
+        window.dispatchEvent(new Event('dataChanged'));
         setTimeout(() => refreshNotifications(), 100);
     }
 

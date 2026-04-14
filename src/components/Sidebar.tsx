@@ -41,40 +41,35 @@ export default function Sidebar() {
         document.addEventListener('click', handleClick);
         
         // Fetch counts
-        try {
-            const userId = currentUser()?.id;
-            if (userId) {
-                const [todos, events, tagList] = await Promise.all([
-                    bk.collection('Todo').getFullList({ filter: `user = "${userId}"` }),
-                    bk.collection('Calendar').getFullList({ filter: `user = "${userId}"` }),
-                    bk.collection('Tags').getFullList({ filter: `user = "${userId}"` }),
-                ]);
-                const activeTodos = todos.filter((t: any) => !t.Completed);
-                setTodoCount(todos.length);
-                setTaskCount(activeTodos.length);
-                setCalendarCount(events.length);
-                setTags(tagList);
-            }
-        } catch (e) {}
-
-        // Listen for data changes
-        const handleItemCreated = () => {
+        async function refreshCounts() {
             try {
                 const userId = currentUser()?.id;
                 if (userId) {
-                    bk.collection('Todo').getFullList({ filter: `user = "${userId}"` }).then(todos => {
-                        setTodoCount(todos.length);
-                        setTaskCount(todos.filter((t: any) => !t.Completed).length);
-                    });
+                    const [todos, events, tagList] = await Promise.all([
+                        bk.collection('Todo').getFullList({ filter: `user = "${userId}"` }),
+                        bk.collection('Calendar').getFullList({ filter: `user = "${userId}"` }),
+                        bk.collection('Tags').getFullList({ filter: `user = "${userId}"` }),
+                    ]);
+                    const activeTodos = todos.filter((t: any) => !t.Completed);
+                    setTodoCount(todos.length);
+                    setTaskCount(activeTodos.length);
+                    setCalendarCount(events.length);
+                    setTags(tagList);
                 }
-            } catch {}
-        };
-        window.addEventListener('itemCreated', handleItemCreated);
+            } catch (e) {}
+        }
+
+        await refreshCounts();
+
+        // Listen for data changes from any page
+        window.addEventListener('itemCreated', refreshCounts);
+        window.addEventListener('dataChanged', refreshCounts);
         
         onCleanup(() => {
             window.removeEventListener('popstate', updatePath);
             document.removeEventListener('click', handleClick);
-            window.removeEventListener('itemCreated', handleItemCreated);
+            window.removeEventListener('itemCreated', refreshCounts);
+            window.removeEventListener('dataChanged', refreshCounts);
         });
     });
 
