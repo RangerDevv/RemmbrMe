@@ -2,6 +2,7 @@ import { createSignal, onMount, onCleanup, For, Show, createMemo, createEffect }
 import { useLocation } from '@solidjs/router';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
+import { formatTime } from '../lib/theme';
 import TagSelector from '../components/TagSelector';
 import ConfirmModal from '../components/ConfirmModal';
 import CustomSelect from '../components/CustomSelect';
@@ -1385,13 +1386,7 @@ function Calendar() {
                                                     </h4>
                                                     <Show when={!event.AllDay}>
                                                         <p class="text-xs mt-1" style={{ "color": "var(--color-text-muted)" }}>
-                                                            {new Date(event.Start).toLocaleTimeString('en-US', { 
-                                                                hour: 'numeric', 
-                                                                minute: '2-digit' 
-                                                            })} - {new Date(event.End).toLocaleTimeString('en-US', { 
-                                                                hour: 'numeric', 
-                                                                minute: '2-digit' 
-                                                            })}
+                                                            {formatTime(new Date(event.Start))} - {formatTime(new Date(event.End))}
                                                         </p>
                                                     </Show>
                                                     <Show when={!isBreak && event.expand?.Tasks?.length > 0}>
@@ -1641,15 +1636,9 @@ function Calendar() {
                                                                     </div>
                                                                     <Show when={!event.AllDay && !isBreak}>
                                                                         <div class="text-[10px] opacity-75">
-                                                                            {new Date(event.Start).toLocaleTimeString('en-US', { 
-                                                                                hour: 'numeric', 
-                                                                                minute: '2-digit' 
-                                                                            })}
+                                                                            {formatTime(new Date(event.Start))}
                                                                             {height > 40 && (
-                                                                                <span> - {new Date(event.End).toLocaleTimeString('en-US', { 
-                                                                                    hour: 'numeric', 
-                                                                                    minute: '2-digit' 
-                                                                                })}</span>
+                                                                                <span> - {formatTime(new Date(event.End))}</span>
                                                                             )}
                                                                         </div>
                                                                     </Show>
@@ -1741,8 +1730,8 @@ function Calendar() {
                                                                     </div>
                                                                     <Show when={hasDuration && !task.Completed}>
                                                                         <div class="text-[10px] opacity-75" style={{ "color": "white" }}>
-                                                                            {deadline.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                                                                            {endTime && (<span> - {endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>)}
+                                                                            {formatTime(deadline)}
+                                                                            {endTime && (<span> - {formatTime(endTime)}</span>)}
                                                                         </div>
                                                                     </Show>
                                                                     <Show when={hasDuration && height > 50 && task.Description}>
@@ -2416,10 +2405,7 @@ function Calendar() {
                                                         </Show>
                                                         <div class="flex items-center gap-2 mt-2 text-xs" style={{ "color": "var(--color-text-muted)" }}>
                                                             <Show when={hasTime}>
-                                                                <span>⏰ {deadline.toLocaleTimeString('en-US', { 
-                                                                    hour: 'numeric', 
-                                                                    minute: '2-digit' 
-                                                                })}</span>
+                                                                <span>⏰ {formatTime(deadline)}</span>
                                                             </Show>
                                                             <Show when={!hasTime}>
                                                                 <span>📅 Anytime today</span>

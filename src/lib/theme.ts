@@ -248,6 +248,30 @@ export function getUserName() {
     return userName;
 }
 
+// ─── Time format (12h / 24h) ───────────────────────────────────────
+const TIME_FORMAT_KEY = 'timeFormat24h';
+const [use24hTime, setUse24hTimeInternal] = createSignal(localStorage.getItem(TIME_FORMAT_KEY) === 'true');
+
+/** Reactive accessor — returns true when 24-hour mode is active */
+export function isUse24hTime() { return use24hTime(); }
+
+export function setUse24hTime(val: boolean) {
+    setUse24hTimeInternal(val);
+    localStorage.setItem(TIME_FORMAT_KEY, String(val));
+}
+
+/**
+ * Format a Date for display, respecting the user's 12h/24h preference.
+ * Reactive: when called inside SolidJS JSX / createMemo it will
+ * automatically re-run whenever the setting changes.
+ */
+export function formatTime(date: Date): string {
+    if (use24hTime()) {
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
 export { currentTheme };
 
 export function applyThemeToDOM(theme: Theme) {

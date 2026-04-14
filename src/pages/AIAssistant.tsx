@@ -3,6 +3,7 @@ import { createSignal, Show, For } from 'solid-js';
 import {bk, currentUser} from '../lib/backend.ts';
 import NotificationModal from '../components/NotificationModal';
 import { RobotIcon } from '../components/Icons';
+import { formatTime } from '../lib/theme';
 
 function AIAssistant() {
     const [apiKey, setApiKey] = createSignal(localStorage.getItem('gemini_api_key') || '');
@@ -553,15 +554,9 @@ Return ONLY the JSON array, no markdown.`;
                                                                 day: 'numeric' 
                                                             })}
                                                             {' '}
-                                                            {new Date(item.data.Start).toLocaleTimeString('en-US', { 
-                                                                hour: 'numeric', 
-                                                                minute: '2-digit' 
-                                                            })}
+                                                            {formatTime(new Date(item.data.Start))}
                                                             {' - '}
-                                                            {new Date(item.data.End).toLocaleTimeString('en-US', { 
-                                                                hour: 'numeric', 
-                                                                minute: '2-digit' 
-                                                            })}
+                                                            {formatTime(new Date(item.data.End))}
                                                         </span>
                                                     </div>
                                                 </Show>

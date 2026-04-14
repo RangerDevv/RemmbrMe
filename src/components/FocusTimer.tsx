@@ -3,6 +3,7 @@ import { focusSession, pauseFocus, resumeFocus, stopFocus } from '../lib/focusTi
 import { XIcon } from './Icons';
 import { bk, currentUser } from '../lib/backend';
 import { timerThemes, getTimerTheme, setTimerTheme, currentTimerThemeId, SPACE_STARS } from '../lib/timerThemes';
+import { formatTime } from '../lib/theme';
 
 // ─── Ring dimensions ───────────────────────────────────────────────
 const FS_R = 120;
@@ -933,7 +934,7 @@ export default function FocusTimer() {
                                                 </p>
                                                 <p class="text-[11px] mt-0.5" style={{ "color": theme().labelColor }}>
                                                     {hasTime
-                                                        ? t2.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                                                        ? formatTime(t2)
                                                         : item.type === 'task' ? item.priority : 'All day'}
                                                 </p>
                                             </div>

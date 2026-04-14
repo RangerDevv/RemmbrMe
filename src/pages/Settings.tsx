@@ -1,7 +1,7 @@
 import { createSignal, onMount, createEffect, For } from 'solid-js';
 import { A } from '@solidjs/router';
 import ConfirmModal from '../components/ConfirmModal';
-import { themes, currentThemeId, setTheme, getUserName, setUserName } from '../lib/theme';
+import { themes, currentThemeId, setTheme, getUserName, setUserName, isUse24hTime, setUse24hTime } from '../lib/theme';
 import { timerThemes, currentTimerThemeId, setTimerTheme } from '../lib/timerThemes';
 import { getStorageMode, setStorageMode, getPocketBaseUrl, setPocketBaseUrl, reinitBackend } from '../lib/backend';
 import { 
@@ -181,6 +181,29 @@ function Settings() {
                             style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
                             placeholder="Your name..."
                         />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-2" style={{ "color": "var(--color-text-secondary)" }}>Time Format</label>
+                        <div class="flex rounded-lg overflow-hidden w-fit" style={{ "border": "1px solid var(--color-border)" }}>
+                            <button
+                                type="button"
+                                onClick={() => setUse24hTime(false)}
+                                class="px-4 py-2 text-sm font-medium transition-all duration-200"
+                                style={{
+                                    "background": !isUse24hTime() ? "var(--color-accent)" : "var(--color-bg-tertiary)",
+                                    "color": !isUse24hTime() ? "var(--color-accent-text)" : "var(--color-text-secondary)",
+                                }}
+                            >12-hour <span class="opacity-60 text-xs">(1:30 PM)</span></button>
+                            <button
+                                type="button"
+                                onClick={() => setUse24hTime(true)}
+                                class="px-4 py-2 text-sm font-medium transition-all duration-200"
+                                style={{
+                                    "background": isUse24hTime() ? "var(--color-accent)" : "var(--color-bg-tertiary)",
+                                    "color": isUse24hTime() ? "var(--color-accent-text)" : "var(--color-text-secondary)",
+                                }}
+                            >24-hour <span class="opacity-60 text-xs">(13:30)</span></button>
+                        </div>
                     </div>
                 </div>
 

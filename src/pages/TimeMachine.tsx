@@ -3,6 +3,7 @@ import { bk, currentUser } from '../lib/backend.ts';
 import NotificationModal from '../components/NotificationModal';
 import { ClockIcon, DashboardIcon, CalendarIcon, WarningIcon } from '../components/Icons';
 import { DatePicker } from '../components/DateTimePicker';
+import { formatTime } from '../lib/theme';
 
 function TimeMachine() {
     const [events, setEvents] = createSignal([] as any[]);
@@ -366,10 +367,7 @@ function TimeMachine() {
                                             day: 'numeric',
                                             year: 'numeric'
                                         })}
-                                        {!event.AllDay && ` at ${new Date(event.Start).toLocaleTimeString('en-US', { 
-                                            hour: 'numeric', 
-                                            minute: '2-digit' 
-                                        })}`}
+                                        {!event.AllDay && ` at ${formatTime(new Date(event.Start))}`}
                                     </p>
                                     <Show when={event.Description}>
                                         <p class="text-sm mt-1" style={{ "color": "var(--color-text-muted)" }}>{event.Description}</p>

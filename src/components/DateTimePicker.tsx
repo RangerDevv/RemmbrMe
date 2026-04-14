@@ -1,4 +1,5 @@
 import { createSignal, createMemo, onMount, onCleanup, For, Show } from 'solid-js';
+import { isUse24hTime } from '../lib/theme';
 
 // ─── Types ─────────────────────────────────────────────────────────
 export interface DateTimePickerProps {
@@ -41,23 +42,25 @@ function formatDisplay(date: string, time?: string) {
     const { y, m, d } = parseYMD(date);
     const dayName = new Date(y, m, d).toLocaleDateString('en-US', { weekday: 'short' });
     let s = `${dayName}, ${MONTHS[m]} ${d}, ${y}`;
-    if (time) s += ` · ${formatTimeTo12h(time)}`;
+    if (time) s += ` · ${isUse24hTime() ? formatTimeTo24h(time) : formatTimeTo12h(time)}`;
     return s;
 }
 
-// Generate hours array in 12h format (5-min increments)
-const HOURS_12 = (() => {
-    const hrs: { label: string; value: string }[] = [];
+// Generate hours array (30-min increments for both formats)
+const TIME_SLOTS = (() => {
+    const slots: { label12: string; label24: string; value: string }[] = [];
     for (let h = 0; h < 24; h++) {
-        for (let m = 0; m < 60; m += 5) {
+        for (let m = 0; m < 60; m += 30) {
             const ampm = h < 12 ? 'AM' : 'PM';
             const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-            const label = `${h12}:${pad2(m)} ${ampm}`;
-            const value = `${pad2(h)}:${pad2(m)}`;
-            hrs.push({ label, value });
+            slots.push({
+                label12: `${h12}:${pad2(m)} ${ampm}`,
+                label24: `${pad2(h)}:${pad2(m)}`,
+                value: `${pad2(h)}:${pad2(m)}`,
+            });
         }
     }
-    return hrs;
+    return slots;
 })();
 
 function formatTimeTo12h(time24: string): string {
@@ -68,6 +71,14 @@ function formatTimeTo12h(time24: string): string {
     const ampm = h < 12 ? 'AM' : 'PM';
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
     return `${h12}:${pad2(m)} ${ampm}`;
+}
+
+function formatTimeTo24h(time24: string): string {
+    const [hStr, mStr] = time24.split(':');
+    const h = parseInt(hStr, 10);
+    const m = parseInt(mStr, 10);
+    if (isNaN(h) || isNaN(m)) return time24;
+    return `${pad2(h)}:${pad2(m)}`;
 }
 
 function parse12hTo24h(input: string): string | null {
@@ -110,9 +121,10 @@ export default function DateTimePicker(props: DateTimePickerProps) {
     const [navYear, setNavYear] = createSignal(parsed().y);
     const [navMonth, setNavMonth] = createSignal(parsed().m);
 
-    // Time scroll ref
+    // Refs
     let timeListRef: HTMLDivElement | undefined;
     let containerRef: HTMLDivElement | undefined;
+    let timeInputRef: HTMLInputElement | undefined;
 
     // Sync nav when date prop changes
     createMemo(() => {
@@ -189,14 +201,15 @@ export default function DateTimePicker(props: DateTimePickerProps) {
 
     function openTimePicker() {
         setView('time');
-        setCustomTimeInput(props.time ? formatTimeTo12h(props.time) : '');
+        const fmt = isUse24hTime() ? formatTimeTo24h : formatTimeTo12h;
+        setCustomTimeInput(props.time ? fmt(props.time) : '');
         setCustomTimeError(false);
-        // Scroll to current time
         requestAnimationFrame(() => {
-            if (timeListRef) {
-                const cur = props.time || '09:00';
-                const idx = HOURS_12.findIndex(h => h.value === cur);
-                if (idx > 0) {
+            timeInputRef?.focus();
+            timeInputRef?.select();
+            if (timeListRef && props.time) {
+                const idx = TIME_SLOTS.findIndex(s => s.value === props.time);
+                if (idx >= 0) {
                     const el = timeListRef.children[idx] as HTMLElement;
                     el?.scrollIntoView({ block: 'center' });
                 }
@@ -417,7 +430,7 @@ export default function DateTimePicker(props: DateTimePickerProps) {
                                         <circle cx="12" cy="12" r="10" />
                                         <polyline points="12 6 12 12 16 14" />
                                     </svg>
-                                    {props.time ? formatTimeTo12h(props.time) : 'Set time'}
+                                    {props.time ? (isUse24hTime() ? formatTimeTo24h(props.time) : formatTimeTo12h(props.time)) : 'Set time'}
                                 </button>
                             </Show>
                         </div>
@@ -489,7 +502,8 @@ export default function DateTimePicker(props: DateTimePickerProps) {
                     {/* ═══ Time Picker View ═══ */}
                     <Show when={view() === 'time'}>
                         <div class="p-3">
-                            <div class="flex items-center justify-between mb-2">
+                            {/* Header row */}
+                            <div class="flex items-center justify-between mb-3">
                                 <button
                                     type="button"
                                     onClick={() => setView('calendar')}
@@ -503,36 +517,46 @@ export default function DateTimePicker(props: DateTimePickerProps) {
                                 </button>
                                 <span class="text-xs font-semibold" style={{ "color": "var(--color-text-muted)" }}>Select Time</span>
                             </div>
-                            {/* Custom time input */}
-                            <div class="flex gap-1.5 mb-2">
+
+                            {/* Primary text input */}
+                            <div class="flex gap-1.5 mb-1">
                                 <input
+                                    ref={timeInputRef!}
                                     type="text"
                                     value={customTimeInput()}
                                     onInput={(e) => { setCustomTimeInput(e.currentTarget.value); setCustomTimeError(false); }}
                                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCustomTimeSubmit(); } }}
-                                    placeholder="e.g. 2:30 PM"
-                                    class="flex-1 rounded-lg px-3 py-1.5 text-sm focus:outline-none transition-colors duration-150"
+                                    placeholder={isUse24hTime() ? 'e.g. 14:30' : 'e.g. 2:30 PM'}
+                                    class="flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-150"
                                     style={{
                                         "background": "var(--color-bg-tertiary)",
                                         "color": "var(--color-text)",
-                                        "border": `1px solid ${customTimeError() ? '#ef4444' : 'var(--color-border)'}`,
+                                        "border": `1px solid ${customTimeError() ? '#ef4444' : 'var(--color-accent)'}`,
+                                        "font-size": "0.95rem",
                                     }}
                                 />
                                 <button
                                     type="button"
                                     onClick={handleCustomTimeSubmit}
-                                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
+                                    class="px-3 py-2 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
                                     style={{ "background": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                                 >
                                     Set
                                 </button>
                             </div>
+                            <Show when={customTimeError()}>
+                                <p class="text-[11px] mb-2 px-1" style={{ "color": "#ef4444" }}>
+                                    {isUse24hTime() ? 'Use HH:MM format (e.g. 14:30)' : 'Use H:MM AM/PM format (e.g. 2:30 PM)'}
+                                </p>
+                            </Show>
+
+                            {/* Quick-pick list */}
                             <div
                                 ref={timeListRef!}
-                                class="overflow-y-auto rounded-lg"
-                                style={{ "max-height": "210px", "background": "var(--color-bg-tertiary)" }}
+                                class="overflow-y-auto rounded-lg mt-2"
+                                style={{ "max-height": "180px", "background": "var(--color-bg-tertiary)" }}
                             >
-                                <For each={HOURS_12}>
+                                <For each={TIME_SLOTS}>
                                     {(slot) => {
                                         const isActive = props.time === slot.value;
                                         const disabled = isTimeDisabled(slot.value);
@@ -540,7 +564,7 @@ export default function DateTimePicker(props: DateTimePickerProps) {
                                             <button
                                                 type="button"
                                                 onClick={() => !disabled && selectTime(slot.value)}
-                                                class="w-full text-left px-3.5 py-2 text-sm transition-all"
+                                                class="w-full text-left px-3.5 py-1.5 text-sm transition-all"
                                                 style={{
                                                     "background": isActive ? "var(--color-accent)" : "transparent",
                                                     "color": disabled ? "var(--color-text-muted)" : isActive ? "var(--color-accent-text)" : "var(--color-text)",
@@ -551,7 +575,7 @@ export default function DateTimePicker(props: DateTimePickerProps) {
                                                 }}
                                                 disabled={disabled}
                                             >
-                                                {slot.label}
+                                                {isUse24hTime() ? slot.label24 : slot.label12}
                                             </button>
                                         );
                                     }}

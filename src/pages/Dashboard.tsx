@@ -2,6 +2,7 @@ import { createSignal, onMount, onCleanup, For, Show, createMemo } from 'solid-j
 import { A } from '@solidjs/router';
 import { bk, currentUser } from '../lib/backend.ts';
 import { startFocus } from '../lib/focusTimer';
+import { formatTime } from '../lib/theme';
 import {
     RepeatIcon,
     PlayIcon,
@@ -336,7 +337,7 @@ function Dashboard() {
                                 <div class="group glass flex items-center gap-3 py-2.5 px-3 rounded-xl card-hover">
                                     <span class="w-12 text-[10px] font-medium shrink-0 text-right tabular-nums" style={{ "color": "var(--color-text-muted)" }}>
                                         {item.hasTime
-                                            ? item.time!.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                                            ? formatTime(item.time!)
                                             : '—'
                                         }
                                     </span>
@@ -530,7 +531,7 @@ function Dashboard() {
                                                         {eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                                                         <Show when={!event.AllDay}>
                                                             <span class="ml-1 hidden sm:inline">
-                                                                {eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                                                {formatTime(eventDate)}
                                                             </span>
                                                         </Show>
                                                     </div>
