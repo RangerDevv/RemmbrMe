@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup, For, Show, createMemo, createEffect } from 'solid-js';
+import { createSignal, onMount, onCleanup, For, Show, createMemo, createEffect, Index } from 'solid-js';
 import { useLocation } from '@solidjs/router';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
@@ -2060,15 +2060,15 @@ function Calendar() {
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Quick Add Tasks</label>
                                 <div class="space-y-2">
-                                    <For each={quickAddTasks()}>
+                                    <Index each={quickAddTasks()}>
                                         {(task, index) => (
                                             <div class="flex items-center gap-2">
                                                 <input
                                                     type="text"
-                                                    value={task}
+                                                    value={task()}
                                                     onInput={(e) => {
                                                         const updated = [...quickAddTasks()];
-                                                        updated[index()] = e.currentTarget.value;
+                                                        updated[index] = e.currentTarget.value;
                                                         setQuickAddTasks(updated);
                                                     }}
                                                     placeholder="Enter task title..."
@@ -2077,7 +2077,7 @@ function Calendar() {
                                                 <button
                                                     type="button"
                                                     onClick={() => {
-                                                        const updated = quickAddTasks().filter((_: any, i: any) => i !== index());
+                                                        const updated = quickAddTasks().filter((_: any, i: any) => i !== index);
                                                         setQuickAddTasks(updated);
                                                     }}
                                                     class="text-red-400 hover:text-red-300 transition-colors duration-200"
@@ -2086,7 +2086,7 @@ function Calendar() {
                                                 </button>
                                             </div>
                                         )}
-                                    </For>
+                                    </Index>
                                     <button
                                         type="button"
                                         onClick={() => setQuickAddTasks([...quickAddTasks(), ''])}
@@ -2322,15 +2322,15 @@ function Calendar() {
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Quick Add Tasks</label>
                                 <div class="space-y-2">
-                                    <For each={quickAddTasks()}>
+                                    <Index each={quickAddTasks()}>
                                         {(task, index) => (
                                             <div class="flex items-center gap-2">
                                                 <input
                                                     type="text"
-                                                    value={task}
+                                                    value={task()}
                                                     onInput={(e) => {
                                                         const updated = [...quickAddTasks()];
-                                                        updated[index()] = e.currentTarget.value;
+                                                        updated[index] = e.currentTarget.value;
                                                         setQuickAddTasks(updated);
                                                     }}
                                                     placeholder="Enter task title..."
@@ -2339,7 +2339,7 @@ function Calendar() {
                                                 <button
                                                     type="button"
                                                     onClick={() => {
-                                                        const updated = quickAddTasks().filter((_: any, i: any) => i !== index());
+                                                        const updated = quickAddTasks().filter((_: any, i: any) => i !== index);
                                                         setQuickAddTasks(updated);
                                                     }}
                                                     class="text-red-400 hover:text-red-300 transition-colors duration-200"
@@ -2348,7 +2348,7 @@ function Calendar() {
                                                 </button>
                                             </div>
                                         )}
-                                    </For>
+                                    </Index>
                                     <button
                                         type="button"
                                         onClick={() => setQuickAddTasks([...quickAddTasks(), ''])}
