@@ -71,7 +71,7 @@ function Calendar() {
     createEffect(() => {
         if (viewMode() === 'week' && weekScrollRef) {
             const now = new Date();
-            const scrollTop = Math.max(0, now.getHours() * 60 + now.getMinutes() - 120);
+            const scrollTop = Math.max(0, now.getHours() * 61 + Math.round((now.getMinutes() / 60) * 60) - 120);
             weekScrollRef.scrollTop = scrollTop;
         }
     });
@@ -1618,7 +1618,9 @@ function Calendar() {
                                 const now = currentTime();
                                 const isCurrentWeek = getWeekDays().some(d => d.toDateString() === now.toDateString());
                                 if (!isCurrentWeek) return null;
-                                const topPx = now.getHours() * 60 + now.getMinutes();
+                                // Each hour row = 60px min-height + 1px border-bottom = 61px per row
+                                const hourHeight = 61;
+                                const topPx = now.getHours() * hourHeight + (now.getMinutes() / 60) * 60;
                                 return (
                                     <div
                                         class="absolute z-30 pointer-events-none"
