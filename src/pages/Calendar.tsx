@@ -88,6 +88,27 @@ function Calendar() {
     const [dragCreateEnd, setDragCreateEnd] = createSignal<{ day: Date, hour: number, minutes: number } | null>(null);
     let dragCreateMoved = false;
     
+    // Drag-create type chooser (Event vs Todo)
+    const [dragCreateChoice, setDragCreateChoice] = createSignal<{
+        show: boolean;
+        dateStr: string;
+        startTime: string;
+        endTime: string;
+        pos: { x: number, y: number };
+    }>({ show: false, dateStr: '', startTime: '', endTime: '', pos: { x: 0, y: 0 } });
+    
+    // Todo creation modal state (for creating todos from calendar)
+    const [showTodoModal, setShowTodoModal] = createSignal(false);
+    const [todoTitle, setTodoTitle] = createSignal('');
+    const [todoDescription, setTodoDescription] = createSignal('');
+    const [todoPriority, setTodoPriority] = createSignal('P2');
+    const [todoDeadlineDate, setTodoDeadlineDate] = createSignal('');
+    const [todoDeadlineTime, setTodoDeadlineTime] = createSignal('');
+    const [todoSubtasks, setTodoSubtasks] = createSignal<{id: string, title: string, completed: boolean}[]>([]);
+    const [todoNewSubtask, setTodoNewSubtask] = createSignal('');
+    const [todoDuration, setTodoDuration] = createSignal(0);
+    const [todoTags, setTodoTags] = createSignal<string[]>([]);
+    
     // Recurrence edit choice dialog
     const [recurrenceChoice, setRecurrenceChoice] = createSignal<{
         show: boolean;
@@ -337,6 +358,33 @@ function Calendar() {
         window.dispatchEvent(new Event('dataChanged'));
         resetForm();
         setShowEventModal(false);
+    }
+
+    async function createTodoFromCalendar() {
+        let deadlineISO = undefined;
+        if (todoDeadlineDate() && todoDeadlineDate().trim()) {
+            const timeStr = todoDeadlineTime() && todoDeadlineTime().trim() ? todoDeadlineTime() : '00:00';
+            const date = new Date(`${todoDeadlineDate()}T${timeStr}`);
+            deadlineISO = date.toISOString();
+        }
+
+        const data = {
+            Title: todoTitle(),
+            Description: todoDescription(),
+            Completed: false,
+            Priority: todoPriority() as `P${number}`,
+            Deadline: deadlineISO,
+            Tags: todoTags(),
+            Subtasks: todoSubtasks(),
+            Duration: todoDuration() || undefined,
+            user: currentUser()!.id
+        };
+
+        await bk.collection('Todo').create(data);
+        await fetchTodos();
+        window.dispatchEvent(new Event('dataChanged'));
+        setTimeout(() => refreshNotifications(), 100);
+        setShowTodoModal(false);
     }
 
     async function updateEvent() {
@@ -1131,7 +1179,7 @@ function Calendar() {
         }
     }
 
-    function handleDragCreateEnd() {
+    function handleDragCreateEnd(e?: MouseEvent) {
         if (!isDragCreating()) return;
         const start = dragCreateStart();
         const end = dragCreateEnd();
@@ -1159,23 +1207,58 @@ function Calendar() {
         const startM = actualStartMin % 60;
         const endH = Math.floor(actualEndMin / 60);
         const endM = actualEndMin % 60;
+        const startTimeStr = `${pad2(startH)}:${pad2(startM)}`;
+        const endTimeStr = `${pad2(endH)}:${pad2(endM)}`;
 
-        setEditingEvent(null);
-        setEventName('');
-        setDescription('');
-        setAllDay(false);
-        setStartDate(dateStr);
-        setEndDate(dateStr);
-        setStartTime(`${pad2(startH)}:${pad2(startM)}`);
-        setEndTime(`${pad2(endH)}:${pad2(endM)}`);
-        setEventColor('#3b82f6');
-        setLinkedTaskIds([]);
-        setQuickAddTasks([]);
-        setSelectedTags([]);
-        setRecurrence('none');
-        setRecurrenceEndDate('');
-        setRecurrenceDays([]);
-        setShowEventModal(true);
+        // Show type chooser popup at mouse position
+        const posX = e ? e.clientX : window.innerWidth / 2;
+        const posY = e ? e.clientY : window.innerHeight / 2;
+        setDragCreateChoice({
+            show: true,
+            dateStr,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            pos: { x: posX, y: posY }
+        });
+    }
+
+    function chooseDragCreateType(type: 'event' | 'todo') {
+        const choice = dragCreateChoice();
+        setDragCreateChoice({ show: false, dateStr: '', startTime: '', endTime: '', pos: { x: 0, y: 0 } });
+
+        if (type === 'event') {
+            setEditingEvent(null);
+            setEventName('');
+            setDescription('');
+            setAllDay(false);
+            setStartDate(choice.dateStr);
+            setEndDate(choice.dateStr);
+            setStartTime(choice.startTime);
+            setEndTime(choice.endTime);
+            setEventColor('#3b82f6');
+            setLinkedTaskIds([]);
+            setQuickAddTasks([]);
+            setSelectedTags([]);
+            setRecurrence('none');
+            setRecurrenceEndDate('');
+            setRecurrenceDays([]);
+            setShowEventModal(true);
+        } else {
+            setTodoTitle('');
+            setTodoDescription('');
+            setTodoPriority('P2');
+            setTodoDeadlineDate(choice.dateStr);
+            setTodoDeadlineTime(choice.startTime);
+            setTodoDuration((() => {
+                const [sh, sm] = choice.startTime.split(':').map(Number);
+                const [eh, em] = choice.endTime.split(':').map(Number);
+                return (eh * 60 + em) - (sh * 60 + sm);
+            })());
+            setTodoSubtasks([]);
+            setTodoNewSubtask('');
+            setTodoTags([]);
+            setShowTodoModal(true);
+        }
     }
 
     function getDragCreatePreview(day: Date, hour: number): { top: number, height: number } | null {
@@ -1211,10 +1294,10 @@ function Calendar() {
         setIsLoading(false);
 
         // Global mouseup for drag-to-move, resize, and drag-to-create
-        const onMouseUp = () => {
+        const onMouseUp = (e: MouseEvent) => {
             handleEventDragEnd();
             handleResizeEnd();
-            handleDragCreateEnd();
+            handleDragCreateEnd(e);
         };
         window.addEventListener('mouseup', onMouseUp);
 
@@ -2599,7 +2682,6 @@ function Calendar() {
                     }}
                 >
                     <div
-                        class="rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] overflow-hidden"
                         class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -2761,6 +2843,210 @@ function Calendar() {
                 onConfirm={confirmDeleteEvent}
                 onCancel={() => setConfirmDelete({ show: false, eventId: '' })}
             />
+
+            {/* Drag-create type chooser popup */}
+            <Show when={dragCreateChoice().show}>
+                <div class="fixed inset-0 z-50" onClick={() => setDragCreateChoice({ show: false, dateStr: '', startTime: '', endTime: '', pos: { x: 0, y: 0 } })}>
+                    <div
+                        class="absolute rounded-xl shadow-xl p-1 flex flex-col gap-0.5 min-w-[140px]"
+                        style={{
+                            left: `${Math.min(dragCreateChoice().pos.x, window.innerWidth - 160)}px`,
+                            top: `${Math.min(dragCreateChoice().pos.y, window.innerHeight - 100)}px`,
+                            "background-color": "var(--color-bg-secondary)",
+                            "border": "1px solid var(--color-border)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 text-left"
+                            style={{ "color": "var(--color-text)" }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--color-bg-tertiary)"}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                            onClick={() => chooseDragCreateType('event')}
+                        >
+                            <CalendarIcon />
+                            Event
+                        </button>
+                        <button
+                            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 text-left"
+                            style={{ "color": "var(--color-text)" }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--color-bg-tertiary)"}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                            onClick={() => chooseDragCreateType('todo')}
+                        >
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Todo
+                        </button>
+                    </div>
+                </div>
+            </Show>
+
+            {/* Todo creation modal */}
+            <Show when={showTodoModal()}>
+                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => setShowTodoModal(false)}>
+                    <div class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
+                            <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>New Todo</h2>
+                            <button
+                                onClick={() => setShowTodoModal(false)}
+                                class="transition-colors duration-200 text-xl w-8 h-8 flex items-center justify-center rounded-lg" style={{ "color": "var(--color-text-muted)" }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div class="p-5">
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                createTodoFromCalendar();
+                            }}>
+                                <div class="mb-4">
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Title</label>
+                                    <input
+                                        type="text"
+                                        value={todoTitle()}
+                                        onInput={(e) => setTodoTitle(e.currentTarget.value)}
+                                        required
+                                        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200"
+                                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        placeholder="What needs to be done?"
+                                    />
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Description</label>
+                                    <textarea
+                                        value={todoDescription()}
+                                        onInput={(e) => setTodoDescription(e.currentTarget.value)}
+                                        rows="3"
+                                        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200 resize-none"
+                                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        placeholder="Add more details..."
+                                    ></textarea>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Priority</label>
+                                    <CustomSelect
+                                        value={todoPriority()}
+                                        onChange={(v) => setTodoPriority(v)}
+                                        options={[
+                                            { value: "P1", label: "P1 - High Priority" },
+                                            { value: "P2", label: "P2 - Medium Priority" },
+                                            { value: "P3", label: "P3 - Low Priority" },
+                                        ]}
+                                    />
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Start / Due Date</label>
+                                    <DateTimePicker
+                                        date={todoDeadlineDate()}
+                                        time={todoDeadlineTime()}
+                                        onDateChange={setTodoDeadlineDate}
+                                        onTimeChange={setTodoDeadlineTime}
+                                    />
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Duration</label>
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={todoDuration() || ''}
+                                            onInput={(e) => setTodoDuration(parseInt(e.currentTarget.value) || 0)}
+                                            placeholder="Minutes"
+                                            class="flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors duration-200"
+                                            style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                        />
+                                        <div class="flex gap-1">
+                                            {[{label: '15m', val: 15}, {label: '30m', val: 30}, {label: '1h', val: 60}, {label: '2h', val: 120}].map(p => (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTodoDuration(p.val)}
+                                                    class={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${todoDuration() === p.val ? 'ring-1 ring-[var(--color-accent)]' : ''}`}
+                                                    style={{ "background-color": todoDuration() === p.val ? "var(--color-accent)" : "var(--color-bg-tertiary)", "color": todoDuration() === p.val ? "var(--color-accent-text)" : "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
+                                                >
+                                                    {p.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p class="text-xs mt-1" style={{ "color": "var(--color-text-muted)" }}>Shows as a time block on the calendar</p>
+                                </div>
+                                <div class="mb-4">
+                                    <TagSelector
+                                        allTags={allTags}
+                                        selectedTags={todoTags}
+                                        setSelectedTags={setTodoTags}
+                                        onTagCreated={fetchTags}
+                                    />
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Subtasks</label>
+                                    <div class="rounded-lg p-2 space-y-1.5" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
+                                        <Index each={todoSubtasks()}>
+                                            {(sub, idx) => (
+                                                <div class="flex items-center gap-2 group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={sub().completed}
+                                                        onChange={() => {
+                                                            const updated = [...todoSubtasks()];
+                                                            updated[idx] = { ...updated[idx], completed: !updated[idx].completed };
+                                                            setTodoSubtasks(updated);
+                                                        }}
+                                                        class="w-4 h-4 rounded cursor-pointer shrink-0"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={sub().title}
+                                                        onInput={(e) => {
+                                                            const updated = [...todoSubtasks()];
+                                                            updated[idx] = { ...updated[idx], title: e.currentTarget.value };
+                                                            setTodoSubtasks(updated);
+                                                        }}
+                                                        class="flex-1 bg-transparent text-sm focus:outline-none"
+                                                        style={{ "color": "var(--color-text)" }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setTodoSubtasks(todoSubtasks().filter((_, i) => i !== idx))}
+                                                        class="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-all duration-200 text-sm px-1"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </Index>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-sm shrink-0" style={{ "color": "var(--color-text-muted)" }}>+</span>
+                                            <input
+                                                type="text"
+                                                value={todoNewSubtask()}
+                                                onInput={(e) => setTodoNewSubtask(e.currentTarget.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && todoNewSubtask().trim()) {
+                                                        e.preventDefault();
+                                                        setTodoSubtasks([...todoSubtasks(), { id: crypto.randomUUID().slice(0, 8), title: todoNewSubtask().trim(), completed: false }]);
+                                                        setTodoNewSubtask('');
+                                                    }
+                                                }}
+                                                placeholder="Add subtask... (Enter to add)"
+                                                class="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-[var(--color-text-muted)]"
+                                                style={{ "color": "var(--color-text)" }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    type="submit"
+                                    class="w-full font-semibold py-2.5 rounded-lg transition-all duration-300 text-sm"
+                                    style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
+                                >
+                                    Create Todo
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </Show>
         </div>
     );
 }
