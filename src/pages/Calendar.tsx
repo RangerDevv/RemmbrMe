@@ -287,10 +287,10 @@ function Calendar() {
 
     async function createEvent() {
         const start = allDay() 
-            ? new Date(startDate()).toISOString() 
+            ? new Date(`${startDate()}T00:00:00`).toISOString() 
             : new Date(`${startDate()}T${startTime()}`).toISOString();
         const end = allDay() 
-            ? new Date(endDate()).toISOString() 
+            ? new Date(`${endDate()}T23:59:59`).toISOString() 
             : new Date(`${endDate()}T${endTime()}`).toISOString();
 
         // Create inline tasks first
@@ -343,10 +343,10 @@ function Calendar() {
         if (!editingEvent()) return;
 
         const start = allDay() 
-            ? new Date(startDate()).toISOString() 
+            ? new Date(`${startDate()}T00:00:00`).toISOString() 
             : new Date(`${startDate()}T${startTime()}`).toISOString();
         const end = allDay() 
-            ? new Date(endDate()).toISOString() 
+            ? new Date(`${endDate()}T23:59:59`).toISOString() 
             : new Date(`${endDate()}T${endTime()}`).toISOString();
 
         // Create inline tasks first
@@ -700,7 +700,7 @@ function Calendar() {
 
     // Generate break blocks for unscheduled time
     function getEventsWithBreaks(date: Date): any[] {
-        const dayEvents = getEventsForDate(date);
+        const dayEvents = getEventsForDate(date).filter(e => !e.AllDay);
         const dayStart = new Date(date);
         dayStart.setHours(0, 0, 0, 0);
         const dayEnd = new Date(date);
@@ -711,41 +711,42 @@ function Calendar() {
             new Date(a.Start).getTime() - new Date(b.Start).getTime()
         );
 
+        if (sortedEvents.length === 0) return [];
+
+        // Merge overlapping time ranges to find true free time
+        const mergedRanges: { start: number, end: number }[] = [];
+        for (const event of sortedEvents) {
+            const evStart = Math.max(new Date(event.Start).getTime(), dayStart.getTime());
+            const evEnd = Math.min(new Date(event.End).getTime(), dayEnd.getTime());
+            if (mergedRanges.length > 0 && evStart <= mergedRanges[mergedRanges.length - 1].end) {
+                mergedRanges[mergedRanges.length - 1].end = Math.max(mergedRanges[mergedRanges.length - 1].end, evEnd);
+            } else {
+                mergedRanges.push({ start: evStart, end: evEnd });
+            }
+        }
+
+        // Build result with breaks only in truly free gaps
         const result: any[] = [];
         let currentTime = dayStart.getTime();
 
-        sortedEvents.forEach((event) => {
-            const eventStart = new Date(event.Start);
-            const eventEnd = new Date(event.End);
-            
-            // Cap event times to current day
-            const displayStart = eventStart < dayStart ? dayStart : eventStart;
-            const displayEnd = eventEnd > dayEnd ? dayEnd : eventEnd;
-            
-            const displayStartTime = displayStart.getTime();
-            const displayEndTime = displayEnd.getTime();
-
-            // Add break block if there's a gap
-            if (currentTime < displayStartTime) {
+        for (const range of mergedRanges) {
+            if (currentTime < range.start) {
                 result.push({
                     id: `break-${currentTime}`,
                     EventName: '🌴 Break',
                     Description: 'Free time',
                     Start: new Date(currentTime).toISOString(),
-                    End: new Date(displayStartTime).toISOString(),
+                    End: new Date(range.start).toISOString(),
                     AllDay: false,
                     Color: '#1a1a1a',
                     isBreak: true,
                     Tasks: []
                 });
             }
+            currentTime = range.end;
+        }
 
-            // Add the actual event
-            result.push(event);
-            currentTime = Math.max(currentTime, displayEndTime);
-        });
-
-        // Add final break block if day isn't fully scheduled
+        // Final break
         if (currentTime < dayEnd.getTime()) {
             result.push({
                 id: `break-${currentTime}`,
@@ -760,6 +761,71 @@ function Calendar() {
             });
         }
 
+        // Add actual events
+        result.push(...sortedEvents);
+
+        return result;
+    }
+
+    function getAllDayEvents(date: Date): any[] {
+        return getEventsForDate(date).filter(e => e.AllDay);
+    }
+
+    // Calculate layered overlap layout: longest events in back, shortest in front
+    function getOverlapLayout(dayEvents: any[], day: Date): Map<string, { layer: number, totalLayers: number }> {
+        const result = new Map<string, { layer: number, totalLayers: number }>();
+        
+        const timed = dayEvents.filter(e => !e.AllDay && !e.isBreak);
+        if (timed.length === 0) return result;
+        
+        const dayStart = new Date(day);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(day);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        const getRange = (e: any) => ({
+            start: Math.max(new Date(e.Start).getTime(), dayStart.getTime()),
+            end: Math.min(new Date(e.End).getTime(), dayEnd.getTime()),
+        });
+        
+        // Build groups of mutually overlapping events
+        const groups: any[][] = [];
+        for (const event of timed) {
+            const ev = getRange(event);
+            let placed = false;
+            for (const group of groups) {
+                if (group.some(g => {
+                    const gr = getRange(g);
+                    return ev.start < gr.end && ev.end > gr.start;
+                })) {
+                    group.push(event);
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) groups.push([event]);
+        }
+        
+        for (const group of groups) {
+            if (group.length === 1) {
+                result.set(group[0].id, { layer: 0, totalLayers: 1 });
+                continue;
+            }
+            
+            // Sort by duration descending (longest first = back layer), then by start time
+            group.sort((a, b) => {
+                const aDur = getRange(a).end - getRange(a).start;
+                const bDur = getRange(b).end - getRange(b).start;
+                if (bDur !== aDur) return bDur - aDur;
+                return getRange(a).start - getRange(b).start;
+            });
+            
+            const totalLayers = group.length;
+            for (let i = 0; i < group.length; i++) {
+                result.set(group[i].id, { layer: i, totalLayers });
+            }
+        }
+        
         return result;
     }
 
@@ -1615,6 +1681,41 @@ function Calendar() {
                         </div>
                     </div>
 
+                    {/* All-day events row */}
+                    {(() => {
+                        const hasAnyAllDay = getWeekDays().some(d => getAllDayEvents(d).length > 0);
+                        if (!hasAnyAllDay) return null;
+                        return (
+                            <div class="overflow-x-auto" style={{ "border-bottom": "1px solid var(--color-border)" }}>
+                                <div class="grid grid-cols-8 min-w-[800px]">
+                                    <div class="p-2 text-xs font-medium flex items-center justify-center" style={{ "border-right": "1px solid var(--color-border)", "color": "var(--color-text-muted)", "background-color": "var(--color-bg-tertiary)" }}>
+                                        All Day
+                                    </div>
+                                    <For each={getWeekDays()}>
+                                        {(day) => {
+                                            const allDayEvts = createMemo(() => getAllDayEvents(day));
+                                            return (
+                                                <div class="p-1 min-h-[32px]" style={{ "border-right": "1px solid var(--color-border)", "background-color": "var(--color-bg-secondary)" }}>
+                                                    <For each={allDayEvts()}>
+                                                        {(event) => (
+                                                            <div
+                                                                class="text-xs px-2 py-1 rounded mb-0.5 truncate cursor-pointer hover:opacity-80 transition-opacity"
+                                                                style={{ "background-color": event.Color || '#3b82f6', "color": "white" }}
+                                                                onClick={() => openEventModal(event.id)}
+                                                            >
+                                                                {event.EventName}
+                                                            </div>
+                                                        )}
+                                                    </For>
+                                                </div>
+                                            );
+                                        }}
+                                    </For>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
                     {/* Time slots with scaled events */}
                     <div ref={weekScrollRef} class="max-h-[600px] overflow-y-auto overflow-x-auto relative">
                         <div class="min-w-[800px] relative">
@@ -1653,6 +1754,7 @@ function Calendar() {
                                                 // Use createMemo to make this reactive to events() changes
                                                 const dayEvents = createMemo(() => getEventsWithBreaks(day));
                                                 const dayTasks = createMemo(() => getTasksForDate(day));
+                                                const overlapLayout = createMemo(() => getOverlapLayout(dayEvents(), day));
                                                 
                                                 return (
                                                     <div 
@@ -1704,6 +1806,9 @@ function Calendar() {
                                                         {/* Render Events */}
                                                         <For each={dayEvents()}>
                                                             {(event) => {
+                                                                // Skip all-day events - they're shown in the dedicated row
+                                                                if (event.AllDay) return null;
+                                                                
                                                                 const eventStart = new Date(event.Start);
                                                                 const eventEnd = new Date(event.End);
                                                                 
@@ -1716,54 +1821,55 @@ function Calendar() {
                                                                 const displayEnd = eventEnd > endOfDay ? endOfDay : eventEnd;
                                                                 
                                                                 const eventStartHour = displayStart.getHours();
-                                                                const eventEndHour = displayEnd.getHours();
                                                                 const eventStartMinute = displayStart.getMinutes();
-                                                                const eventEndMinute = displayEnd.getMinutes();
                                                                 
                                                                 // Calculate if event should appear in this hour slot
                                                                 const eventStartsInThisHour = eventStartHour === hour;
                                                                 
-                                                                if (!event.AllDay && !eventStartsInThisHour) {
-                                                                    return null;
-                                                                }
-
-                                                                // For all-day events, only show in hour 0
-                                                                if (event.AllDay && hour !== 0) {
+                                                                if (!eventStartsInThisHour) {
                                                                     return null;
                                                                 }
 
                                                                 // Calculate height and position
-                                                                let height = 60; // Default 1 hour
-                                                                let topOffset = 0;
-
-                                                                if (!event.AllDay) {
-                                                                    const durationMs = displayEnd.getTime() - displayStart.getTime();
-                                                                    const durationHours = durationMs / (1000 * 60 * 60);
-                                                                    height = Math.max(30, durationHours * 60); // 60px per hour
-                                                                    
-                                                                    // Offset within the hour based on minutes
-                                                                    topOffset = (eventStartMinute / 60) * 60;
-                                                                }
+                                                                const durationMs = displayEnd.getTime() - displayStart.getTime();
+                                                                const durationHours = durationMs / (1000 * 60 * 60);
+                                                                const height = Math.max(30, durationHours * 60); // 60px per hour
+                                                                const topOffset = (eventStartMinute / 60) * 60;
 
                                                                 const totalTasks = event.expand?.Tasks?.length || 0;
                                                                 const completedTasks = event.expand?.Tasks?.filter((t: any) => t.Completed).length || 0;
                                                                 const allTasksCompleted = totalTasks > 0 && completedTasks === totalTasks;
                                                                 const isBreak = event.isBreak || false;
+                                                                
+                                                                // Get layered overlap info
+                                                                const layoutInfo = isBreak ? null : overlapLayout().get(event.id);
+                                                                const layer = layoutInfo?.layer ?? 0;
+                                                                const totalLayers = layoutInfo?.totalLayers ?? 1;
+                                                                
+                                                                // Layered layout: small fixed px offset per layer keeps events readable
+                                                                // Longest in back (full width), shorter ones slightly offset on top
+                                                                const offsetPx = isBreak ? 0 : (layer * 12);
+                                                                const zIndex = isBreak ? 1 : (10 + layer);
 
                                                                 return (
                                                                 <div
-                                                                    class={`absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 ${
+                                                                    class={`absolute text-xs px-2 py-1 rounded-md overflow-hidden ${
                                                                         isBreak 
                                                                             ? 'border-dashed'
-                                                                            : 'cursor-grab hover:opacity-80 transition-all duration-200'
+                                                                            : 'cursor-grab hover:brightness-110 transition-all duration-150'
                                                                     }`}
                                                                     style={{ 
                                                                         'background-color': isBreak ? 'transparent' : (event.Color || '#3b82f6'),
                                                                         'border': isBreak ? '1px dashed var(--color-border)' : 'none',
+                                                                        'border-left': !isBreak && totalLayers > 1 ? `3px solid rgba(255,255,255,0.35)` : (isBreak ? '1px dashed var(--color-border)' : 'none'),
                                                                         'top': `${topOffset}px`,
+                                                                        'left': `${offsetPx}px`,
+                                                                        'right': isBreak ? '0' : '2px',
                                                                         'height': `${getResizedHeight(event) ?? height}px`,
-                                                                        'opacity': isDraggingEvent() && draggingEvent()?.id === event.id ? 0.3 : (isBreak ? 0.5 : (allTasksCompleted ? 0.6 : 0.9)),
-                                                                        'pointer-events': isBreak || isDraggingEvent() || isResizing() || isDragCreating() ? 'none' : 'auto'
+                                                                        'z-index': zIndex,
+                                                                        'opacity': isDraggingEvent() && draggingEvent()?.id === event.id ? 0.3 : (isBreak ? 0.5 : (allTasksCompleted ? 0.6 : 0.95)),
+                                                                        'pointer-events': isBreak || isDraggingEvent() || isResizing() || isDragCreating() ? 'none' : 'auto',
+                                                                        'box-shadow': !isBreak && layer > 0 ? '-2px 0 6px rgba(0,0,0,0.25)' : 'none'
                                                                     }}
                                                                     onMouseDown={(e) => {
                                                                         if (isBreak) return;
@@ -1773,7 +1879,7 @@ function Calendar() {
                     <div class={`font-medium truncate ${allTasksCompleted && !isBreak ? 'line-through' : ''} ${isBreak ? 'italic' : ''}`} style={{ "color": isBreak ? "var(--color-text-muted)" : "white" }}>
                                                                         {allTasksCompleted && !isBreak ? '✓ ' : ''}{event.EventName}
                                                                     </div>
-                                                                    <Show when={!event.AllDay && !isBreak}>
+                                                                    <Show when={!isBreak}>
                                                                         <div class="text-[10px] opacity-75">
                                                                             {formatTime(new Date(event.Start))}
                                                                             {height > 40 && (
