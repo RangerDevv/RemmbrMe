@@ -27,6 +27,7 @@ function Calendar() {
     const [showEventModal, setShowEventModal] = createSignal(false);
     const [viewMode, setViewMode] = createSignal<'month' | 'week'>(window.location.pathname === '/schedule' ? 'week' : 'month');
     const [hoveredEvent, setHoveredEvent] = createSignal<any>(null);
+    const [hoverPos, setHoverPos] = createSignal<{ left: number, right: number, y: number }>({ left: 0, right: 0, y: 0 });
     const [quickViewEvent, setQuickViewEvent] = createSignal<any>(null);
     
     // Form fields
@@ -1413,7 +1414,11 @@ function Calendar() {
                                                                         e.stopPropagation();
                                                                         handleEventDragStart(e, event);
                                                                     }}
-                                                                    onMouseEnter={() => setHoveredEvent(event)}
+                                                                    onMouseEnter={(e) => {
+                                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                                        setHoverPos({ left: rect.left, right: rect.right, y: rect.top });
+                                                                        setHoveredEvent(event);
+                                                                    }}
                                                                     onMouseLeave={() => setHoveredEvent(null)}
                                                                 >
                                                                     <div class={`truncate font-medium ${allTasksCompleted ? 'line-through' : ''}`}>
@@ -1893,34 +1898,49 @@ function Calendar() {
 
             {/* Hover Tooltip */}
             <Show when={hoveredEvent() && !quickViewEvent()}>
-                <div 
-                    class="fixed z-50 rounded-lg p-3 shadow-xl pointer-events-none glass"
-                    style={{
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                    }}
-                >
-                    <h4 class="font-semibold mb-1" style={{ "color": "var(--color-text)" }}>{hoveredEvent()!.EventName}</h4>
-                    <Show when={hoveredEvent()!.Description}>
-                        <p class="text-sm mb-2" style={{ "color": "var(--color-text-secondary)", "white-space": "pre-wrap" }}>{hoveredEvent()!.Description}</p>
-                    </Show>
-                    <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
-                        {new Date(hoveredEvent()!.Start).toLocaleString()} - {new Date(hoveredEvent()!.End).toLocaleString()}
-                    </p>
-                    <Show when={hoveredEvent()!.expand?.Tasks?.length > 0}>
-                        <div class="mt-2 pt-2" style={{ "border-top": "1px solid var(--color-border)" }}>
-                            <p class="text-xs mb-1" style={{ "color": "var(--color-text-secondary)" }}>Tasks:</p>
-                            <For each={hoveredEvent()!.expand.Tasks}>
-                                {(task: any) => (
-                                    <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
-                                        {task.Completed ? '✓' : '○'} {task.Title}
-                                    </div>
-                                )}
-                            </For>
+                {(() => {
+                    const pos = hoverPos();
+                    const windowW = window.innerWidth;
+                    const tooltipW = 280;
+                    // Show to the right if there's room, otherwise to the left
+                    const showRight = pos.right + tooltipW + 8 < windowW;
+                    let left = showRight ? pos.right + 8 : pos.left - tooltipW - 8;
+                    // Clamp horizontally so it stays on screen
+                    left = Math.max(8, Math.min(left, windowW - tooltipW - 8));
+                    // Clamp vertical position so it doesn't overflow
+                    const top = Math.max(8, Math.min(pos.y, window.innerHeight - 200));
+                    return (
+                        <div 
+                            class="fixed z-50 rounded-lg p-3 shadow-xl pointer-events-none glass"
+                            style={{
+                                top: `${top}px`,
+                                left: `${left}px`,
+                                width: `${tooltipW}px`,
+                                "max-width": `${tooltipW}px`,
+                            }}
+                        >
+                            <h4 class="font-semibold mb-1" style={{ "color": "var(--color-text)" }}>{hoveredEvent()!.EventName}</h4>
+                            <Show when={hoveredEvent()!.Description}>
+                                <p class="text-sm mb-2 line-clamp-3" style={{ "color": "var(--color-text-secondary)", "white-space": "pre-wrap" }}>{hoveredEvent()!.Description}</p>
+                            </Show>
+                            <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
+                                {new Date(hoveredEvent()!.Start).toLocaleString()} - {new Date(hoveredEvent()!.End).toLocaleString()}
+                            </p>
+                            <Show when={hoveredEvent()!.expand?.Tasks?.length > 0}>
+                                <div class="mt-2 pt-2" style={{ "border-top": "1px solid var(--color-border)" }}>
+                                    <p class="text-xs mb-1" style={{ "color": "var(--color-text-secondary)" }}>Tasks:</p>
+                                    <For each={hoveredEvent()!.expand.Tasks}>
+                                        {(task: any) => (
+                                            <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
+                                                {task.Completed ? '✓' : '○'} {task.Title}
+                                            </div>
+                                        )}
+                                    </For>
+                                </div>
+                            </Show>
                         </div>
-                    </Show>
-                </div>
+                    );
+                })()}
             </Show>
 
             {/* Event Detail/Edit Modal */}
