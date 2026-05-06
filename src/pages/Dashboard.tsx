@@ -157,14 +157,16 @@ function Dashboard() {
                 return true;
             })
             .sort((a, b) => {
+                if (a.Deadline && b.Deadline) {
+                    const diff = new Date(a.Deadline).getTime() - new Date(b.Deadline).getTime();
+                    if (diff !== 0) return diff;
+                }
+                if (a.Deadline && !b.Deadline) return -1;
+                if (!a.Deadline && b.Deadline) return 1;
                 const po = { P1: 0, P2: 1, P3: 2 };
                 const ap = po[a.Priority as keyof typeof po] ?? 3;
                 const bp = po[b.Priority as keyof typeof po] ?? 3;
-                if (ap !== bp) return ap - bp;
-                if (a.Deadline && b.Deadline) return new Date(a.Deadline).getTime() - new Date(b.Deadline).getTime();
-                if (a.Deadline) return -1;
-                if (b.Deadline) return 1;
-                return 0;
+                return ap - bp;
             })
             .slice(0, 15);
     }

@@ -1,5 +1,5 @@
 import { UploadFile, fileUploader } from '@solid-primitives/upload';
-import { Index, Show, createSignal, onMount, onCleanup } from 'solid-js';
+import { Index, Show, createSignal, createMemo, onMount, onCleanup } from 'solid-js';
 import { generateRecurringTasks } from '../utils/recurrence';
 import { bk, currentUser } from '../lib/backend.ts';
 import { startFocus } from '../lib/focusTimer';
@@ -49,9 +49,7 @@ function Todo() {
             Duration: duration || undefined,
             user: currentUser()!.id
         };
-        console.log('Creating task with data:', data);
-        const record = await bk.collection('Todo').create(data);
-        console.log('Task created:', record);
+        await bk.collection('Todo').create(data);
         
         fetchTodos();
         window.dispatchEvent(new Event('dataChanged'));
@@ -85,7 +83,6 @@ function Todo() {
             user: currentUser()?.id
         };
         await bk.collection('Todo').update(id, data);
-        console.log('Task updated');
         fetchTodos();
         window.dispatchEvent(new Event('dataChanged'));
         setTimeout(() => refreshNotifications(), 100);
@@ -112,9 +109,7 @@ function Todo() {
         // If marking as complete and task has recurrence, reschedule to next occurrence
         if (!currentStatus) {
             const task = todoItems().find(t => t.id === id);
-            console.log('Toggling complete for task:', task);
             if (task && task.Recurrence && task.Recurrence !== 'none' && task.Deadline) {
-                console.log('Task has recurrence:', task.Recurrence, 'Deadline:', task.Deadline);
                 const currentDeadline = new Date(task.Deadline);
                 let nextDeadline = new Date(currentDeadline);
                 
@@ -145,8 +140,6 @@ function Todo() {
                     }
                 }
                 
-                console.log('Next deadline calculated:', nextDeadline.toISOString());
-                
                 // Check if next deadline exceeds recurrence end date
                 if (task.RecurrenceEndDate) {
                     const endDate = new Date(task.RecurrenceEndDate);
@@ -162,13 +155,10 @@ function Todo() {
                     }
                 }
                 
-                // Update to next deadline and keep uncompleted
-                console.log('Updating task with new deadline:', nextDeadline.toISOString());
                 await bk.collection('Todo').update(id, {
                     Deadline: nextDeadline.toISOString(),
                     Completed: false
                 });
-                console.log('Task updated successfully');
                 fetchTodos();
                 window.dispatchEvent(new Event('dataChanged'));
                 setTimeout(() => refreshNotifications(), 100);
@@ -207,7 +197,7 @@ function Todo() {
     const [searchQuery, setSearchQuery] = createSignal('');
     const [filterPriority, setFilterPriority] = createSignal('all');
     const [filterStatus, setFilterStatus] = createSignal('active');
-    const [sortBy, setSortBy] = createSignal('priority'); // priority, deadline, created
+    const [sortBy, setSortBy] = createSignal('deadline'); // priority, deadline, created
     const [showCompletedSection, setShowCompletedSection] = createSignal(true);
     const [touchStart, setTouchStart] = createSignal(0);
     const [touchEnd, setTouchEnd] = createSignal(0);
@@ -218,10 +208,16 @@ function Todo() {
     let needsRefetch = false;
     
     async function fetchTodos() {
-            const items = await bk.collection('Todo').getFullList({
-                expand: 'Tags'
-            });
+        if (isFetchingTodos) { needsRefetch = true; return; }
+        isFetchingTodos = true;
+        needsRefetch = false;
+        try {
+            const items = await bk.collection('Todo').getFullList({ expand: 'Tags' });
             setTodoItems(items);
+        } finally {
+            isFetchingTodos = false;
+            if (needsRefetch) { needsRefetch = false; fetchTodos(); }
+        }
     }
     
     async function fetchTags() {
@@ -298,137 +294,105 @@ function Todo() {
         });
     });
 
-    function getFilteredTodos() {
+    // Memoized filtered + sorted list — recomputes only when inputs change
+    const filteredTodos = createMemo(() => {
         let filtered = todoItems();
 
-        // Search filter
         if (searchQuery()) {
-            filtered = filtered.filter(t => 
-                t.Title.toLowerCase().includes(searchQuery().toLowerCase()) ||
-                t.Description.toLowerCase().includes(searchQuery().toLowerCase())
+            const q = searchQuery().toLowerCase();
+            filtered = filtered.filter(t =>
+                t.Title.toLowerCase().includes(q) ||
+                t.Description.toLowerCase().includes(q)
             );
         }
 
-        // Priority filter
         if (filterPriority() !== 'all') {
             filtered = filtered.filter(t => t.Priority === filterPriority());
         }
 
-        // Status filter
         if (filterStatus() === 'active') {
             filtered = filtered.filter(t => !t.Completed);
         } else if (filterStatus() === 'completed') {
             filtered = filtered.filter(t => t.Completed);
         }
 
-        // Sort
-        if (sortBy() === 'priority') {
-            filtered.sort((a, b) => {
-                const priorityOrder = { P1: 0, P2: 1, P3: 2 };
-                return priorityOrder[a.Priority as keyof typeof priorityOrder] - priorityOrder[b.Priority as keyof typeof priorityOrder];
+        // Sort on a copy to avoid mutating the signal array
+        const sort = sortBy();
+        if (sort === 'priority') {
+            filtered = [...filtered].sort((a, b) => {
+                const po = { P1: 0, P2: 1, P3: 2 };
+                const pa = po[a.Priority as keyof typeof po] ?? 3;
+                const pb = po[b.Priority as keyof typeof po] ?? 3;
+                if (pa !== pb) return pa - pb;
+                if (a.Deadline && b.Deadline) return new Date(a.Deadline).getTime() - new Date(b.Deadline).getTime();
+                if (a.Deadline) return -1;
+                if (b.Deadline) return 1;
+                return 0;
             });
-        } else if (sortBy() === 'deadline') {
-            filtered.sort((a, b) => {
+        } else if (sort === 'deadline') {
+            filtered = [...filtered].sort((a, b) => {
                 if (!a.Deadline) return 1;
                 if (!b.Deadline) return -1;
                 return new Date(a.Deadline).getTime() - new Date(b.Deadline).getTime();
             });
-        } else if (sortBy() === 'created') {
-            filtered.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+        } else if (sort === 'created') {
+            filtered = [...filtered].sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
         }
 
         return filtered;
-    }
+    });
 
-    function getOverdueTasks() {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        return getFilteredTodos().filter(t => {
-            if (!t.Deadline || t.Completed) return false;
-            const deadline = new Date(t.Deadline);
-            return deadline < today;
-        });
-    }
+    // Single-pass partition into sections — avoids iterating filteredTodos 6 separate times
+    const taskSections = createMemo(() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const todayMs   = now.getTime();
+        const tomMs     = todayMs + 86_400_000;
+        const dayAftMs  = todayMs + 2 * 86_400_000;
+        const weekEndMs = todayMs + 7 * 86_400_000;
 
-    function getTodayTasks() {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        const overdue: any[]     = [];
+        const today: any[]       = [];
+        const tomorrow: any[]    = [];
+        const thisWeek: any[]    = [];
+        const later: any[]       = [];
+        const noDeadline: any[]  = [];
 
-        return getFilteredTodos().filter(t => {
-            if (t.Completed) return false;
-            if (!t.Deadline) return false;
-            const deadline = new Date(t.Deadline);
-            return deadline >= today && deadline < tomorrow;
-        });
-    }
+        for (const t of filteredTodos()) {
+            if (t.Completed) continue;
+            if (!t.Deadline) { noDeadline.push(t); continue; }
+            const ms = new Date(t.Deadline).getTime();
+            if      (ms < todayMs)   overdue.push(t);
+            else if (ms < tomMs)     today.push(t);
+            else if (ms < dayAftMs)  tomorrow.push(t);
+            else if (ms < weekEndMs) thisWeek.push(t);
+            else                     later.push(t);
+        }
 
-    function getTomorrowTasks() {
-        const tomorrow = new Date();
-        tomorrow.setHours(0, 0, 0, 0);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const dayAfter = new Date(tomorrow);
-        dayAfter.setDate(dayAfter.getDate() + 1);
+        return { overdue, today, tomorrow, thisWeek, later, noDeadline };
+    });
 
-        return getFilteredTodos().filter(t => {
-            if (t.Completed) return false;
-            if (!t.Deadline) return false;
-            const deadline = new Date(t.Deadline);
-            return deadline >= tomorrow && deadline < dayAfter;
-        });
-    }
+    // Memoized stats — single pass
+    const taskStats = createMemo(() => {
+        const all = todoItems();
+        let completed = 0, p1 = 0;
+        for (const t of all) {
+            if (t.Completed) completed++;
+            else if (t.Priority === 'P1') p1++;
+        }
+        return { total: all.length, completed, p1, percentage: all.length > 0 ? Math.round((completed / all.length) * 100) : 0 };
+    });
 
-    function getThisWeekTasks() {
-        const dayAfterTomorrow = new Date();
-        dayAfterTomorrow.setHours(0, 0, 0, 0);
-        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
-        const weekEnd = new Date();
-        weekEnd.setHours(0, 0, 0, 0);
-        weekEnd.setDate(weekEnd.getDate() + 7);
-
-        return getFilteredTodos().filter(t => {
-            if (t.Completed) return false;
-            if (!t.Deadline) return false;
-            const deadline = new Date(t.Deadline);
-            return deadline >= dayAfterTomorrow && deadline < weekEnd;
-        });
-    }
-
-    function getLaterTasks() {
-        const weekEnd = new Date();
-        weekEnd.setHours(0, 0, 0, 0);
-        weekEnd.setDate(weekEnd.getDate() + 7);
-
-        return getFilteredTodos().filter(t => {
-            if (t.Completed) return false;
-            if (!t.Deadline) return false;
-            const deadline = new Date(t.Deadline);
-            return deadline >= weekEnd;
-        });
-    }
-
-    function getNoDeadlineTasks() {
-        return getFilteredTodos().filter(t => !t.Completed && !t.Deadline);
-    }
-
-    function getTaskStats() {
-        const total = todoItems().length;
-        const completed = todoItems().filter(t => t.Completed).length;
-        const p1 = todoItems().filter(t => t.Priority === 'P1' && !t.Completed).length;
-        return { total, completed, p1, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
-    }
-    
-    function getCompletedTodos() {
-        return todoItems()
+    // Memoized completed list sorted by completion date
+    const completedTodos = createMemo(() =>
+        todoItems()
             .filter(t => t.Completed)
             .sort((a, b) => {
                 const aDate = a.CompletedAt || a.updated;
                 const bDate = b.CompletedAt || b.updated;
                 return new Date(bDate).getTime() - new Date(aDate).getTime();
-            });
-    }
+            })
+    );
     
     function handleTouchStart(e: TouchEvent) {
         setTouchStart(e.touches[0].clientX);
@@ -635,7 +599,7 @@ function Todo() {
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="glass flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm">
-                        <span style={{ "color": "var(--color-text-secondary)" }}>{getTaskStats().completed}/{getTaskStats().total}</span>
+                        <span style={{ "color": "var(--color-text-secondary)" }}>{taskStats().completed}/{taskStats().total}</span>
                     </div>
                 </div>
             </div>
@@ -709,7 +673,7 @@ function Todo() {
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text-secondary)" }}>
                     {filterStatus() === 'active' ? 'Active' : filterStatus() === 'completed' ? 'Completed' : 'All'} 
-                    <span style={{ "color": "var(--color-text-muted)" }}>({getFilteredTodos().length})</span>
+                    <span style={{ "color": "var(--color-text-muted)" }}>({filteredTodos().length})</span>
                 </h3>
                 <button
                     onClick={() => setShowModal(true)}
@@ -725,15 +689,15 @@ function Todo() {
             <Show when={filterStatus() === 'active'}>
                 <div class="space-y-6">
                     {/* Overdue Tasks */}
-                    <Show when={getOverdueTasks().length > 0}>
+                    <Show when={taskSections().overdue.length > 0}>
                         <div>
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-2 h-2 rounded-full bg-red-500"></div>
                                 <h4 class="text-sm font-semibold text-red-400">Overdue</h4>
-                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getOverdueTasks().length})</span>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({taskSections().overdue.length})</span>
                             </div>
                             <div class="space-y-3">
-                                <Index each={getOverdueTasks()}>
+                                <Index each={taskSections().overdue}>
                                     {(item) => <TaskItem task={item()} />}
                                 </Index>
                             </div>
@@ -741,15 +705,15 @@ function Todo() {
                     </Show>
 
                     {/* Today's Tasks */}
-                    <Show when={getTodayTasks().length > 0}>
+                    <Show when={taskSections().today.length > 0}>
                         <div>
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-2 h-2 rounded-full" style={{ "background-color": "var(--color-accent)" }}></div>
                                 <h4 class="text-sm font-semibold" style={{ "color": "var(--color-accent)" }}>Today</h4>
-                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getTodayTasks().length})</span>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({taskSections().today.length})</span>
                             </div>
                             <div class="space-y-3">
-                                <Index each={getTodayTasks()}>
+                                <Index each={taskSections().today}>
                                     {(item) => <TaskItem task={item()} />}
                                 </Index>
                             </div>
@@ -757,15 +721,15 @@ function Todo() {
                     </Show>
 
                     {/* Tomorrow's Tasks */}
-                    <Show when={getTomorrowTasks().length > 0}>
+                    <Show when={taskSections().tomorrow.length > 0}>
                         <div>
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-2 h-2 rounded-full bg-amber-500"></div>
                                 <h4 class="text-sm font-semibold text-amber-400">Tomorrow</h4>
-                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getTomorrowTasks().length})</span>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({taskSections().tomorrow.length})</span>
                             </div>
                             <div class="space-y-3">
-                                <Index each={getTomorrowTasks()}>
+                                <Index each={taskSections().tomorrow}>
                                     {(item) => <TaskItem task={item()} />}
                                 </Index>
                             </div>
@@ -773,15 +737,15 @@ function Todo() {
                     </Show>
 
                     {/* This Week */}
-                    <Show when={getThisWeekTasks().length > 0}>
+                    <Show when={taskSections().thisWeek.length > 0}>
                         <div>
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-2 h-2 rounded-full bg-purple-500"></div>
                                 <h4 class="text-sm font-semibold text-purple-400">This Week</h4>
-                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getThisWeekTasks().length})</span>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({taskSections().thisWeek.length})</span>
                             </div>
                             <div class="space-y-3">
-                                <Index each={getThisWeekTasks()}>
+                                <Index each={taskSections().thisWeek}>
                                     {(item) => <TaskItem task={item()} />}
                                 </Index>
                             </div>
@@ -789,15 +753,15 @@ function Todo() {
                     </Show>
 
                     {/* Later */}
-                    <Show when={getLaterTasks().length > 0}>
+                    <Show when={taskSections().later.length > 0}>
                         <div>
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-2 h-2 rounded-full bg-cyan-500"></div>
                                 <h4 class="text-sm font-semibold text-cyan-400">Later</h4>
-                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getLaterTasks().length})</span>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({taskSections().later.length})</span>
                             </div>
                             <div class="space-y-3">
-                                <Index each={getLaterTasks()}>
+                                <Index each={taskSections().later}>
                                     {(item) => <TaskItem task={item()} />}
                                 </Index>
                             </div>
@@ -805,15 +769,15 @@ function Todo() {
                     </Show>
 
                     {/* No Deadline */}
-                    <Show when={getNoDeadlineTasks().length > 0}>
+                    <Show when={taskSections().noDeadline.length > 0}>
                         <div>
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-2 h-2 rounded-full" style={{ "background-color": "var(--color-text-muted)" }}></div>
                                 <h4 class="text-sm font-semibold" style={{ "color": "var(--color-text-muted)" }}>No Deadline</h4>
-                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getNoDeadlineTasks().length})</span>
+                                <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({taskSections().noDeadline.length})</span>
                             </div>
                             <div class="space-y-3">
-                                <Index each={getNoDeadlineTasks()}>
+                                <Index each={taskSections().noDeadline}>
                                     {(item) => <TaskItem task={item()} />}
                                 </Index>
                             </div>
@@ -821,7 +785,7 @@ function Todo() {
                     </Show>
 
                     {/* Empty state */}
-                    <Show when={getFilteredTodos().filter(t => !t.Completed).length === 0}>
+                    <Show when={taskSections().overdue.length + taskSections().today.length + taskSections().tomorrow.length + taskSections().thisWeek.length + taskSections().later.length + taskSections().noDeadline.length === 0}>
                         <div class="text-center py-12" style={{ "color": "var(--color-text-muted)" }}>
                             <CheckCircleIcon class="w-12 h-12 mx-auto mb-3" style={{ "color": "var(--color-accent)" }} />
                             <p class="text-base font-medium" style={{ "color": "var(--color-text-secondary)" }}>All caught up!</p>
@@ -834,7 +798,7 @@ function Todo() {
             {/* Show flat list for completed or all tasks filter */}
             <Show when={filterStatus() !== 'active'}>
                 <div class="space-y-3">
-                    <Index each={getFilteredTodos()}>
+                    <Index each={filteredTodos()}>
                         {(item) => <TaskItem task={item()} />}
                     </Index>
                 </div>
@@ -842,7 +806,7 @@ function Todo() {
             </div>
             
             {/* Completed Tasks Section */}
-            <Show when={filterStatus() === 'active' && getCompletedTodos().length > 0}>
+            <Show when={filterStatus() === 'active' && completedTodos().length > 0}>
                 <div class="mt-8">
                     <button
                         onClick={() => setShowCompletedSection(!showCompletedSection())}
@@ -851,14 +815,14 @@ function Todo() {
                         <div class="flex items-center gap-2">
                             <CheckCircleIcon class="w-4 h-4" style={{ "color": "var(--color-accent)" }} />
                             <h3 class="text-sm font-semibold" style={{ "color": "var(--color-text)" }}>Completed</h3>
-                            <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({getCompletedTodos().length})</span>
+                            <span class="text-xs" style={{ "color": "var(--color-text-muted)" }}>({completedTodos().length})</span>
                         </div>
                         <ChevronDownIcon class={`w-4 h-4 transition-transform duration-200 ${showCompletedSection() ? 'rotate-180' : ''}`} style={{ "color": "var(--color-text-muted)" }} />
                     </button>
                     
                     <Show when={showCompletedSection()}>
                         <div class="space-y-3">
-                            <Index each={getCompletedTodos()}>
+                            <Index each={completedTodos()}>
                                 {(item) => (
                                     <div class="group relative glass rounded-xl p-4 transition-all duration-200" style={{ "opacity": 0.7 }}>
                                         <div class="flex items-start gap-3 mb-2">
@@ -947,7 +911,6 @@ function Todo() {
                         <form
                             class="transition-all duration-200"
                             onSubmit={async (e) => {
-                            console.log(TaskFile());
                             e.preventDefault();
                             if (editingTask()) {
                                 await updateTask(
@@ -1040,7 +1003,7 @@ function Todo() {
                                     type="file"
                                     multiple
                                     use:fileUploader={{
-                                    userCallback: fs => fs.forEach(f => console.log(f)), setFiles: setTaskFile
+                                    userCallback: () => {}, setFiles: setTaskFile
                                 }}
                                     class="w-full rounded-lg px-3 py-2 text-sm cursor-pointer focus:outline-none transition-colors duration-200"
                                     style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
