@@ -773,7 +773,9 @@ function Calendar() {
             new Date(a.Start).getTime() - new Date(b.Start).getTime()
         );
 
-        if (sortedEvents.length === 0) return [];
+        if (sortedEvents.length === 0) {
+            return getEventsForDate(date).filter(e => e.AllDay);
+        }
 
         // Merge overlapping time ranges to find true free time
         const mergedRanges: { start: number, end: number }[] = [];
@@ -823,10 +825,12 @@ function Calendar() {
             });
         }
 
-        // Add actual events
+        // Add actual timed events
         result.push(...sortedEvents);
 
-        return result;
+        // Prepend all-day events at the top
+        const allDayEvents = getEventsForDate(date).filter(e => e.AllDay);
+        return [...allDayEvents, ...result];
     }
 
     function getAllDayEvents(date: Date): any[] {
