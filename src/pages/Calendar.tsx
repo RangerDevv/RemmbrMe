@@ -713,7 +713,7 @@ function Calendar() {
             }
             
             return isInRange;
-        });
+        }).sort((a, b) => new Date(a.Start).getTime() - new Date(b.Start).getTime());
     }
 
     function getDaysInMonth(date: Date): Date[] {
