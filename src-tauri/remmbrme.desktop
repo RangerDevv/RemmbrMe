@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=RemmbrMe
+GenericName=Productivity App
+Comment=All-in-one productivity and memory app powered by Generative AI
+Exec=remmbrme
+Icon=remmbrme
+Terminal=false
+StartupNotify=true
+StartupWMClass=remmbrme
+Categories=Productivity;Office;
+Keywords=productivity;memory;notes;todo;calendar;tasks;ai;

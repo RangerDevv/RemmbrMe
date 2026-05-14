@@ -1,0 +1,115 @@
+name: Build (Arch Linux)
+
+# Runs on every push/PR to verify the Arch build works.
+# On the 'release' branch (or manual trigger) it also uploads the binary
+# to the GitHub release as a standalone asset.
+on:
+  push:
+    branches: [main, master, release]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to attach the artifact to (e.g. v1.0.0)'
+        required: false
+        default: ''
+
+jobs:
+  build-arch:
+    name: Arch Linux x86_64
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+
+    steps:
+      # ── 1. Bootstrap pacman ─────────────────────────────────────────────────
+      - name: Initialize pacman keyring & update
+        run: |
+          pacman-key --init
+          pacman-key --populate archlinux
+          pacman -Syu --noconfirm
+
+      # ── 2. Install build tools ───────────────────────────────────────────────
+      - name: Install build dependencies
+        run: |
+          pacman -S --noconfirm --needed \
+            git \
+            base-devel \
+            nodejs \
+            npm \
+            rust \
+            webkit2gtk-4.1 \
+            gtk3 \
+            glib2 \
+            libsoup3 \
+            openssl \
+            pkg-config \
+            patchelf
+
+      # ── 3. Checkout ─────────────────────────────────────────────────────────
+      - uses: actions/checkout@v4
+
+      # ── 4. Cache npm & cargo ─────────────────────────────────────────────────
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-arch-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-arch-
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-${{ runner.os }}-arch-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-arch-
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/target
+          key: cargo-target-${{ runner.os }}-arch-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-target-${{ runner.os }}-arch-
+
+      # ── 5. Build ─────────────────────────────────────────────────────────────
+      # This mirrors exactly what the PKGBUILD build() function does.
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build Vite frontend
+        run: npm run build
+
+      - name: Build Tauri binary (cargo)
+        run: cd src-tauri && cargo build --release
+
+      # ── 6. Stage artifact ────────────────────────────────────────────────────
+      - name: Stage release files
+        run: |
+          mkdir -p dist-arch
+          cp src-tauri/target/release/remmbrme          dist-arch/remmbrme
+          cp src-tauri/remmbrme.desktop                 dist-arch/remmbrme.desktop
+          cp src-tauri/icons/128x128.png                dist-arch/remmbrme.png
+          # Create a simple tarball for easy distribution
+          tar -czf dist-arch/remmbrme-linux-x86_64.tar.gz \
+            -C dist-arch remmbrme remmbrme.desktop remmbrme.png
+
+      # ── 7. Upload artifact (always) ──────────────────────────────────────────
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: remmbrme-arch-linux-x86_64
+          path: dist-arch/remmbrme-linux-x86_64.tar.gz
+          retention-days: 30
+
+      # ── 8. Attach to GitHub release (release branch or manual trigger) ───────
+      - name: Upload to GitHub release
+        if: github.ref == 'refs/heads/release' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version || 'v1.0.0' }}
+          files: dist-arch/remmbrme-linux-x86_64.tar.gz
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
