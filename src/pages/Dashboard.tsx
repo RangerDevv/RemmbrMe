@@ -29,7 +29,8 @@ function Dashboard() {
             const [eventRecords, todoRecords] = await Promise.all([
                 bk.collection('Calendar').getFullList({
                     filter: `user = "${currentUser()?.id}"`,
-                    sort: 'Start'
+                    sort: 'Start',
+                    expand: 'Tasks'
                 }),
                 bk.collection('Todo').getFullList({
                     filter: `user = "${currentUser()?.id}"`,
@@ -180,6 +181,12 @@ function Dashboard() {
         });
     }
 
+    function getEventLinkedTasks(event: any): any[] {
+        const tasks = event.expand?.Tasks;
+        if (!Array.isArray(tasks)) return [];
+        return tasks.filter((t: any) => !t.Completed);
+    }
+
     // --- Today View helpers ---
     function getTodayTimeline() {
         const today = new Date();
@@ -201,7 +208,16 @@ function Dashboard() {
             }
         });
 
-        todos().filter(t => !t.Completed && t.Deadline).forEach(t => {
+        // Collect IDs of todos already shown inside a calendar event
+        const linkedTodoIds = new Set<string>();
+        events().forEach(e => {
+            const start = new Date(e.Start);
+            if (start >= today && start < tomorrow) {
+                (e.expand?.Tasks || []).forEach((t: any) => linkedTodoIds.add(t.id));
+            }
+        });
+
+        todos().filter(t => !t.Completed && t.Deadline && !linkedTodoIds.has(t.id)).forEach(t => {
             const d = new Date(t.Deadline);
             if (d >= today && d < tomorrow) {
                 const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
@@ -336,15 +352,15 @@ function Dashboard() {
                         {/* Today's timeline: events + tasks sorted chronologically */}
                         <For each={getTodayTimeline()}>
                             {(item) => (
-                                <div class="group glass flex items-center gap-3 py-2.5 px-3 rounded-xl card-hover">
-                                    <span class="w-12 text-[10px] font-medium shrink-0 text-right tabular-nums" style={{ "color": "var(--color-text-muted)" }}>
+                                <div class="group glass flex items-start gap-3 py-2.5 px-3 rounded-xl card-hover">
+                                    <span class="w-12 text-[10px] font-medium shrink-0 text-right tabular-nums pt-0.5" style={{ "color": "var(--color-text-muted)" }}>
                                         {item.hasTime
                                             ? formatTime(item.time!)
                                             : '—'
                                         }
                                     </span>
                                     <div
-                                        class="w-1 h-8 rounded-full shrink-0"
+                                        class="w-1 min-h-8 self-stretch rounded-full shrink-0"
                                         style={{
                                             "background-color": item.type === 'event'
                                                 ? (item.data.Color || 'var(--color-accent)')
@@ -364,27 +380,56 @@ function Dashboard() {
                                                 : `${item.data.Priority}${item.data.Duration ? ` · ${item.data.Duration}min` : ''}`
                                             }
                                         </div>
+                                        <Show when={item.data.Description}>
+                                            <div class="text-[11px] mt-0.5 line-clamp-2" style={{ "color": "var(--color-text-muted)", "opacity": "0.8" }}>
+                                                {item.data.Description}
+                                            </div>
+                                        </Show>
+                                        <Show when={item.type === 'event' && getEventLinkedTasks(item.data).length > 0}>
+                                            <div class="flex flex-col gap-0.5 mt-1.5">
+                                                <For each={getEventLinkedTasks(item.data).slice(0, 4)}>
+                                                    {(task: any) => (
+                                                        <div class="flex items-center gap-1.5">
+                                                            <button
+                                                                onClick={() => quickCompleteTask(task.id)}
+                                                                class="w-3 h-3 rounded-full shrink-0 hover:opacity-70 transition-opacity"
+                                                                style={{ "border": "1.5px solid var(--color-border-hover)" }}
+                                                                title="Complete task"
+                                                            />
+                                                            <span class="text-[11px] truncate" style={{ "color": "var(--color-text-muted)" }}>{task.Title}</span>
+                                                        </div>
+                                                    )}
+                                                </For>
+                                                <Show when={getEventLinkedTasks(item.data).length > 4}>
+                                                    <span class="text-[10px] pl-[18px]" style={{ "color": "var(--color-text-muted)", "opacity": "0.6" }}>
+                                                        +{getEventLinkedTasks(item.data).length - 4} more
+                                                    </span>
+                                                </Show>
+                                            </div>
+                                        </Show>
                                     </div>
-                                    <button
-                                        onClick={() => item.type === 'event'
-                                            ? startFocus(item.data.id, item.data.EventName, getEventDurationMins(item.data), 'event')
-                                            : startFocus(item.data.id, item.data.Title, item.data.Duration || 25, 'task')
-                                        }
-                                        class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80 shrink-0"
-                                        style={{ "background": "var(--color-accent-muted)", "color": "var(--color-accent)" }}
-                                        title="Start focus session"
-                                    >
-                                        <PlayIcon class="w-3 h-3" />
-                                        Focus
-                                    </button>
-                                    <Show when={item.type === 'task'}>
+                                    <div class="flex items-center gap-1.5 shrink-0">
                                         <button
-                                            onClick={() => quickCompleteTask(item.data.id)}
-                                            class="w-[18px] h-[18px] rounded-full shrink-0 hover:opacity-70 transition-opacity"
-                                            style={{ "border": "2px solid var(--color-accent)" }}
-                                            title="Complete"
-                                        />
-                                    </Show>
+                                            onClick={() => item.type === 'event'
+                                                ? startFocus(item.data.id, item.data.EventName, getEventDurationMins(item.data), 'event')
+                                                : startFocus(item.data.id, item.data.Title, item.data.Duration || 25, 'task')
+                                            }
+                                            class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80 shrink-0"
+                                            style={{ "background": "var(--color-accent-muted)", "color": "var(--color-accent)" }}
+                                            title="Start focus session"
+                                        >
+                                            <PlayIcon class="w-3 h-3" />
+                                            Focus
+                                        </button>
+                                        <Show when={item.type === 'task'}>
+                                            <button
+                                                onClick={() => quickCompleteTask(item.data.id)}
+                                                class="w-[18px] h-[18px] rounded-full shrink-0 hover:opacity-70 transition-opacity"
+                                                style={{ "border": "2px solid var(--color-accent)" }}
+                                                title="Complete"
+                                            />
+                                        </Show>
+                                    </div>
                                 </div>
                             )}
                         </For>
@@ -515,27 +560,56 @@ function Dashboard() {
                                         {(event) => {
                                             const eventDate = new Date(event.Start);
                                             return (
-                                                <div class="group glass flex items-center gap-3 py-2.5 px-3 rounded-xl card-hover">
-                                                    <div class="w-1 h-8 rounded-full shrink-0" style={{ "background-color": event.Color || 'var(--color-accent)' }}></div>
+                                                <div class="group glass flex items-start gap-3 py-2.5 px-3 rounded-xl card-hover">
+                                                    <div class="w-1 min-h-8 self-stretch rounded-full shrink-0" style={{ "background-color": event.Color || 'var(--color-accent)' }}></div>
                                                     <div class="flex-1 min-w-0">
                                                         <div class="text-sm font-medium truncate" style={{ "color": "var(--color-text)" }}>{event.EventName}</div>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => startFocus(event.id, event.EventName, getEventDurationMins(event), 'event')}
-                                                        class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80 shrink-0"
-                                                        style={{ "background": "var(--color-accent-muted)", "color": "var(--color-accent)" }}
-                                                        title="Start focus session"
-                                                    >
-                                                        <PlayIcon class="w-3 h-3" />
-                                                        Focus
-                                                    </button>
-                                                    <div class="text-xs shrink-0" style={{ "color": "var(--color-text-muted)" }}>
-                                                        {eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                                        <Show when={!event.AllDay}>
-                                                            <span class="ml-1 hidden sm:inline">
-                                                                {formatTime(eventDate)}
-                                                            </span>
+                                                        <Show when={event.Description}>
+                                                            <div class="text-[11px] mt-0.5 line-clamp-2" style={{ "color": "var(--color-text-muted)", "opacity": "0.8" }}>
+                                                                {event.Description}
+                                                            </div>
                                                         </Show>
+                                                        <Show when={getEventLinkedTasks(event).length > 0}>
+                                                            <div class="flex flex-col gap-0.5 mt-1.5">
+                                                                <For each={getEventLinkedTasks(event).slice(0, 4)}>
+                                                                    {(task: any) => (
+                                                                        <div class="flex items-center gap-1.5">
+                                                                            <button
+                                                                                onClick={() => quickCompleteTask(task.id)}
+                                                                                class="w-3 h-3 rounded-full shrink-0 hover:opacity-70 transition-opacity"
+                                                                                style={{ "border": "1.5px solid var(--color-border-hover)" }}
+                                                                                title="Complete task"
+                                                                            />
+                                                                            <span class="text-[11px] truncate" style={{ "color": "var(--color-text-muted)" }}>{task.Title}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </For>
+                                                                <Show when={getEventLinkedTasks(event).length > 4}>
+                                                                    <span class="text-[10px] pl-[18px]" style={{ "color": "var(--color-text-muted)", "opacity": "0.6" }}>
+                                                                        +{getEventLinkedTasks(event).length - 4} more
+                                                                    </span>
+                                                                </Show>
+                                                            </div>
+                                                        </Show>
+                                                    </div>
+                                                    <div class="flex items-center gap-2 shrink-0">
+                                                        <button
+                                                            onClick={() => startFocus(event.id, event.EventName, getEventDurationMins(event), 'event')}
+                                                            class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80 shrink-0"
+                                                            style={{ "background": "var(--color-accent-muted)", "color": "var(--color-accent)" }}
+                                                            title="Start focus session"
+                                                        >
+                                                            <PlayIcon class="w-3 h-3" />
+                                                            Focus
+                                                        </button>
+                                                        <div class="text-xs shrink-0" style={{ "color": "var(--color-text-muted)" }}>
+                                                            {eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                            <Show when={!event.AllDay}>
+                                                                <span class="ml-1 hidden sm:inline">
+                                                                    {formatTime(eventDate)}
+                                                                </span>
+                                                            </Show>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             );

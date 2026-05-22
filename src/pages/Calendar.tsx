@@ -14,7 +14,9 @@ import {
     CalendarWeekIcon, 
     CalendarMonthIcon,
     XIcon,
-    BoltIcon
+    BoltIcon,
+    EditIcon,
+    TrashIcon
 } from '../components/Icons';
 
 function Calendar() {
@@ -108,6 +110,8 @@ function Calendar() {
     const [todoNewSubtask, setTodoNewSubtask] = createSignal('');
     const [todoDuration, setTodoDuration] = createSignal(0);
     const [todoTags, setTodoTags] = createSignal<string[]>([]);
+    const [editingTodoId, setEditingTodoId] = createSignal<string | null>(null);
+    const [confirmDeleteTodo, setConfirmDeleteTodo] = createSignal({ show: false, taskId: '' });
     
     // Recurrence edit choice dialog
     const [recurrenceChoice, setRecurrenceChoice] = createSignal<{
@@ -323,6 +327,7 @@ function Calendar() {
                     Description: '',
                     Completed: false,
                     Priority: 'P2',
+                    Deadline: start,
                     user: currentUser().id
                 });
                 createdTaskIds.push(taskRecord.id);
@@ -333,6 +338,11 @@ function Calendar() {
 
         // Combine created tasks with linked tasks
         const allTaskIds = [...createdTaskIds, ...linkedTaskIds()];
+
+        // Sync deadline of all linked (existing) todos to event start date
+        for (const taskId of linkedTaskIds()) {
+            await bk.collection('Todo').update(taskId, { Deadline: start });
+        }
 
         const data = {
             EventName: eventName(),
@@ -361,6 +371,10 @@ function Calendar() {
     }
 
     async function createTodoFromCalendar() {
+        if (editingTodoId()) {
+            await updateTodoFromCalendar();
+            return;
+        }
         let deadlineISO = undefined;
         if (todoDeadlineDate() && todoDeadlineDate().trim()) {
             const timeStr = todoDeadlineTime() && todoDeadlineTime().trim() ? todoDeadlineTime() : '00:00';
@@ -387,6 +401,85 @@ function Calendar() {
         setShowTodoModal(false);
     }
 
+    function resetTodoForm() {
+        setTodoTitle('');
+        setTodoDescription('');
+        setTodoPriority('P2');
+        setTodoDeadlineDate('');
+        setTodoDeadlineTime('');
+        setTodoSubtasks([]);
+        setTodoNewSubtask('');
+        setTodoDuration(0);
+        setTodoTags([]);
+        setEditingTodoId(null);
+    }
+
+    function startEditingTodoFromCalendar(task: any) {
+        setEditingTodoId(task.id);
+        setTodoTitle(task.Title || '');
+        setTodoDescription(task.Description || '');
+        setTodoPriority(task.Priority || 'P2');
+        if (task.Deadline) {
+            const d = new Date(task.Deadline);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            setTodoDeadlineDate(`${year}-${month}-${day}`);
+            setTodoDeadlineTime(`${hours}:${minutes}`);
+        } else {
+            setTodoDeadlineDate('');
+            setTodoDeadlineTime('');
+        }
+        setTodoTags(task.expand?.Tags?.map((t: any) => t.id) || []);
+        setTodoSubtasks(task.Subtasks || []);
+        setTodoNewSubtask('');
+        setTodoDuration(task.Duration || 0);
+        setShowTodoModal(true);
+    }
+
+    async function updateTodoFromCalendar() {
+        const id = editingTodoId();
+        if (!id) return;
+        let deadlineISO = undefined;
+        if (todoDeadlineDate() && todoDeadlineDate().trim()) {
+            const timeStr = todoDeadlineTime() && todoDeadlineTime().trim() ? todoDeadlineTime() : '00:00';
+            const date = new Date(`${todoDeadlineDate()}T${timeStr}`);
+            deadlineISO = date.toISOString();
+        }
+        const data = {
+            Title: todoTitle(),
+            Description: todoDescription(),
+            Priority: todoPriority() as `P${number}`,
+            Deadline: deadlineISO,
+            Tags: todoTags(),
+            Subtasks: todoSubtasks(),
+            Duration: todoDuration() || undefined,
+        };
+        await bk.collection('Todo').update(id, data);
+        await fetchTodos();
+        window.dispatchEvent(new Event('dataChanged'));
+        setTimeout(() => refreshNotifications(), 100);
+        resetTodoForm();
+        setShowTodoModal(false);
+    }
+
+    async function deleteTodoFromCalendar(taskId: string) {
+        setConfirmDeleteTodo({ show: true, taskId });
+    }
+
+    async function confirmDeleteTodoFromCalendar() {
+        const taskId = confirmDeleteTodo().taskId;
+        if (taskId) {
+            await bk.collection('Todo').delete(taskId);
+            await fetchTodos();
+            window.dispatchEvent(new Event('dataChanged'));
+            setTimeout(() => refreshNotifications(), 100);
+        }
+        setConfirmDeleteTodo({ show: false, taskId: '' });
+    }
+
     async function updateEvent() {
         if (!editingEvent()) return;
 
@@ -406,6 +499,7 @@ function Calendar() {
                     Description: '',
                     Completed: false,
                     Priority: 'P2',
+                    Deadline: start,
                     user: currentUser()?.id
                 });
                 createdTaskIds.push(taskRecord.id);
@@ -416,6 +510,11 @@ function Calendar() {
 
         // Combine created tasks with linked tasks
         const allTaskIds = [...createdTaskIds, ...linkedTaskIds()];
+
+        // Sync deadline of all linked (existing) todos to event start date
+        for (const taskId of linkedTaskIds()) {
+            await bk.collection('Todo').update(taskId, { Deadline: start });
+        }
 
         // If editing a single instance of a recurring event, detach it
         if (editingEvent()._editingInstance) {
@@ -2184,8 +2283,10 @@ function Calendar() {
                                                         }}
                                                     </For>
                                                     
-                                                    {/* Render Tasks */}
-                                                    <For each={dayTasks()}>
+                                                    {/* Render Tasks — skip any task already shown inside a linked calendar event */}
+                                                    <For each={dayTasks().filter(task => {
+                                                        return !dayEvents().some(ev => ev.expand?.Tasks?.some((t: any) => t.id === task.id));
+                                                    })}>
                                                         {(task) => {
                                                             const deadline = new Date(task.Deadline);
                                                             const taskHour = deadline.getHours();
@@ -2914,6 +3015,22 @@ function Calendar() {
                                                                 }`}>
                                                                     {task.Priority}
                                                                 </span>
+                                                                <button
+                                                                    onClick={() => startEditingTodoFromCalendar(task)}
+                                                                    class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors duration-200 hover:bg-blue-500/15"
+                                                                    style={{ "color": "var(--color-text-muted)" }}
+                                                                    title="Edit todo"
+                                                                >
+                                                                    <EditIcon />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => deleteTodoFromCalendar(task.id)}
+                                                                    class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors duration-200 hover:bg-red-500/15 hover:text-red-400"
+                                                                    style={{ "color": "var(--color-text-muted)" }}
+                                                                    title="Delete todo"
+                                                                >
+                                                                    <TrashIcon />
+                                                                </button>
                                                             </div>
                                                         </div>
                                                         <Show when={task.Description}>
@@ -3056,14 +3173,14 @@ function Calendar() {
                 </div>
             </Show>
 
-            {/* Todo creation modal */}
+            {/* Todo creation/edit modal */}
             <Show when={showTodoModal()}>
-                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => setShowTodoModal(false)}>
+                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => { resetTodoForm(); setShowTodoModal(false); }}>
                     <div class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
-                            <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>New Todo</h2>
+                            <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>{editingTodoId() ? 'Edit Todo' : 'New Todo'}</h2>
                             <button
-                                onClick={() => setShowTodoModal(false)}
+                                onClick={() => { resetTodoForm(); setShowTodoModal(false); }}
                                 class="transition-colors duration-200 text-xl w-8 h-8 flex items-center justify-center rounded-lg" style={{ "color": "var(--color-text-muted)" }}
                             >
                                 ×
@@ -3215,13 +3332,24 @@ function Calendar() {
                                     class="w-full font-semibold py-2.5 rounded-lg transition-all duration-300 text-sm"
                                     style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
                                 >
-                                    Create Todo
+                                    {editingTodoId() ? 'Save Changes' : 'Create Todo'}
                                 </button>
                             </form>
                         </div>
                     </div>
                 </div>
             </Show>
+
+            <ConfirmModal
+                show={confirmDeleteTodo().show}
+                title="Delete Todo"
+                message="Are you sure you want to delete this todo? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+                onConfirm={confirmDeleteTodoFromCalendar}
+                onCancel={() => setConfirmDeleteTodo({ show: false, taskId: '' })}
+            />
         </div>
     );
 }
