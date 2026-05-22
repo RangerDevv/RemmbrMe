@@ -23,7 +23,7 @@ import {
 
 function Todo() {
 
-    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[], duration:number, recurDays:number[]) {
+    async function createTask(name:string, description:string, completed:boolean, url:string, file:any, priority: string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[], duration:number, recurDays:number[], color:string) {
         // Combine date and time into ISO string
         let deadlineISO = undefined;
         if (deadlineDate && deadlineDate.trim()) {
@@ -47,6 +47,7 @@ function Todo() {
             RecurrenceEndDate: recurEnd || undefined,
             Subtasks: subs,
             Duration: duration || undefined,
+            Color: color || undefined,
             user: currentUser()!.id
         };
         await bk.collection('Todo').create(data);
@@ -56,7 +57,7 @@ function Todo() {
         setTimeout(() => refreshNotifications(), 100);
     }
 
-    async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[], duration:number, recurDays:number[]) {
+    async function updateTask(id: string, name:string, description:string, completed:boolean, url:string, file:any, priority:string, deadlineDate:string, deadlineTime:string, tags:string[], recur:string, recurEnd:string, subs:Subtask[], duration:number, recurDays:number[], color:string) {
         // Combine date and time into ISO string
         let deadlineISO = undefined;
         if (deadlineDate && deadlineDate.trim()) {
@@ -80,6 +81,7 @@ function Todo() {
             RecurrenceEndDate: recurEnd || undefined,
             Subtasks: subs,
             Duration: duration || undefined,
+            Color: color || undefined,
             user: currentUser()?.id
         };
         await bk.collection('Todo').update(id, data);
@@ -190,6 +192,7 @@ function Todo() {
     const [subtasks, setSubtasks] = createSignal<Subtask[]>([]);
     const [newSubtaskTitle, setNewSubtaskTitle] = createSignal('');
     const [taskDuration, setTaskDuration] = createSignal(0);
+    const [taskColor, setTaskColor] = createSignal('');
 
     const [todoItems, setTodoItems] = createSignal([] as any[]);
     const [allTags, setAllTags] = createSignal([] as any[]);
@@ -243,6 +246,7 @@ function Todo() {
         setSubtasks([]);
         setNewSubtaskTitle('');
         setTaskDuration(0);
+        setTaskColor('');
     }
 
     function startEditing(task: any) {
@@ -275,6 +279,7 @@ function Todo() {
         setSubtasks(task.Subtasks || []);
         setNewSubtaskTitle('');
         setTaskDuration(task.Duration || 0);
+        setTaskColor(task.Color || '');
         setShowModal(true);
     }
 
@@ -424,13 +429,19 @@ function Todo() {
 
     const TaskItem = (props: { task: any }) => {
         const item = () => props.task;
+        const accentColor = () => item().Color || null;
+        const priorityDefaultColor = () =>
+            item().Priority === 'P1' ? '#ef4444' :
+            item().Priority === 'P2' ? '#f97316' : '#22c55e';
+        const displayColor = () => accentColor() || priorityDefaultColor();
         return (
             <div 
                 class={`group relative glass rounded-xl p-4 transition-all duration-300 ${
                     swipingTask() === item().id ? 'scale-95' : ''
                 }`}
                 style={{
-                    "border": "1px solid var(--color-border)"
+                    "border": "1px solid var(--color-border)",
+                    "border-left": `3px solid ${displayColor()}`,
                 }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={(e) => handleTouchMove(e, item().id)}
@@ -449,11 +460,14 @@ function Todo() {
                                 item().Completed ? 'line-through' : ''
                             }`} style={{ "color": item().Completed ? "var(--color-text-muted)" : "var(--color-text)" }}>{item().Title}</h3>
                             <div class="flex items-center gap-2">
-                                <span class={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                                    item().Priority === 'P1' ? 'bg-red-500/15 text-red-400 border border-red-500/20' :
-                                    item().Priority === 'P2' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
-                                    'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                                }`}>
+                                <span
+                                    class="px-3 py-1 rounded-full text-xs font-medium transition-all duration-200"
+                                    style={{
+                                        "background-color": `${displayColor()}20`,
+                                        "color": displayColor(),
+                                        "border": `1px solid ${displayColor()}40`,
+                                    }}
+                                >
                                     {item().Priority}
                                 </span>
                                 <button
@@ -928,7 +942,8 @@ function Todo() {
                                     recurrenceEndDate(),
                                     subtasks(),
                                     taskDuration(),
-                                    recurrenceDays()
+                                    recurrenceDays(),
+                                    taskColor()
                                 );
                             } else {
                                 await createTask(
@@ -945,7 +960,8 @@ function Todo() {
                                     recurrenceEndDate(),
                                     subtasks(),
                                     taskDuration(),
-                                    recurrenceDays()
+                                    recurrenceDays(),
+                                    taskColor()
                                 );
                             }
                             resetForm();
@@ -1020,6 +1036,57 @@ function Todo() {
                                         { value: "P3", label: "P3 - Low Priority" },
                                     ]}
                                 />
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Color <span class="font-normal opacity-60">(optional override)</span></label>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    {[
+                                        { name: 'None', value: '' },
+                                        { name: 'Blue', value: '#3b82f6' },
+                                        { name: 'Purple', value: '#a855f7' },
+                                        { name: 'Pink', value: '#ec4899' },
+                                        { name: 'Red', value: '#ef4444' },
+                                        { name: 'Orange', value: '#f97316' },
+                                        { name: 'Yellow', value: '#eab308' },
+                                        { name: 'Green', value: '#22c55e' },
+                                        { name: 'Cyan', value: '#06b6d4' },
+                                    ].map(preset => (
+                                        <button
+                                            type="button"
+                                            title={preset.name}
+                                            onClick={() => setTaskColor(preset.value)}
+                                            class="w-7 h-7 rounded-full transition-all duration-200 flex items-center justify-center"
+                                            style={{
+                                                "background-color": preset.value || "var(--color-bg-tertiary)",
+                                                "border": taskColor() === preset.value
+                                                    ? `2px solid var(--color-text)`
+                                                    : `2px solid ${preset.value ? preset.value + '80' : 'var(--color-border)'}`,
+                                                "transform": taskColor() === preset.value ? "scale(1.2)" : "scale(1)",
+                                            }}
+                                        >
+                                            {!preset.value && <span style={{ "color": "var(--color-text-muted)", "font-size": "14px", "line-height": "1" }}>×</span>}
+                                        </button>
+                                    ))}
+                                    <input
+                                        type="text"
+                                        value={taskColor()}
+                                        onInput={(e) => {
+                                            const v = e.currentTarget.value;
+                                            if (v === '' || /^#[0-9a-fA-F]{0,6}$/.test(v)) {
+                                                setTaskColor(v);
+                                            }
+                                        }}
+                                        onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+                                        placeholder="#hex"
+                                        maxLength={7}
+                                        class="w-16 rounded-lg px-2 py-1 text-xs focus:outline-none transition-colors duration-200"
+                                        style={{
+                                            "background-color": "var(--color-bg-tertiary)",
+                                            "color": "var(--color-text)",
+                                            "border": `1px solid ${taskColor() && /^#[0-9a-fA-F]{6}$/.test(taskColor()) ? taskColor() : 'var(--color-border)'}`,
+                                        }}
+                                    />
+                                </div>
                             </div>
                             <div class="mb-4">
                                 <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Start / Due Date</label>

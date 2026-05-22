@@ -1478,43 +1478,11 @@ function Calendar() {
                         + New Event
                     </button>
                 </div>
-                <div class="flex gap-2">
-                    <button
-                        onClick={async () => { await fetchTodos(); await fetchEvents(); }}
-                        class="px-2.5 py-1.5 rounded-lg transition-all duration-200 text-sm flex items-center gap-1.5"
-                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
-                        title="Refresh tasks and events"
-                    >
-                        <RepeatIcon class="w-4 h-4" />
-                    </button>
-                    <div class="flex rounded-lg overflow-hidden" style={{ "border": "1px solid var(--color-border)" }}>
-                        <button
-                            onClick={() => { setViewMode('month'); history.replaceState(null, '', '/calendar'); }}
-                            class="px-3 py-1.5 text-sm flex items-center gap-1.5 transition-all duration-200"
-                            style={{
-                                "background-color": viewMode() === 'month' ? "var(--color-accent)" : "var(--color-bg-tertiary)",
-                                "color": viewMode() === 'month' ? "var(--color-accent-text)" : "var(--color-text-secondary)"
-                            }}
-                        >
-                            <CalendarMonthIcon class="w-4 h-4" /> Calendar
-                        </button>
-                        <button
-                            onClick={() => { setViewMode('week'); history.replaceState(null, '', '/schedule'); }}
-                            class="px-3 py-1.5 text-sm flex items-center gap-1.5 transition-all duration-200"
-                            style={{
-                                "background-color": viewMode() === 'week' ? "var(--color-accent)" : "var(--color-bg-tertiary)",
-                                "color": viewMode() === 'week' ? "var(--color-accent-text)" : "var(--color-text-secondary)"
-                            }}
-                        >
-                            <CalendarWeekIcon class="w-4 h-4" /> Schedule
-                        </button>
-                    </div>
-                </div>
             </div>
 
             {/* Calendar Header */}
             <div class="glass rounded-xl p-4 mb-4">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
                         <button
                             onClick={() => {
@@ -1854,13 +1822,15 @@ function Calendar() {
                                                         P1: '#ef4444', P2: '#f97316', P3: '#3b82f6', P4: '#6b7280'
                                                     };
                                                     const priorityColor = priorityColors[todo.Priority] || '#6b7280';
+                                                    const displayColor = todo.Color || priorityColor;
 
                                                     return (
                                                         <div
                                                             class="p-3 rounded-lg"
                                                             style={{
                                                                 'background-color': todo.Completed ? 'var(--color-bg)' : 'var(--color-surface)',
-                                                                'border': '1px solid var(--color-border)',
+                                                                'border': `1px solid var(--color-border)`,
+                                                                'border-left': `3px solid ${displayColor}`,
                                                                 'opacity': todo.Completed ? '0.65' : '1'
                                                             }}
                                                         >
@@ -1877,7 +1847,7 @@ function Calendar() {
                                                                         <span class={`text-sm font-medium ${todo.Completed ? 'line-through opacity-60' : ''}`} style={{ "color": "var(--color-text)" }}>
                                                                             {todo.Title}
                                                                         </span>
-                                                                        <span class="text-[10px] font-bold px-1 py-0.5 rounded" style={{ "background-color": `${priorityColor}20`, "color": priorityColor }}>
+                                                                        <span class="text-[10px] font-bold px-1 py-0.5 rounded" style={{ "background-color": `${displayColor}20`, "color": displayColor }}>
                                                                             {todo.Priority}
                                                                         </span>
                                                                         <Show when={todo.Recurrence && todo.Recurrence !== 'none'}>
@@ -2302,6 +2272,7 @@ function Calendar() {
                                                             const hasDuration = task.Duration && task.Duration > 0;
                                                             const height = hasDuration ? Math.max(30, (task.Duration / 60) * 60) : 30;
                                                             const priorityColor = task.Priority === 'P1' ? '#ef4444' : task.Priority === 'P2' ? '#f97316' : '#22c55e';
+                                                            const displayColor = task.Color || priorityColor;
                                                             const isDraggable = hasDuration && !task.Completed;
                                                             
                                                             // Calculate end time for display
@@ -2311,8 +2282,8 @@ function Calendar() {
                                                                 <div
                                                                     class={`absolute left-0 right-0 mx-1 text-xs px-2 py-1 rounded overflow-hidden z-10 ${isDraggable ? 'cursor-grab' : 'cursor-pointer'} hover:opacity-80 transition-all duration-200 ${hasDuration ? '' : 'border-l-2'}`}
                                                                     style={{ 
-                                                                        'background-color': hasDuration ? priorityColor : (task.Priority === 'P1' ? '#ef444420' : task.Priority === 'P2' ? '#f9731620' : '#22c55e20'),
-                                                                        'border-left-color': hasDuration ? undefined : priorityColor,
+                                                                        'background-color': hasDuration ? displayColor : `${displayColor}20`,
+                                                                        'border-left-color': hasDuration ? undefined : displayColor,
                                                                         'top': `${topOffset}px`,
                                                                         'height': `${height}px`,
                                                                         'opacity': isDraggingEvent() && draggingEvent()?.id === task.id ? 0.3 : (task.Completed ? 0.5 : 0.9),
@@ -2994,7 +2965,11 @@ function Calendar() {
                                         const hasTime = deadline.getHours() !== 0 || deadline.getMinutes() !== 0;
                                         
                                         return (
-                                            <div class="rounded-xl p-4 transition-all duration-200" style={{ "background-color": "var(--color-bg-secondary)", "border": "1px solid var(--color-border)" }}>
+                                            <div class="rounded-xl p-4 transition-all duration-200" style={{
+                                                "background-color": "var(--color-bg-secondary)",
+                                                "border": "1px solid var(--color-border)",
+                                                "border-left": `3px solid ${task.Color || (task.Priority === 'P1' ? '#ef4444' : task.Priority === 'P2' ? '#f97316' : '#22c55e')}`
+                                            }}>
                                                 <div class="flex items-start gap-3">
                                                     <input
                                                         type="checkbox"
@@ -3007,12 +2982,11 @@ function Calendar() {
                                                             <h3 class={`text-base font-semibold transition-all duration-200 ${task.Completed ? 'line-through' : ''}`} style={{ "color": task.Completed ? "var(--color-text-muted)" : "var(--color-text)" }}>
                                                                 {task.Title}
                                                             </h3>
-                                                            <div class="flex items-center gap-2">
-                                                                <span class={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                                    task.Priority === 'P1' ? 'bg-red-500/15 text-red-400 border border-red-500/20' :
-                                                                    task.Priority === 'P2' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
-                                                                    'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                                                                }`}>
+                                                            {(() => {
+                                                                const c = task.Color || (task.Priority === 'P1' ? '#ef4444' : task.Priority === 'P2' ? '#f97316' : '#22c55e');
+                                                                return (
+                                                                <div class="flex items-center gap-2">
+                                                                <span class="px-2 py-1 rounded-full text-xs font-medium" style={{ "background-color": `${c}20`, "color": c, "border": `1px solid ${c}40` }}>
                                                                     {task.Priority}
                                                                 </span>
                                                                 <button
@@ -3032,6 +3006,8 @@ function Calendar() {
                                                                     <TrashIcon />
                                                                 </button>
                                                             </div>
+                                                                );
+                                                            })()}
                                                         </div>
                                                         <Show when={task.Description}>
                                                             <p class={`text-sm mt-1 ${task.Completed ? 'line-through' : ''}`} style={{ "color": task.Completed ? "var(--color-text-muted)" : "var(--color-text-secondary)", "white-space": "pre-wrap" }}>
