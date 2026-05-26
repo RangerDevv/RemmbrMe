@@ -137,17 +137,45 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Force software rendering so the WebView isn't blank on systems
-          # without a compatible GPU compositor or DMA-BUF support.
-          WEBKIT_DISABLE_DMABUF_RENDERER: '1'
-          WEBKIT_DISABLE_COMPOSITING_MODE: '1'
         with:
+          # Build only – do not upload; we patch AppRun first, then upload below.
           args: '--bundles appimage'
-          tagName: ${{ github.event.inputs.version || 'v1.0.0' }}
-          releaseName: "RemmbrMe ${{ github.event.inputs.version || 'v1.0.0' }}"
-          releaseBody: 'See the assets below to download the app for your platform.'
-          releaseDraft: false
-          prerelease: false
+
+      - name: Patch AppImage – embed EGL software-rendering workaround
+        # The WEBKIT_DISABLE_* vars must be exported at *runtime* inside the
+        # AppImage, not just during the CI build.  We extract the AppImage,
+        # inject the exports into AppRun, then repack.
+        run: |
+          APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -1)
+          echo "Patching: $APPIMAGE"
+
+          cd /tmp
+
+          # Extract without FUSE (produces squashfs-root/)
+          cp "$APPIMAGE" app.AppImage
+          chmod +x app.AppImage
+          ./app.AppImage --appimage-extract
+
+          # Insert env-var exports right after the shebang line
+          sed -i '1 a export WEBKIT_DISABLE_COMPOSITING_MODE=1' squashfs-root/AppRun
+          sed -i '2 a export WEBKIT_DISABLE_DMABUF_RENDERER=1'  squashfs-root/AppRun
+
+          # Repack with appimagetool (--appimage-extract-and-run avoids needing FUSE)
+          wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" \
+               -O appimagetool
+          chmod +x appimagetool
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run squashfs-root "$APPIMAGE"
+
+          # Also regenerate the .tar.gz that tauri-action normally produces
+          tar czf "${APPIMAGE}.tar.gz" -C "$(dirname "$APPIMAGE")" "$(basename "$APPIMAGE")"
+
+      - name: Upload AppImage to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -1)
+          gh release upload "${{ github.event.inputs.version || 'v1.0.0' }}" \
+            "$APPIMAGE" "${APPIMAGE}.tar.gz" --clobber
 
   # ── Arch Linux tarball (native pacman + cargo, no AppImage tooling needed) ──
   build-arch:
