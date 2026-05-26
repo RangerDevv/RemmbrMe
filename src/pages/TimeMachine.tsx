@@ -382,9 +382,25 @@ function TimeMachine() {
                 </div>
             </div>
 
+            {/* Note Drawer */}
             <Show when={showNoteModal()}>
-                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => setShowNoteModal(false)}>
-                    <div class="glass-modal rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-md max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div class="fixed inset-0 z-40" style={{ "background": "rgba(0,0,0,0.4)" }} onClick={() => setShowNoteModal(false)} />
+            </Show>
+            <div
+                class="fixed top-[32px] right-0 h-[calc(100vh-32px)] z-50 flex flex-col"
+                style={{
+                    "width": "min(480px, 100vw)",
+                    "background": "var(--color-bg-secondary)",
+                    "border-left": "1px solid var(--color-border)",
+                    "box-shadow": "-4px 0 24px rgba(0,0,0,0.3)",
+                    "opacity": showNoteModal() ? "1" : "0",
+                    "transform": showNoteModal() ? "translate3d(0, 0, 0)" : "translate3d(16px, 0, 0)",
+                    "transition": "opacity 0.2s ease-out, transform 0.2s ease-out",
+                    "pointer-events": showNoteModal() ? "auto" : "none",
+                }}
+            >
+                <div style={{ "overflow-y": "auto", "height": "100%" }}>
+                    <div class="p-5 lg:p-6">
                         <div class="flex items-center justify-between mb-5">
                             <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>Message to Future Self</h2>
                             <button
@@ -429,7 +445,7 @@ function TimeMachine() {
                         </form>
                     </div>
                 </div>
-            </Show>
+            </div>
 
             {/* Delete Confirmation Modal */}
             <Show when={deleteConfirm().show}>

@@ -193,6 +193,9 @@ function Todo() {
     const [newSubtaskTitle, setNewSubtaskTitle] = createSignal('');
     const [taskDuration, setTaskDuration] = createSignal(0);
     const [taskColor, setTaskColor] = createSignal('');
+    const [schedulingTask, setSchedulingTask] = createSignal<any>(null);
+    const [scheduleDate, setScheduleDate] = createSignal('');
+    const [scheduleTime, setScheduleTime] = createSignal('');
 
     const [todoItems, setTodoItems] = createSignal([] as any[]);
     const [allTags, setAllTags] = createSignal([] as any[]);
@@ -210,6 +213,19 @@ function Todo() {
     let isFetchingTodos = false;
     let needsRefetch = false;
     
+    async function scheduleTaskToCalendar() {
+        const task = schedulingTask();
+        if (!task || !scheduleDate()) return;
+        const timeStr = scheduleTime() || '00:00';
+        const deadline = new Date(`${scheduleDate()}T${timeStr}`).toISOString();
+        await bk.collection('Todo').update(task.id, { Deadline: deadline });
+        fetchTodos();
+        window.dispatchEvent(new Event('dataChanged'));
+        setSchedulingTask(null);
+        setScheduleDate('');
+        setScheduleTime('');
+    }
+
     async function fetchTodos() {
         if (isFetchingTodos) { needsRefetch = true; return; }
         isFetchingTodos = true;
@@ -470,6 +486,26 @@ function Todo() {
                                 >
                                     {item().Priority}
                                 </span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSchedulingTask(item());
+                                        if (item().Deadline) {
+                                            const d = new Date(item().Deadline);
+                                            setScheduleDate(d.toLocaleString('sv-SE').split(' ')[0]);
+                                            setScheduleTime(d.toTimeString().slice(0, 5));
+                                        } else {
+                                            setScheduleDate('');
+                                            setScheduleTime('');
+                                        }
+                                    }}
+                                    class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80"
+                                    style={{ "background": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
+                                    title="Schedule on calendar"
+                                >
+                                    <CalendarIcon class="w-3 h-3" />
+                                    Schedule
+                                </button>
                                 <button
                                     onClick={() => startFocus(item().id, item().Title, item().Duration || 25, 'task')}
                                     class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80"
@@ -893,21 +929,25 @@ function Todo() {
                 </div>
             </Show>
 
-            {/* Create/Edit Modal */}
+            {/* Create/Edit Drawer */}
             <Show when={showModal()}>
+                <div class="fixed inset-0 z-40" style={{ "background": "rgba(0,0,0,0.4)" }} onClick={() => { setShowModal(false); setEditingTask(null); resetForm(); }} />
+            </Show>
             <div
-                class="fixed inset-0 glass-overlay z-50 flex items-end lg:items-center justify-center"
-                onClick={() => {
-                    setShowModal(false);
-                    setEditingTask(null);
-                    resetForm();
+                class="fixed top-[32px] right-0 h-[calc(100vh-32px)] z-[45] flex flex-col"
+                style={{
+                    "width": "min(520px, 100vw)",
+                    "background": "var(--color-bg-secondary)",
+                    "border-left": "1px solid var(--color-border)",
+                    "box-shadow": "-4px 0 24px rgba(0,0,0,0.3)",
+                    "opacity": showModal() ? "1" : "0",
+                    "transform": showModal() ? "translate3d(0, 0, 0)" : "translate3d(16px, 0, 0)",
+                    "transition": "opacity 0.2s ease-out, transform 0.2s ease-out",
+                    "pointer-events": showModal() ? "auto" : "none",
                 }}
             >
-                <div
-                    class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
+                <div style={{ "overflow-y": "auto", "height": "100%" }}>
+                    <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)" }}>
                         <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>{editingTask() ? 'Edit Task' : 'New Task'}</h2>
                         <button
                             onClick={() => {
@@ -1271,7 +1311,113 @@ function Todo() {
                     </div>
                 </div>
             </div>
+
+        {/* Schedule drawer backdrop */}
+        <Show when={schedulingTask()}>
+            <div
+                class="fixed inset-0 z-40"
+                style={{ "background": "rgba(0,0,0,0.4)" }}
+                onClick={() => { setSchedulingTask(null); setScheduleDate(''); setScheduleTime(''); }}
+            />
         </Show>
+
+        {/* Schedule drawer */}
+        <div
+            class="fixed top-[32px] right-0 h-[calc(100vh-32px)] z-50 flex flex-col"
+            style={{
+                "width": "min(360px, 100vw)",
+                "background": "var(--color-bg-secondary)",
+                "border-left": "1px solid var(--color-border)",
+                "box-shadow": "-4px 0 24px rgba(0,0,0,0.3)",
+                "opacity": schedulingTask() ? "1" : "0",
+                "transform": schedulingTask() ? "translate3d(0, 0, 0)" : "translate3d(16px, 0, 0)",
+                "transition": "opacity 0.2s ease-out, transform 0.2s ease-out",
+                "pointer-events": schedulingTask() ? "auto" : "none",
+            }}
+        >
+            <div class="flex items-center justify-between p-5 shrink-0" style={{ "border-bottom": "1px solid var(--color-border)" }}>
+                <h3 class="text-base font-bold" style={{ "color": "var(--color-text)" }}>Schedule Task</h3>
+                <button
+                    onClick={() => { setSchedulingTask(null); setScheduleDate(''); setScheduleTime(''); }}
+                    class="text-xl w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                    style={{ "color": "var(--color-text-muted)" }}
+                >×</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5">
+                <p class="text-sm font-semibold mb-5 truncate" style={{ "color": "var(--color-text)" }}>{schedulingTask()?.Title}</p>
+                <div class="grid grid-cols-2 gap-2 mb-5">
+                    {[{ label: 'Today', days: 0 }, { label: 'Tomorrow', days: 1 }, { label: 'In 2 Days', days: 2 }, { label: 'Next Week', days: 7 }].map(opt => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + opt.days);
+                        const val = d.toLocaleString('sv-SE').split(' ')[0];
+                        return (
+                            <button
+                                type="button"
+                                onClick={() => setScheduleDate(val)}
+                                class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                                style={{
+                                    "background-color": scheduleDate() === val ? "var(--color-accent)" : "var(--color-bg-tertiary)",
+                                    "color": scheduleDate() === val ? "var(--color-accent-text)" : "var(--color-text-secondary)",
+                                    "border": "1px solid var(--color-border)",
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        );
+                    })}
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Date</label>
+                    <input
+                        type="date"
+                        value={scheduleDate()}
+                        onInput={(e) => setScheduleDate(e.currentTarget.value)}
+                        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                    />
+                </div>
+                <div class="mb-6">
+                    <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Time (optional)</label>
+                    <input
+                        type="time"
+                        value={scheduleTime()}
+                        onInput={(e) => setScheduleTime(e.currentTarget.value)}
+                        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                    />
+                </div>
+            </div>
+            <div class="flex gap-2 p-5 shrink-0" style={{ "border-top": "1px solid var(--color-border)" }}>
+                <Show when={schedulingTask()?.Deadline}>
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            const task = schedulingTask();
+                            if (!task) return;
+                            await bk.collection('Todo').update(task.id, { Deadline: undefined });
+                            fetchTodos();
+                            window.dispatchEvent(new Event('dataChanged'));
+                            setSchedulingTask(null);
+                            setScheduleDate('');
+                            setScheduleTime('');
+                        }}
+                        class="px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+                        style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text-secondary)", "border": "1px solid var(--color-border)" }}
+                    >
+                        Clear Date
+                    </button>
+                </Show>
+                <button
+                    type="button"
+                    disabled={!scheduleDate()}
+                    onClick={scheduleTaskToCalendar}
+                    class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200"
+                    style={{ "background-color": scheduleDate() ? "var(--color-accent)" : "var(--color-bg-tertiary)", "color": scheduleDate() ? "var(--color-accent-text)" : "var(--color-text-muted)" }}
+                >
+                    Schedule
+                </button>
+            </div>
+        </div>
 
         <ConfirmModal
             show={confirmDelete().show}

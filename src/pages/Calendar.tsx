@@ -1563,9 +1563,9 @@ function Calendar() {
             </Show>
             <Show when={!isLoading()}>
             <Show when={viewMode() === 'month'}>
-                <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 overflow-x-auto">
+                <div class="overflow-x-auto">
                     {/* Month Grid */}
-                    <div class="flex-1 min-w-0">
+                    <div class="min-w-0">
                         <div class="glass rounded-xl overflow-hidden">
                             {/* Day headers */}
                             <div class="grid grid-cols-7" style={{ "border-bottom": "1px solid var(--color-border)", "background-color": "var(--color-bg-tertiary)" }}>
@@ -1680,272 +1680,6 @@ function Calendar() {
                             </div>
                         </div>
                     </div>
-
-                    {/* Sidebar for selected date */}
-                    <Show when={selectedDate()}>
-                        <div class="glass w-full lg:w-80 rounded-xl p-4 lg:p-5 h-fit lg:sticky lg:top-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>
-                                    {selectedDate()!.toLocaleDateString('en-US', { 
-                                        weekday: 'short', 
-                                        month: 'short', 
-                                        day: 'numeric' 
-                                    })}
-                                </h3>
-                                <button
-                                    onClick={() => setSelectedDate(null)}
-                                    class="transition-colors duration-200"
-                                    style={{ "color": "var(--color-text-muted)" }}
-                                >
-                                    <XIcon class="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div class="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-
-                                {/* ── Events ── */}
-                                <For each={getEventsWithBreaks(selectedDate()!)}>
-                                    {(event) => {
-                                        const linkedTasks: any[] = event.expand?.Tasks || [];
-                                        const totalTasks = linkedTasks.length;
-                                        const completedTasks = linkedTasks.filter((t: any) => t.Completed).length;
-                                        const allTasksCompleted = totalTasks > 0 && completedTasks === totalTasks;
-                                        const isBreak = event.isBreak || false;
-                                        const eventTags: any[] = event.expand?.Tags || [];
-                                        
-                                        return (
-                                        <div
-                                            class={`p-3 rounded-lg transition-all duration-200 ${isBreak ? 'border-dashed' : 'cursor-pointer'}`}
-                                            style={{ 
-                                                'background-color': isBreak ? 'transparent' : `${event.Color}15`, 
-                                                'border': isBreak ? '1px dashed var(--color-border)' : `1px solid ${event.Color}40`,
-                                                opacity: isBreak ? 0.6 : (allTasksCompleted ? 0.7 : 1) 
-                                            }}
-                                            onClick={() => {
-                                                if (isBreak) return;
-                                                if (event.isRecurringInstance) {
-                                                    setRecurrenceChoice({ show: true, event, action: 'edit', payload: null });
-                                                } else {
-                                                    openEventModal(event.id);
-                                                }
-                                            }}
-                                        >
-                                            <div class="flex items-start gap-2">
-                                                <div 
-                                                    class="w-3 h-3 rounded-full mt-1 flex-shrink-0"
-                                                    style={{ 'background-color': isBreak ? '#404040' : event.Color }}
-                                                ></div>
-                                                <div class="flex-1 min-w-0">
-                                                    {/* Title */}
-                                                    <h4 class={`font-semibold text-sm ${isBreak ? 'italic' : ''} ${allTasksCompleted && !isBreak ? 'line-through' : ''}`} style={{ "color": isBreak ? "var(--color-text-muted)" : "var(--color-text)" }}>
-                                                        {allTasksCompleted && !isBreak ? '✓ ' : ''}{event.EventName}
-                                                        <Show when={event.Recurrence && event.Recurrence !== 'none'}>
-                                                            <span class="ml-1 text-[10px] opacity-60">↻</span>
-                                                        </Show>
-                                                    </h4>
-
-                                                    {/* Time */}
-                                                    <Show when={!event.AllDay}>
-                                                        <p class="text-xs mt-0.5" style={{ "color": "var(--color-text-muted)" }}>
-                                                            {formatTime(new Date(event.Start))} – {formatTime(new Date(event.End))}
-                                                        </p>
-                                                    </Show>
-                                                    <Show when={event.AllDay && !isBreak}>
-                                                        <p class="text-xs mt-0.5" style={{ "color": "var(--color-text-muted)" }}>All day</p>
-                                                    </Show>
-
-                                                    {/* Description */}
-                                                    <Show when={!isBreak && event.Description}>
-                                                        <p class="text-xs mt-1.5 leading-relaxed" style={{ "color": "var(--color-text-secondary)" }}>
-                                                            {event.Description}
-                                                        </p>
-                                                    </Show>
-
-                                                    {/* Tags */}
-                                                    <Show when={eventTags.length > 0}>
-                                                        <div class="flex flex-wrap gap-1 mt-1.5">
-                                                            <For each={eventTags}>
-                                                                {(tag: any) => (
-                                                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ "background-color": `${tag.Color || '#3b82f6'}25`, "color": tag.Color || '#3b82f6', "border": `1px solid ${tag.Color || '#3b82f6'}50` }}>
-                                                                        {tag.Name}
-                                                                    </span>
-                                                                )}
-                                                            </For>
-                                                        </div>
-                                                    </Show>
-
-                                                    {/* Linked tasks — interactive checkboxes */}
-                                                    <Show when={totalTasks > 0}>
-                                                        <div class="mt-2 space-y-1 border-t pt-2" style={{ "border-color": "var(--color-border)" }}>
-                                                            <p class="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ "color": "var(--color-text-muted)" }}>
-                                                                Tasks ({completedTasks}/{totalTasks})
-                                                            </p>
-                                                            <For each={linkedTasks}>
-                                                                {(task: any) => (
-                                                                    <label
-                                                                        class="flex items-center gap-2 text-xs cursor-pointer group"
-                                                                        onClick={(e) => e.stopPropagation()}
-                                                                    >
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={task.Completed}
-                                                                            onChange={() => toggleTaskCompletion(task.id, task.Completed)}
-                                                                            class="w-3 h-3 rounded flex-shrink-0"
-                                                                        />
-                                                                        <span class={task.Completed ? 'line-through opacity-50' : 'group-hover:opacity-80'} style={{ "color": task.Completed ? "var(--color-text-muted)" : "var(--color-text-secondary)" }}>
-                                                                            {task.Title}
-                                                                        </span>
-                                                                    </label>
-                                                                )}
-                                                            </For>
-                                                        </div>
-                                                    </Show>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        );
-                                    }}
-                                </For>
-
-                                {/* ── Todo items due this day ── */}
-                                <Show when={getTasksForDate(selectedDate()!).length > 0}>
-                                    <div class="mt-3">
-                                        <p class="text-[11px] font-semibold uppercase tracking-wide mb-2 px-1" style={{ "color": "var(--color-text-muted)" }}>
-                                            Todos due
-                                        </p>
-                                        <div class="space-y-2">
-                                            <For each={getTasksForDate(selectedDate()!)}>
-                                                {(todo: any) => {
-                                                    const subtasks: any[] = todo.Subtasks || [];
-                                                    const completedSubs = subtasks.filter((s: any) => s.completed).length;
-                                                    const todoTags: any[] = todo.expand?.Tags || [];
-                                                    const priorityColors: Record<string, string> = {
-                                                        P1: '#ef4444', P2: '#f97316', P3: '#3b82f6', P4: '#6b7280'
-                                                    };
-                                                    const priorityColor = priorityColors[todo.Priority] || '#6b7280';
-                                                    const displayColor = todo.Color || priorityColor;
-
-                                                    return (
-                                                        <div
-                                                            class="p-3 rounded-lg"
-                                                            style={{
-                                                                'background-color': todo.Completed ? 'var(--color-bg)' : 'var(--color-surface)',
-                                                                'border': `1px solid var(--color-border)`,
-                                                                'border-left': `3px solid ${displayColor}`,
-                                                                'opacity': todo.Completed ? '0.65' : '1'
-                                                            }}
-                                                        >
-                                                            {/* Header row: checkbox + title + priority */}
-                                                            <div class="flex items-start gap-2">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={todo.Completed}
-                                                                    onChange={() => toggleTodoCompletion(todo.id, todo.Completed)}
-                                                                    class="w-4 h-4 rounded mt-0.5 flex-shrink-0 cursor-pointer"
-                                                                />
-                                                                <div class="flex-1 min-w-0">
-                                                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                                                        <span class={`text-sm font-medium ${todo.Completed ? 'line-through opacity-60' : ''}`} style={{ "color": "var(--color-text)" }}>
-                                                                            {todo.Title}
-                                                                        </span>
-                                                                        <span class="text-[10px] font-bold px-1 py-0.5 rounded" style={{ "background-color": `${displayColor}20`, "color": displayColor }}>
-                                                                            {todo.Priority}
-                                                                        </span>
-                                                                        <Show when={todo.Recurrence && todo.Recurrence !== 'none'}>
-                                                                            <span class="text-[10px] opacity-60">↻</span>
-                                                                        </Show>
-                                                                    </div>
-
-                                                                    {/* Deadline time (if set) */}
-                                                                    <Show when={todo.Deadline}>
-                                                                        <p class="text-[11px] mt-0.5" style={{ "color": "var(--color-text-muted)" }}>
-                                                                            Due {formatTime(new Date(todo.Deadline))}
-                                                                            <Show when={todo.Duration && todo.Duration > 0}>
-                                                                                <span> · {todo.Duration} min</span>
-                                                                            </Show>
-                                                                        </p>
-                                                                    </Show>
-
-                                                                    {/* Description */}
-                                                                    <Show when={todo.Description}>
-                                                                        <p class="text-xs mt-1.5 leading-relaxed" style={{ "color": "var(--color-text-secondary)" }}>
-                                                                            {todo.Description}
-                                                                        </p>
-                                                                    </Show>
-
-                                                                    {/* Tags */}
-                                                                    <Show when={todoTags.length > 0}>
-                                                                        <div class="flex flex-wrap gap-1 mt-1.5">
-                                                                            <For each={todoTags}>
-                                                                                {(tag: any) => (
-                                                                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ "background-color": `${tag.Color || '#3b82f6'}25`, "color": tag.Color || '#3b82f6', "border": `1px solid ${tag.Color || '#3b82f6'}50` }}>
-                                                                                        {tag.Name}
-                                                                                    </span>
-                                                                                )}
-                                                                            </For>
-                                                                        </div>
-                                                                    </Show>
-
-                                                                    {/* URL */}
-                                                                    <Show when={todo.Url}>
-                                                                        <a
-                                                                            href={todo.Url}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            class="text-[11px] mt-1 block truncate hover:underline"
-                                                                            style={{ "color": "var(--color-accent)" }}
-                                                                            onClick={(e) => e.stopPropagation()}
-                                                                        >
-                                                                            🔗 {todo.Url}
-                                                                        </a>
-                                                                    </Show>
-
-                                                                    {/* Subtasks */}
-                                                                    <Show when={subtasks.length > 0}>
-                                                                        <div class="mt-2 border-t pt-2" style={{ "border-color": "var(--color-border)" }}>
-                                                                            <p class="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ "color": "var(--color-text-muted)" }}>
-                                                                                Subtasks ({completedSubs}/{subtasks.length})
-                                                                            </p>
-                                                                            {/* Progress bar */}
-                                                                            <Show when={subtasks.length > 0}>
-                                                                                <div class="w-full h-1 rounded-full mb-2 overflow-hidden" style={{ "background-color": "var(--color-border)" }}>
-                                                                                    <div class="h-full rounded-full transition-all duration-300" style={{ "width": `${(completedSubs / subtasks.length) * 100}%`, "background-color": completedSubs === subtasks.length ? "var(--color-success, #22c55e)" : "var(--color-accent)" }}></div>
-                                                                                </div>
-                                                                            </Show>
-                                                                            <div class="space-y-1">
-                                                                                <For each={subtasks}>
-                                                                                    {(sub: any, idx) => (
-                                                                                        <label class="flex items-center gap-2 text-xs cursor-pointer group">
-                                                                                            <input
-                                                                                                type="checkbox"
-                                                                                                checked={sub.completed}
-                                                                                                onChange={() => toggleTodoSubtask(todo.id, subtasks, idx())}
-                                                                                                class="w-3 h-3 rounded flex-shrink-0"
-                                                                                            />
-                                                                                            <span class={sub.completed ? 'line-through opacity-50' : 'group-hover:opacity-80'} style={{ "color": sub.completed ? "var(--color-text-muted)" : "var(--color-text-secondary)" }}>
-                                                                                                {sub.title}
-                                                                                            </span>
-                                                                                        </label>
-                                                                                    )}
-                                                                                </For>
-                                                                            </div>
-                                                                        </div>
-                                                                    </Show>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }}
-                                            </For>
-                                        </div>
-                                    </div>
-                                </Show>
-
-                                <Show when={getEventsWithBreaks(selectedDate()!).length === 0 && getTasksForDate(selectedDate()!).length === 0}>
-                                    <p class="text-center py-8" style={{ "color": "var(--color-text-muted)" }}>No events for this day</p>
-                                </Show>
-                            </div>
-                        </div>
-                    </Show>
                 </div>
             </Show>
 
@@ -2379,10 +2113,24 @@ function Calendar() {
                 })()}
             </Show>
 
-            {/* Event Detail/Edit Modal */}
+            {/* Event Detail/Edit Drawer */}
             <Show when={quickViewEvent()}>
-                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => { setQuickViewEvent(null); resetForm(); }}>
-                    <div class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div class="fixed inset-0 z-40" style={{ "background": "rgba(0,0,0,0.4)" }} onClick={() => { setQuickViewEvent(null); resetForm(); }} />
+            </Show>
+            <div
+                class="fixed top-[32px] right-0 h-[calc(100vh-32px)] z-50 flex flex-col"
+                style={{
+                    "width": "min(520px, 100vw)",
+                    "background": "var(--color-bg-secondary)",
+                    "border-left": "1px solid var(--color-border)",
+                    "box-shadow": "-4px 0 24px rgba(0,0,0,0.3)",
+                    "opacity": quickViewEvent() ? "1" : "0",
+                    "transform": quickViewEvent() ? "translate3d(0, 0, 0)" : "translate3d(16px, 0, 0)",
+                    "transition": "opacity 0.2s ease-out, transform 0.2s ease-out",
+                    "pointer-events": quickViewEvent() ? "auto" : "none",
+                }}
+            >
+                <div style={{ "overflow-y": "auto", "height": "100%" }}>
                         <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
                             <div class="flex items-center gap-3">
                                 <div 
@@ -2490,11 +2238,11 @@ function Calendar() {
                                 </div>
                             </div>
 
-                            <Show when={quickViewEvent()!.expand?.Tasks?.length > 0}>
+                            <Show when={(quickViewEvent()?.expand?.Tasks?.length ?? 0) > 0}>
                                 <div class="mb-4 pt-4" style={{ "border-top": "1px solid var(--color-border)" }}>
                                     <h4 class="text-sm font-semibold mb-3" style={{ "color": "var(--color-text-secondary)" }}>Tasks</h4>
                                     <div class="space-y-2">
-                                        <For each={quickViewEvent()!.expand.Tasks}>
+                                        <For each={quickViewEvent()?.expand?.Tasks ?? []}>
                                             {(task: any) => (
                                                 <label class="flex items-center gap-3 p-2 rounded-lg transition-colors duration-200 cursor-pointer" style={{ "background-color": "transparent" }}>
                                                     <input
@@ -2665,15 +2413,28 @@ function Calendar() {
                             </div>
                         </form>
                         </div>
-                    </div>
                 </div>
-            </Show>
+            </div>
 
-            {/* Event Creation Modal */}
-            <Show when={showEventModal()}>
-                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => setShowEventModal(false)}>
-                    <div class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
+            {/* Event Creation Drawer */}
+            <Show when={showEventModal() && !quickViewEvent()}>
+                <div class="fixed inset-0 z-40" style={{ "background": "rgba(0,0,0,0.4)" }} onClick={() => setShowEventModal(false)} />
+            </Show>
+            <div
+                class="fixed top-[32px] right-0 h-[calc(100vh-32px)] z-[45] flex flex-col"
+                style={{
+                    "width": "min(520px, 100vw)",
+                    "background": "var(--color-bg-secondary)",
+                    "border-left": "1px solid var(--color-border)",
+                    "box-shadow": "-4px 0 24px rgba(0,0,0,0.3)",
+                    "opacity": showEventModal() ? "1" : "0",
+                    "transform": showEventModal() ? "translate3d(0, 0, 0)" : "translate3d(16px, 0, 0)",
+                    "transition": "opacity 0.2s ease-out, transform 0.2s ease-out",
+                    "pointer-events": showEventModal() ? "auto" : "none",
+                }}
+            >
+                <div style={{ "overflow-y": "auto", "height": "100%" }}>
+                        <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)" }}>
                             <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>Create Event</h2>
                             <button
                                 onClick={() => {
@@ -2916,42 +2677,36 @@ function Calendar() {
                         </form>
                         </div>
                     </div>
-                </div>
-            </Show>
+            </div>
 
-            {/* Tasks Modal */}
+            {/* Tasks Drawer */}
             <Show when={showTasksModal() && selectedDateTasks()}>
-                <div
-                    class="fixed inset-0 glass-overlay z-50 flex items-end lg:items-center justify-center"
-                    onClick={() => {
-                        setShowTasksModal(false);
-                        setSelectedDateTasks(null);
-                    }}
-                >
-                    <div
-                        class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] overflow-hidden"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
-                            <h2 class="text-base lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>
-                                Tasks Due: {selectedDateTasks()!.toLocaleDateString('en-US', { 
-                                    month: 'short', 
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                })}
-                            </h2>
-                            <button
-                                onClick={() => {
-                                    setShowTasksModal(false);
-                                    setSelectedDateTasks(null);
-                                }}
-                                class="transition-colors duration-200 text-2xl w-8 h-8 flex items-center justify-center"
-                                style={{ "color": "var(--color-text-muted)" }}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        <div class="p-5 overflow-y-auto max-h-[calc(80vh-100px)]">
+                <div class="fixed inset-0 z-40" style={{ "background": "rgba(0,0,0,0.4)" }} onClick={() => { setShowTasksModal(false); setSelectedDateTasks(null); }} />
+            </Show>
+            <div
+                class="fixed top-[32px] right-0 h-[calc(100vh-32px)] z-[45] flex flex-col"
+                style={{
+                    "width": "min(520px, 100vw)",
+                    "background": "var(--color-bg-secondary)",
+                    "border-left": "1px solid var(--color-border)",
+                    "box-shadow": "-4px 0 24px rgba(0,0,0,0.3)",
+                    "opacity": (showTasksModal() && selectedDateTasks()) ? "1" : "0",
+                    "transform": (showTasksModal() && selectedDateTasks()) ? "translate3d(0, 0, 0)" : "translate3d(16px, 0, 0)",
+                    "transition": "opacity 0.2s ease-out, transform 0.2s ease-out",
+                    "pointer-events": (showTasksModal() && selectedDateTasks()) ? "auto" : "none",
+                }}
+            >
+                <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between shrink-0" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)" }}>
+                    <h2 class="text-base lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>
+                        Tasks Due: {selectedDateTasks() ? selectedDateTasks()!.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                    </h2>
+                    <button
+                        onClick={() => { setShowTasksModal(false); setSelectedDateTasks(null); }}
+                        class="transition-colors duration-200 text-2xl w-8 h-8 flex items-center justify-center"
+                        style={{ "color": "var(--color-text-muted)" }}
+                    >×</button>
+                </div>
+                <div class="p-5 overflow-y-auto flex-1">
                             <Show when={getTasksForDate(selectedDateTasks()!).length === 0}>
                                 <div class="text-center py-8" style={{ "color": "var(--color-text-muted)" }}>
                                     No tasks due on this date
@@ -3051,11 +2806,9 @@ function Calendar() {
                                 </For>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </Show>
+            </div>
 
-            {/* Recurrence Edit Choice Dialog */}
+            {/* Recurrence Edit Choice Dialog — stays as centred dialog (small choice) */}
             <Show when={recurrenceChoice().show}>
                 <div class="fixed inset-0 glass-overlay flex items-center justify-center z-[60]" onClick={() => setRecurrenceChoice({ show: false, event: null, action: 'edit' })}>
                     <div class="glass-modal rounded-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
@@ -3149,11 +2902,25 @@ function Calendar() {
                 </div>
             </Show>
 
-            {/* Todo creation/edit modal */}
+            {/* Todo creation/edit Drawer */}
             <Show when={showTodoModal()}>
-                <div class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50" onClick={() => { resetTodoForm(); setShowTodoModal(false); }}>
-                    <div class="glass-modal rounded-t-2xl lg:rounded-xl w-full lg:max-w-2xl max-h-[85vh] lg:max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)", "backdrop-filter": "blur(20px)" }}>
+                <div class="fixed inset-0 z-50" style={{ "background": "rgba(0,0,0,0.4)" }} onClick={() => { resetTodoForm(); setShowTodoModal(false); }} />
+            </Show>
+            <div
+                class="fixed top-[32px] right-0 h-[calc(100vh-32px)] z-[55] flex flex-col"
+                style={{
+                    "width": "min(520px, 100vw)",
+                    "background": "var(--color-bg-secondary)",
+                    "border-left": "1px solid var(--color-border)",
+                    "box-shadow": "-4px 0 24px rgba(0,0,0,0.3)",
+                    "opacity": showTodoModal() ? "1" : "0",
+                    "transform": showTodoModal() ? "translate3d(0, 0, 0)" : "translate3d(16px, 0, 0)",
+                    "transition": "opacity 0.2s ease-out, transform 0.2s ease-out",
+                    "pointer-events": showTodoModal() ? "auto" : "none",
+                }}
+            >
+                <div style={{ "overflow-y": "auto", "height": "100%" }}>
+                    <div class="sticky top-0 p-4 lg:p-5 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)" }}>
                             <h2 class="text-lg lg:text-xl font-bold" style={{ "color": "var(--color-text)" }}>{editingTodoId() ? 'Edit Todo' : 'New Todo'}</h2>
                             <button
                                 onClick={() => { resetTodoForm(); setShowTodoModal(false); }}
@@ -3313,8 +3080,126 @@ function Calendar() {
                             </form>
                         </div>
                     </div>
-                </div>
+            </div>
+
+            {/* Day Detail Drawer */}
+            <Show when={selectedDate()}>
+                <div class="fixed inset-0 z-[35]" style={{ "background": "rgba(0,0,0,0.4)" }} onClick={() => setSelectedDate(null)} />
             </Show>
+            <div
+                class="fixed top-[32px] right-0 h-[calc(100vh-32px)] z-[38] flex flex-col"
+                style={{
+                    "width": "min(400px, 100vw)",
+                    "background": "var(--color-bg-secondary)",
+                    "border-left": "1px solid var(--color-border)",
+                    "box-shadow": "-4px 0 24px rgba(0,0,0,0.3)",
+                    "opacity": selectedDate() ? "1" : "0",
+                    "transform": selectedDate() ? "translate3d(0, 0, 0)" : "translate3d(16px, 0, 0)",
+                    "transition": "opacity 0.2s ease-out, transform 0.2s ease-out",
+                    "pointer-events": selectedDate() ? "auto" : "none",
+                }}
+            >
+                <div class="sticky top-0 p-4 flex items-center justify-between shrink-0" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)" }}>
+                    <h3 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>
+                        {selectedDate()?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) ?? ''}
+                    </h3>
+                    <button onClick={() => setSelectedDate(null)} class="transition-colors duration-200" style={{ "color": "var(--color-text-muted)" }}>
+                        <XIcon class="w-5 h-5" />
+                    </button>
+                </div>
+                <div class="p-4 overflow-y-auto flex-1 space-y-2">
+                    <Show when={selectedDate()}>
+                        <For each={getEventsWithBreaks(selectedDate()!)}>
+                            {(event) => {
+                                const linkedTasks: any[] = event.expand?.Tasks || [];
+                                const totalTasks = linkedTasks.length;
+                                const completedTasks = linkedTasks.filter((t: any) => t.Completed).length;
+                                const allTasksCompleted = totalTasks > 0 && completedTasks === totalTasks;
+                                const isBreak = event.isBreak || false;
+                                const eventTags: any[] = event.expand?.Tags || [];
+                                return (
+                                <div
+                                    class={`p-3 rounded-lg transition-all duration-200 ${isBreak ? 'border-dashed' : 'cursor-pointer'}`}
+                                    style={{ 'background-color': isBreak ? 'transparent' : `${event.Color}15`, 'border': isBreak ? '1px dashed var(--color-border)' : `1px solid ${event.Color}40`, opacity: isBreak ? 0.6 : (allTasksCompleted ? 0.7 : 1) }}
+                                    onClick={() => { if (isBreak) return; if (event.isRecurringInstance) { setRecurrenceChoice({ show: true, event, action: 'edit', payload: null }); } else { openEventModal(event.id); } }}
+                                >
+                                    <div class="flex items-start gap-2">
+                                        <div class="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ 'background-color': isBreak ? '#404040' : event.Color }}></div>
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class={`font-semibold text-sm ${isBreak ? 'italic' : ''} ${allTasksCompleted && !isBreak ? 'line-through' : ''}`} style={{ "color": isBreak ? "var(--color-text-muted)" : "var(--color-text)" }}>
+                                                {allTasksCompleted && !isBreak ? '✓ ' : ''}{event.EventName}
+                                                <Show when={event.Recurrence && event.Recurrence !== 'none'}><span class="ml-1 text-[10px] opacity-60">↻</span></Show>
+                                            </h4>
+                                            <Show when={!event.AllDay}><p class="text-xs mt-0.5" style={{ "color": "var(--color-text-muted)" }}>{formatTime(new Date(event.Start))} – {formatTime(new Date(event.End))}</p></Show>
+                                            <Show when={event.AllDay && !isBreak}><p class="text-xs mt-0.5" style={{ "color": "var(--color-text-muted)" }}>All day</p></Show>
+                                            <Show when={!isBreak && event.Description}><p class="text-xs mt-1.5 leading-relaxed" style={{ "color": "var(--color-text-secondary)" }}>{event.Description}</p></Show>
+                                            <Show when={eventTags.length > 0}>
+                                                <div class="flex flex-wrap gap-1 mt-1.5">
+                                                    <For each={eventTags}>{(tag: any) => (<span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ "background-color": `${tag.Color || '#3b82f6'}25`, "color": tag.Color || '#3b82f6', "border": `1px solid ${tag.Color || '#3b82f6'}50` }}>{tag.Name}</span>)}</For>
+                                                </div>
+                                            </Show>
+                                            <Show when={totalTasks > 0}>
+                                                <div class="mt-2 space-y-1 border-t pt-2" style={{ "border-color": "var(--color-border)" }}>
+                                                    <p class="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ "color": "var(--color-text-muted)" }}>Tasks ({completedTasks}/{totalTasks})</p>
+                                                    <For each={linkedTasks}>{(task: any) => (<label class="flex items-center gap-2 text-xs cursor-pointer group" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={task.Completed} onChange={() => toggleTaskCompletion(task.id, task.Completed)} class="w-3 h-3 rounded flex-shrink-0" /><span class={task.Completed ? 'line-through opacity-50' : 'group-hover:opacity-80'} style={{ "color": task.Completed ? "var(--color-text-muted)" : "var(--color-text-secondary)" }}>{task.Title}</span></label>)}</For>
+                                                </div>
+                                            </Show>
+                                        </div>
+                                    </div>
+                                </div>
+                                );
+                            }}
+                        </For>
+                        <Show when={getTasksForDate(selectedDate()!).length > 0}>
+                            <div class="mt-3">
+                                <p class="text-[11px] font-semibold uppercase tracking-wide mb-2 px-1" style={{ "color": "var(--color-text-muted)" }}>Todos due</p>
+                                <div class="space-y-2">
+                                    <For each={getTasksForDate(selectedDate()!)}>
+                                        {(todo: any) => {
+                                            const subtasks: any[] = todo.Subtasks || [];
+                                            const completedSubs = subtasks.filter((s: any) => s.completed).length;
+                                            const todoTags: any[] = todo.expand?.Tags || [];
+                                            const priorityColors: Record<string, string> = { P1: '#ef4444', P2: '#f97316', P3: '#3b82f6', P4: '#6b7280' };
+                                            const displayColor = todo.Color || priorityColors[todo.Priority] || '#6b7280';
+                                            return (
+                                            <div class="p-3 rounded-lg" style={{ 'background-color': todo.Completed ? 'var(--color-bg)' : 'var(--color-surface)', 'border': `1px solid var(--color-border)`, 'border-left': `3px solid ${displayColor}`, 'opacity': todo.Completed ? '0.65' : '1' }}>
+                                                <div class="flex items-start gap-2">
+                                                    <input type="checkbox" checked={todo.Completed} onChange={() => toggleTodoCompletion(todo.id, todo.Completed)} class="w-4 h-4 rounded mt-0.5 flex-shrink-0 cursor-pointer" />
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                                            <span class={`text-sm font-medium ${todo.Completed ? 'line-through opacity-60' : ''}`} style={{ "color": "var(--color-text)" }}>{todo.Title}</span>
+                                                            <span class="text-[10px] font-bold px-1 py-0.5 rounded" style={{ "background-color": `${displayColor}20`, "color": displayColor }}>{todo.Priority}</span>
+                                                        </div>
+                                                        <Show when={todo.Deadline}><p class="text-[11px] mt-0.5" style={{ "color": "var(--color-text-muted)" }}>Due {formatTime(new Date(todo.Deadline))}</p></Show>
+                                                        <Show when={todo.Description}><p class="text-xs mt-1.5 leading-relaxed" style={{ "color": "var(--color-text-secondary)" }}>{todo.Description}</p></Show>
+                                                        <Show when={todoTags.length > 0}>
+                                                            <div class="flex flex-wrap gap-1 mt-1.5">
+                                                                <For each={todoTags}>{(tag: any) => (<span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ "background-color": `${tag.Color || '#3b82f6'}25`, "color": tag.Color || '#3b82f6', "border": `1px solid ${tag.Color || '#3b82f6'}50` }}>{tag.Name}</span>)}</For>
+                                                            </div>
+                                                        </Show>
+                                                        <Show when={subtasks.length > 0}>
+                                                            <div class="mt-2 border-t pt-2" style={{ "border-color": "var(--color-border)" }}>
+                                                                <p class="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ "color": "var(--color-text-muted)" }}>Subtasks ({completedSubs}/{subtasks.length})</p>
+                                                                <div class="space-y-1">
+                                                                    <For each={subtasks}>{(sub: any, idx) => (<label class="flex items-center gap-2 text-xs cursor-pointer group"><input type="checkbox" checked={sub.completed} onChange={() => toggleTodoSubtask(todo.id, subtasks, idx())} class="w-3 h-3 rounded flex-shrink-0" /><span class={sub.completed ? 'line-through opacity-50' : 'group-hover:opacity-80'} style={{ "color": sub.completed ? "var(--color-text-muted)" : "var(--color-text-secondary)" }}>{sub.title}</span></label>)}</For>
+                                                                </div>
+                                                            </div>
+                                                        </Show>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            );
+                                        }}
+                                    </For>
+                                </div>
+                            </div>
+                        </Show>
+                        <Show when={(getEventsWithBreaks(selectedDate()!).length === 0) && (getTasksForDate(selectedDate()!).length === 0)}>
+                            <p class="text-center py-8" style={{ "color": "var(--color-text-muted)" }}>No events for this day</p>
+                        </Show>
+                    </Show>
+                </div>
+            </div>
 
             <ConfirmModal
                 show={confirmDeleteTodo().show}

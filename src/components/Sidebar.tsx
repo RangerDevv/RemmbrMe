@@ -122,10 +122,10 @@ export default function Sidebar() {
                 overflow-y-auto overscroll-contain
             `}
             style={{
-                "background": "var(--color-bg-secondary)",
+                "background": "color-mix(in srgb, var(--color-bg-secondary) 70%, transparent)",
                 "border-right": "1px solid var(--color-border)",
-                "backdrop-filter": "blur(32px) saturate(1.3)",
-                "-webkit-backdrop-filter": "blur(32px) saturate(1.3)",
+                "backdrop-filter": "blur(24px) saturate(1.4)",
+                "-webkit-backdrop-filter": "blur(24px) saturate(1.4)",
                 "box-shadow": "inset -0.5px 0 0 0 rgba(255,255,255,0.04), 4px 0 24px rgba(0,0,0,0.1)"
             }}
             >

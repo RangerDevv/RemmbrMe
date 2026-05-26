@@ -6,6 +6,9 @@ import { formatTime } from '../lib/theme';
 import {
     RepeatIcon,
     PlayIcon,
+    EditIcon,
+    TrashIcon,
+    XIcon,
 } from '../components/Icons';
 
 function Dashboard() {
@@ -16,6 +19,12 @@ function Dashboard() {
         (localStorage.getItem('dashCalView') as 'week' | 'month') || 'week'
     );
     const [currentDate, setCurrentDate] = createSignal(new Date());
+    const [editingTask, setEditingTask] = createSignal<any>(null);
+    const [editTitle, setEditTitle] = createSignal('');
+    const [editDescription, setEditDescription] = createSignal('');
+    const [editPriority, setEditPriority] = createSignal('P2');
+    const [editDeadlineDate, setEditDeadlineDate] = createSignal('');
+    const [editDeadlineTime, setEditDeadlineTime] = createSignal('');
 
     let greeting = "";
     const time = new Date().getHours();
@@ -238,6 +247,45 @@ function Dashboard() {
         return Math.round((now.getHours() * 60 + now.getMinutes()) / (24 * 60) * 100);
     }
 
+    function openEditTask(task: any) {
+        setEditTitle(task.Title || '');
+        setEditDescription(task.Description || '');
+        setEditPriority(task.Priority || 'P2');
+        if (task.Deadline) {
+            const d = new Date(task.Deadline);
+            setEditDeadlineDate(d.toISOString().split('T')[0]);
+            setEditDeadlineTime(`${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`);
+        } else {
+            setEditDeadlineDate('');
+            setEditDeadlineTime('');
+        }
+        setEditingTask(task);
+    }
+
+    async function saveEditedTask() {
+        const task = editingTask();
+        if (!task) return;
+        let deadline: string | undefined;
+        if (editDeadlineDate()) {
+            deadline = new Date(`${editDeadlineDate()}T${editDeadlineTime() || '00:00'}:00`).toISOString();
+        }
+        await bk.collection('Todo').update(task.id, {
+            Title: editTitle(),
+            Description: editDescription(),
+            Priority: editPriority() as `P${number}`,
+            Deadline: deadline,
+        });
+        setEditingTask(null);
+        fetchData();
+        window.dispatchEvent(new Event('dataChanged'));
+    }
+
+    async function deleteTaskFromDashboard(taskId: string) {
+        await bk.collection('Todo').delete(taskId);
+        fetchData();
+        window.dispatchEvent(new Event('dataChanged'));
+    }
+
     function getEventDurationMins(event: any): number {
         if (!event.Start || !event.End) return 25;
         return Math.max(1, Math.round((new Date(event.End).getTime() - new Date(event.Start).getTime()) / 60000));
@@ -270,6 +318,19 @@ function Dashboard() {
             return `${s.toLocaleDateString('en-US', { month: 'short' })} ${s.getDate()}–${e.getDate()}, ${s.getFullYear()}`;
         }
         return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    });
+
+    const todayTimelineWithNow = createMemo((): Array<any> => {
+        const items: Array<any> = getTodayTimeline();
+        const now = new Date();
+        const nowMarker = { type: 'now', time: now, hasTime: true, data: null };
+        const insertIdx = items.findIndex((i: any) => i.hasTime && i.time && i.time > now);
+        if (insertIdx === -1) {
+            return items.some((i: any) => i.hasTime) ? [...items, nowMarker] : items;
+        }
+        const result = [...items];
+        result.splice(insertIdx, 0, nowMarker);
+        return result;
     });
 
     return (
@@ -633,52 +694,71 @@ function Dashboard() {
                                 <Show when={getActiveTasks().length > 0}>
                                     <For each={getActiveTasks()}>
                                         {(task) => (
-                                            <div class="group glass flex items-center gap-2.5 py-2.5 px-3 rounded-xl card-hover">
-                                                <button
-                                                    onClick={() => quickCompleteTask(task.id)}
-                                                    class="w-[18px] h-[18px] rounded-full shrink-0 hover:opacity-70 transition-opacity"
-                                                    style={{ "border": "2px solid var(--color-border-hover)" }}
-                                                    title="Complete"
-                                                />
-                                                <div class="flex-1 min-w-0">
-                                                    <div class="text-sm truncate" style={{ "color": "var(--color-text)" }}>{task.Title}</div>
-                                                    <Show when={task.Deadline}>
-                                                        <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
-                                                            {new Date(task.Deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                                            <Show when={task.Recurrence && task.Recurrence !== 'none'}>
-                                                                <span class="ml-1.5 inline-flex items-center gap-0.5">
-                                                                    <RepeatIcon class="w-3 h-3" /> {task.Recurrence}
-                                                                </span>
-                                                            </Show>
-                                                        </div>
-                                                    </Show>
-                                                    <Show when={task.Subtasks && task.Subtasks.length > 0}>
-                                                        <div class="flex items-center gap-1.5 mt-1">
-                                                            <div class="flex-1 h-1 rounded-full overflow-hidden" style={{ "background-color": "var(--color-bg-tertiary)" }}>
-                                                                <div
-                                                                    class="h-full rounded-full transition-all duration-300"
-                                                                    style={{
-                                                                        "width": `${(task.Subtasks.filter((s: any) => s.completed).length / task.Subtasks.length) * 100}%`,
-                                                                        "background-color": task.Subtasks.filter((s: any) => s.completed).length === task.Subtasks.length ? "var(--color-success)" : "var(--color-accent)"
-                                                                    }}
-                                                                />
+                                            <div class="group glass rounded-xl card-hover overflow-hidden">
+                                                <div class="flex items-center gap-2.5 py-2.5 px-3">
+                                                    <div class="w-1 self-stretch rounded-full shrink-0" style={{ "background-color": priorityDot(task.Priority), "min-height": "20px" }} />
+                                                    <button
+                                                        onClick={() => quickCompleteTask(task.id)}
+                                                        class="w-[18px] h-[18px] rounded-full shrink-0 hover:opacity-70 transition-opacity"
+                                                        style={{ "border": `2px solid ${priorityDot(task.Priority)}` }}
+                                                        title="Complete"
+                                                    />
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="text-sm truncate" style={{ "color": "var(--color-text)" }}>{task.Title}</div>
+                                                        <Show when={task.Deadline}>
+                                                            <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
+                                                                {new Date(task.Deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                                <Show when={task.Recurrence && task.Recurrence !== 'none'}>
+                                                                    <span class="ml-1.5 inline-flex items-center gap-0.5">
+                                                                        <RepeatIcon class="w-3 h-3" /> {task.Recurrence}
+                                                                    </span>
+                                                                </Show>
                                                             </div>
-                                                            <span class="text-[10px] shrink-0" style={{ "color": "var(--color-text-muted)" }}>
-                                                                {task.Subtasks.filter((s: any) => s.completed).length}/{task.Subtasks.length}
-                                                            </span>
-                                                        </div>
-                                                    </Show>
+                                                        </Show>
+                                                        <Show when={task.Subtasks && task.Subtasks.length > 0}>
+                                                            <div class="flex items-center gap-1.5 mt-1">
+                                                                <div class="flex-1 h-1 rounded-full overflow-hidden" style={{ "background-color": "var(--color-bg-tertiary)" }}>
+                                                                    <div
+                                                                        class="h-full rounded-full transition-all duration-300"
+                                                                        style={{
+                                                                            "width": `${(task.Subtasks.filter((s: any) => s.completed).length / task.Subtasks.length) * 100}%`,
+                                                                            "background-color": task.Subtasks.filter((s: any) => s.completed).length === task.Subtasks.length ? "var(--color-success)" : "var(--color-accent)"
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <span class="text-[10px] shrink-0" style={{ "color": "var(--color-text-muted)" }}>
+                                                                    {task.Subtasks.filter((s: any) => s.completed).length}/{task.Subtasks.length}
+                                                                </span>
+                                                            </div>
+                                                        </Show>
+                                                    </div>
+                                                    <div class="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                                                        <button
+                                                            onClick={() => openEditTask(task)}
+                                                            class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
+                                                            style={{ "color": "var(--color-text-muted)" }}
+                                                            title="Edit task"
+                                                        >
+                                                            <EditIcon class="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => startFocus(task.id, task.Title, task.Duration || 25, 'task')}
+                                                            class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
+                                                            style={{ "color": "var(--color-accent)" }}
+                                                            title={`Focus: ${task.Duration || 25}min`}
+                                                        >
+                                                            <PlayIcon class="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => deleteTaskFromDashboard(task.id)}
+                                                            class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors hover:text-red-400"
+                                                            style={{ "color": "var(--color-text-muted)" }}
+                                                            title="Delete task"
+                                                        >
+                                                            <TrashIcon class="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <button
-                                                    onClick={() => startFocus(task.id, task.Title, task.Duration || 25, 'task')}
-                                                    class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-80 shrink-0"
-                                                    style={{ "background": "var(--color-accent-muted)", "color": "var(--color-accent)" }}
-                                                    title={`Start focus session: ${task.Duration || 25} min`}
-                                                >
-                                                    <PlayIcon class="w-3 h-3" />
-                                                    Focus
-                                                </button>
-                                                <div class="w-2 h-2 rounded-full shrink-0" style={{ "background-color": priorityDot(task.Priority) }}></div>
                                             </div>
                                         )}
                                     </For>
@@ -693,6 +773,107 @@ function Dashboard() {
                     </div>
                 </div>
             </Show>
+            {/* Task edit drawer */}
+            <Show when={editingTask()}>
+                <div class="fixed inset-0 z-40" style={{ "background": "rgba(0,0,0,0.4)" }} onClick={() => setEditingTask(null)} />
+            </Show>
+            <div
+                class="fixed top-[32px] right-0 h-[calc(100vh-32px)] z-[45] flex flex-col"
+                style={{
+                    "width": "min(420px, 100vw)",
+                    "background": "var(--color-bg-secondary)",
+                    "border-left": "1px solid var(--color-border)",
+                    "box-shadow": "-4px 0 24px rgba(0,0,0,0.3)",
+                    "opacity": editingTask() ? "1" : "0",
+                    "transform": editingTask() ? "translate3d(0, 0, 0)" : "translate3d(16px, 0, 0)",
+                    "transition": "opacity 0.2s ease-out, transform 0.2s ease-out",
+                    "pointer-events": editingTask() ? "auto" : "none",
+                }}
+            >
+                <div style={{ "overflow-y": "auto", "height": "100%" }}>
+                    <div class="sticky top-0 p-4 flex items-center justify-between shrink-0" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)" }}>
+                        <h2 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>Edit Task</h2>
+                        <button onClick={() => setEditingTask(null)} class="w-8 h-8 flex items-center justify-center rounded-lg" style={{ "color": "var(--color-text-muted)" }}>
+                            <XIcon class="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Title</label>
+                            <input
+                                type="text"
+                                value={editTitle()}
+                                onInput={(e) => setEditTitle(e.currentTarget.value)}
+                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                                style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Description</label>
+                            <textarea
+                                value={editDescription()}
+                                onInput={(e) => setEditDescription(e.currentTarget.value)}
+                                rows="3"
+                                class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none resize-none"
+                                style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Priority</label>
+                            <div class="flex gap-2">
+                                <For each={['P1', 'P2', 'P3']}>
+                                    {(p) => (
+                                        <button
+                                            type="button"
+                                            onClick={() => setEditPriority(p)}
+                                            class="flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-150"
+                                            style={{
+                                                "background-color": editPriority() === p ? `${priorityDot(p)}20` : "var(--color-bg-tertiary)",
+                                                "color": editPriority() === p ? priorityDot(p) : "var(--color-text-muted)",
+                                                "border": `1px solid ${editPriority() === p ? priorityDot(p) : 'var(--color-border)'}`,
+                                            }}
+                                        >{p}</button>
+                                    )}
+                                </For>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1.5" style={{ "color": "var(--color-text-secondary)" }}>Due Date</label>
+                            <div class="flex gap-2">
+                                <input
+                                    type="date"
+                                    value={editDeadlineDate()}
+                                    onInput={(e) => setEditDeadlineDate(e.currentTarget.value)}
+                                    class="flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                />
+                                <input
+                                    type="time"
+                                    value={editDeadlineTime()}
+                                    onInput={(e) => setEditDeadlineTime(e.currentTarget.value)}
+                                    class="w-28 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                />
+                            </div>
+                            <Show when={editDeadlineDate()}>
+                                <button
+                                    type="button"
+                                    onClick={() => { setEditDeadlineDate(''); setEditDeadlineTime(''); }}
+                                    class="text-xs mt-1.5 hover:underline"
+                                    style={{ "color": "var(--color-text-muted)" }}
+                                >Clear date</button>
+                            </Show>
+                        </div>
+                        <button
+                            onClick={saveEditedTask}
+                            class="w-full py-2.5 rounded-lg font-semibold text-sm transition-all duration-200"
+                            style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

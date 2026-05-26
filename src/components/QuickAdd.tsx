@@ -455,17 +455,26 @@ function QuickAdd() {
                 </svg>
             </button>
 
-            {/* Quick Add Modal */}
-            <Show when={showModal()}>
-                <div 
-                    class="fixed inset-0 glass-overlay flex items-end lg:items-center justify-center z-50 animate-fade-in"
-                    onClick={() => setShowModal(false)}
-                >
-                    <Show when={!showSuccess()}>
-                        <div 
-                            class="glass-modal rounded-t-2xl lg:rounded-xl p-5 lg:p-6 w-full lg:max-w-2xl max-h-[85vh] overflow-y-auto animate-slide-up"
-                            onClick={(e) => e.stopPropagation()}
-                        >
+            {/* Quick Add Drawer */}
+            <Show when={showModal() && !showSuccess()}>
+                <div class="fixed inset-0 z-40" style={{ "background": "rgba(0,0,0,0.4)" }} onClick={() => setShowModal(false)} />
+            </Show>
+            <div
+                class="fixed top-[32px] right-0 h-[calc(100vh-32px)] z-50 flex flex-col"
+                style={{
+                    "width": "min(520px, 100vw)",
+                    "background": "var(--color-bg-secondary)",
+                    "border-left": "1px solid var(--color-border)",
+                    "box-shadow": "-4px 0 24px rgba(0,0,0,0.3)",
+                    "opacity": showModal() ? "1" : "0",
+                    "transform": showModal() ? "translate3d(0, 0, 0)" : "translate3d(16px, 0, 0)",
+                    "transition": "opacity 0.2s ease-out, transform 0.2s ease-out",
+                    "pointer-events": showModal() ? "auto" : "none",
+                }}
+            >
+                <Show when={!showSuccess()}>
+                    <div style={{ "overflow-y": "auto", "height": "100%" }}>
+                        <div class="p-5 lg:p-6">
                             <div class="flex items-center justify-between mb-5">
                                 <div class="flex items-center gap-3">
                                     <div class="w-9 h-9 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center" style={{ "background-color": "var(--color-accent)" }}>
@@ -661,10 +670,12 @@ function QuickAdd() {
                                 </div>
                             </form>
                         </div>
-                    </Show>
+                    </div>
+                </Show>
 
-                    {/* Success Animation */}
-                    <Show when={showSuccess()}>
+                {/* Success Animation */}
+                <Show when={showSuccess()}>
+                    <div class="fixed inset-0 glass-overlay flex items-center justify-center z-[60]">
                         <div class="glass-modal rounded-xl p-10 max-w-md w-full animate-scale-in text-center">
                             <div class="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-in">
                                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -674,9 +685,9 @@ function QuickAdd() {
                             <h3 class="text-xl font-bold mb-2" style={{ "color": "var(--color-text)" }}>Success!</h3>
                             <p style={{ "color": "var(--color-text-secondary)" }}>{successMessage()}</p>
                         </div>
-                    </Show>
-                </div>
-            </Show>
+                    </div>
+                </Show>
+            </div>
 
             <style>{`
                 @keyframes fade-in {
