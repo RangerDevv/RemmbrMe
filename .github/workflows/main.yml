@@ -146,7 +146,12 @@ jobs:
         # AppImage, not just during the CI build.  We extract the AppImage,
         # inject the exports into AppRun, then repack.
         run: |
-          APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -1)
+          APPIMAGE_REL=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" -print -quit)
+          if [ -z "$APPIMAGE_REL" ]; then
+            echo "No AppImage found under src-tauri/target/release/bundle/appimage"
+            exit 1
+          fi
+          APPIMAGE="$GITHUB_WORKSPACE/$APPIMAGE_REL"
           echo "Patching: $APPIMAGE"
 
           cd /tmp
@@ -173,7 +178,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          APPIMAGE=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -1)
+          APPIMAGE_REL=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" -print -quit)
+          if [ -z "$APPIMAGE_REL" ]; then
+            echo "No AppImage found under src-tauri/target/release/bundle/appimage"
+            exit 1
+          fi
+          APPIMAGE="$GITHUB_WORKSPACE/$APPIMAGE_REL"
           gh release upload "${{ github.event.inputs.version || 'v1.0.0' }}" \
             "$APPIMAGE" "${APPIMAGE}.tar.gz" --clobber
 
