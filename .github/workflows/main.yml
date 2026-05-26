@@ -238,11 +238,8 @@ jobs:
       - name: Install JS dependencies
         run: npm ci
 
-      - name: Build Vite frontend
-        run: npm run build
-
-      - name: Build Tauri binary
-        run: cd src-tauri && cargo build --release
+      - name: Build Tauri binary (production, no bundle)
+        run: npm run tauri build -- --no-bundle
 
       - name: Package tarball
         run: |
