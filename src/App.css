@@ -1,15 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
   /* Default theme vars (overridden by JS) */
   --color-bg: #0c0c0e;
-  --color-bg-secondary: rgba(16,16,20,0.82);
-  --color-bg-tertiary: rgba(30,30,36,0.6);
-  --color-surface: rgba(20,20,26,0.72);
-  --color-surface-hover: rgba(28,28,34,0.78);
-  --color-border: rgba(255,255,255,0.10);
-  --color-border-hover: rgba(255,255,255,0.18);
+  --color-bg-secondary: #111114;
+  --color-bg-tertiary: #18181c;
+  --color-surface: #131316;
+  --color-surface-hover: #1a1a1e;
+  --color-border: #2a2a30;
+  --color-border-hover: #38383f;
   --color-text: #e8e8e6;
   --color-text-secondary: #9b9a97;
   --color-text-muted: #5c5c5c;
@@ -25,14 +25,12 @@
   --color-success-muted: rgba(15,123,108,0.12);
   --color-info: #529cca;
   --color-info-muted: rgba(82,156,202,0.12);
-  --glass-blur: 20px;
-  --glass-border: 1px solid var(--color-border);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  font-size: 16px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
   line-height: 1.5;
   font-weight: 400;
   color: var(--color-text);
@@ -50,107 +48,55 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   overflow: hidden;
-  position: relative;
 }
 
-/* Ambient glow orbs for glass effect depth */
-body::before {
-  content: '';
-  position: fixed;
-  top: -20%;
-  left: -10%;
-  width: 50%;
-  height: 50%;
-  background: radial-gradient(circle, var(--color-accent-muted) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.6;
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  bottom: -30%;
-  right: -15%;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(circle, var(--color-accent-muted) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.4;
-}
-
-/* Ensure content sits above glow */
-#root, main {
-  position: relative;
-  z-index: 1;
-}
-
-/* Scrollbar styling */
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: 10px;
+  border-radius: 2px;
 }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-hover); }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-hover);
-}
-
-/* Custom checkbox styling */
+/* Checkbox */
 input[type="checkbox"] {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--color-border-hover);
-  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--color-border-hover);
+  border-radius: 3px;
   background: transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.1s, border-color 0.1s;
   position: relative;
   flex-shrink: 0;
 }
-
 input[type="checkbox"]:checked {
   background: var(--color-accent);
   border-color: var(--color-accent);
 }
-
 input[type="checkbox"]:checked::after {
   content: '';
   position: absolute;
   left: 50%;
   top: 45%;
-  width: 5px;
-  height: 9px;
+  width: 4px;
+  height: 8px;
   border: solid white;
-  border-width: 0 2px 2px 0;
+  border-width: 0 1.5px 1.5px 0;
   transform: translate(-50%, -50%) rotate(45deg);
 }
+input[type="checkbox"]:hover { border-color: var(--color-accent); }
 
-input[type="checkbox"]:hover {
-  border-color: var(--color-accent);
-}
-
-/* Date/time input styling for dark themes */
+/* Date/time/select inputs */
 input[type="date"],
-input[type="time"] {
-  color-scheme: dark;
-}
-
-/* Select styling */
-select {
-  color-scheme: dark;
-}
+input[type="time"],
+select { color-scheme: dark; }
 
 /* Focus ring */
 *:focus-visible {
@@ -158,14 +104,52 @@ select {
   outline-offset: 2px;
 }
 
-/* Smooth transitions for theme changes */
-body, main, div, nav, aside, section, header {
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+/* Theme transition — only on bg/border/color, not layout */
+* { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Surface classes ──────────────────────────────────────────────── */
+
+/* Flat card surface — no blur, no glow */
+.glass {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
 }
 
-/* ─── Focus Timer Visual Animations ─────────────────────────────── */
+.glass-strong {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+}
 
-/* Zen: slow breathing pulse */
+.glass-modal {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.glass-overlay {
+  background: rgba(0,0,0,0.6);
+}
+
+/* Card hover — bg shift only, no lift */
+.card-hover {
+  cursor: default;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+.card-hover:hover {
+  background-color: var(--color-surface-hover) !important;
+  border-color: var(--color-border-hover) !important;
+}
+
+/* Touch targets */
+@media (max-width: 1023px) {
+  button, a, input[type="checkbox"] {
+    min-height: 36px;
+    min-width: 36px;
+  }
+}
+
+/* ── Focus Timer animations ───────────────────────────────────────── */
 @keyframes timerZenPulse {
   0%, 100% { transform: scale(1);    opacity: 0.48; }
   50%       { transform: scale(1.10); opacity: 0.80; }
@@ -174,8 +158,6 @@ body, main, div, nav, aside, section, header {
   0%, 100% { transform: scale(1);    opacity: 0.28; }
   50%       { transform: scale(1.16); opacity: 0.55; }
 }
-
-/* Waves: gentle horizontal drift per layer */
 @keyframes timerWave1 {
   0%, 100% { transform: translateX(0px);   }
   50%       { transform: translateX(-22px); }
@@ -188,11 +170,7 @@ body, main, div, nav, aside, section, header {
   0%, 100% { transform: translateX(4px);   }
   50%       { transform: translateX(-14px); }
 }
-
-/* Terminal CRT scanline overlay */
-.timer-scan-overlay {
-  position: relative;
-}
+.timer-scan-overlay { position: relative; }
 .timer-scan-overlay::after {
   content: '';
   position: absolute;
@@ -207,106 +185,34 @@ body, main, div, nav, aside, section, header {
   pointer-events: none;
   z-index: 10;
 }
-
-/* Terminal phosphor text flicker */
 @keyframes timerPhosphor {
-  0%, 94%, 100%   { opacity: 1; }
-  95%             { opacity: 0.85; }
-  97%             { opacity: 0.92; }
+  0%, 94%, 100% { opacity: 1; }
+  95%           { opacity: 0.85; }
+  97%           { opacity: 0.92; }
 }
-
-/* Space: twinkling star */
 @keyframes timerStarTwinkle {
   0%, 100% { opacity: 0.8; }
   50%       { opacity: 0.2; }
 }
-
-/* Neon: outer ring halo pulse */
 @keyframes timerNeonHalo {
   0%, 100% { opacity: 0.18; }
   50%       { opacity: 0.38; }
 }
 
-/* Animation keyframes */
+/* ── Utility animations ───────────────────────────────────────────── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
-
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
-/* Card hover effect */
-.card-hover {
-  transition: background-color 0.15s ease, box-shadow 0.2s ease, transform 0.15s ease, border-color 0.15s ease;
-}
-.card-hover:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.15), inset 0 1px 0 0 rgba(255,255,255,0.06);
-  border-color: var(--color-border-hover) !important;
-}
-
-/* Glass surface — use on any card/panel */
-.glass {
-  background: var(--color-surface);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
-  border: 1px solid var(--color-border);
-  box-shadow: inset 0 0.5px 0 0 rgba(255,255,255,0.06), 0 2px 16px rgba(0,0,0,0.12);
-}
-
-/* Stronger glass for sidebar/prominent panels */
-.glass-strong {
-  background: var(--color-bg-secondary);
-  backdrop-filter: blur(32px) saturate(1.3);
-  -webkit-backdrop-filter: blur(32px) saturate(1.3);
-  border: 1px solid var(--color-border);
-  box-shadow: inset 0 0.5px 0 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.15);
-}
-
-/* Glass for modals — most opaque for readability */
-.glass-modal {
-  background: var(--color-bg-secondary);
-  backdrop-filter: blur(48px) saturate(1.5);
-  -webkit-backdrop-filter: blur(48px) saturate(1.5);
-  border: 1px solid var(--color-border);
-  box-shadow: inset 0 0.5px 0 0 rgba(255,255,255,0.06), 0 8px 48px rgba(0,0,0,0.4);
-}
-
-/* Modal overlay backdrop */
-.glass-overlay {
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-
-/* Touch-friendly tap targets */
-@media (max-width: 1023px) {
-  button, a, input[type="checkbox"] {
-    min-height: 36px;
-    min-width: 36px;
-  }
-  
-  /* Prevent text overflow on small screens */
-  .truncate-mobile {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
 @keyframes scaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
 }
+.animate-fadeIn  { animation: fadeIn  0.15s ease-out; }
+.animate-slideUp { animation: slideUp 0.15s ease-out; }
+.animate-scaleIn { animation: scaleIn 0.15s ease-out; }
 
-.animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-.animate-slideUp { animation: slideUp 0.3s ease-out; }
-.animate-scaleIn { animation: scaleIn 0.2s ease-out; }

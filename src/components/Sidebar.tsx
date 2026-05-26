@@ -122,11 +122,8 @@ export default function Sidebar() {
                 overflow-y-auto overscroll-contain
             `}
             style={{
-                "background": "color-mix(in srgb, var(--color-bg-secondary) 70%, transparent)",
+                "background": "var(--color-bg-secondary)",
                 "border-right": "1px solid var(--color-border)",
-                "backdrop-filter": "blur(24px) saturate(1.4)",
-                "-webkit-backdrop-filter": "blur(24px) saturate(1.4)",
-                "box-shadow": "inset -0.5px 0 0 0 rgba(255,255,255,0.04), 4px 0 24px rgba(0,0,0,0.1)"
             }}
             >
                 {/* User Profile */}

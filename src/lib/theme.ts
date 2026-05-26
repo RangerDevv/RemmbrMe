@@ -44,12 +44,12 @@ export const themes: Theme[] = [
         id: 'midnight',
         colors: {
             bg: '#0c0c0e',
-            bgSecondary: 'rgba(16,16,20,0.82)',
-            bgTertiary: 'rgba(30,30,36,0.6)',
-            surface: 'rgba(20,20,26,0.72)',
-            surfaceHover: 'rgba(28,28,34,0.78)',
-            border: 'rgba(255,255,255,0.10)',
-            borderHover: 'rgba(255,255,255,0.18)',
+            bgSecondary: '#111114',
+            bgTertiary: '#18181c',
+            surface: '#131316',
+            surfaceHover: '#1c1c21',
+            border: '#2a2a30',
+            borderHover: '#3a3a42',
             text: '#e8e8e6',
             textSecondary: '#9b9a97',
             textMuted: '#5c5c5c',
@@ -72,12 +72,12 @@ export const themes: Theme[] = [
         id: 'light',
         colors: {
             bg: '#f5f5f0',
-            bgSecondary: 'rgba(255,255,255,0.80)',
-            bgTertiary: 'rgba(240,240,235,0.6)',
-            surface: 'rgba(255,255,255,0.72)',
-            surfaceHover: 'rgba(255,255,255,0.85)',
-            border: 'rgba(0,0,0,0.10)',
-            borderHover: 'rgba(0,0,0,0.16)',
+            bgSecondary: '#ffffff',
+            bgTertiary: '#eeeee9',
+            surface: '#fafafa',
+            surfaceHover: '#f0f0eb',
+            border: '#e0e0db',
+            borderHover: '#c8c8c2',
             text: '#37352f',
             textSecondary: '#6b6b6b',
             textMuted: '#9b9a97',
@@ -100,12 +100,12 @@ export const themes: Theme[] = [
         id: 'ocean',
         colors: {
             bg: '#070d1a',
-            bgSecondary: 'rgba(12,20,38,0.82)',
-            bgTertiary: 'rgba(22,34,56,0.6)',
-            surface: 'rgba(14,24,44,0.72)',
-            surfaceHover: 'rgba(20,32,54,0.78)',
-            border: 'rgba(100,180,255,0.12)',
-            borderHover: 'rgba(100,180,255,0.20)',
+            bgSecondary: '#0c1428',
+            bgTertiary: '#111e38',
+            surface: '#0e1830',
+            surfaceHover: '#14203e',
+            border: '#1e2f4e',
+            borderHover: '#273d60',
             text: '#e2e8f0',
             textSecondary: '#94a3b8',
             textMuted: '#475569',
@@ -128,12 +128,12 @@ export const themes: Theme[] = [
         id: 'slate',
         colors: {
             bg: '#09090b',
-            bgSecondary: 'rgba(16,16,20,0.82)',
-            bgTertiary: 'rgba(28,28,34,0.6)',
-            surface: 'rgba(18,18,24,0.72)',
-            surfaceHover: 'rgba(24,24,30,0.78)',
-            border: 'rgba(255,255,255,0.09)',
-            borderHover: 'rgba(255,255,255,0.16)',
+            bgSecondary: '#101013',
+            bgTertiary: '#18181c',
+            surface: '#111115',
+            surfaceHover: '#1c1c21',
+            border: '#27272a',
+            borderHover: '#3f3f46',
             text: '#fafafa',
             textSecondary: '#a3a3a3',
             textMuted: '#636363',
@@ -156,12 +156,12 @@ export const themes: Theme[] = [
         id: 'emerald',
         colors: {
             bg: '#0e0c0a',
-            bgSecondary: 'rgba(22,18,14,0.82)',
-            bgTertiary: 'rgba(36,30,24,0.6)',
-            surface: 'rgba(26,22,16,0.72)',
-            surfaceHover: 'rgba(32,26,20,0.78)',
-            border: 'rgba(255,200,150,0.10)',
-            borderHover: 'rgba(255,200,150,0.18)',
+            bgSecondary: '#161210',
+            bgTertiary: '#1e1916',
+            surface: '#1a1612',
+            surfaceHover: '#231e19',
+            border: '#2e2820',
+            borderHover: '#3e3730',
             text: '#e7e5e4',
             textSecondary: '#a8a29e',
             textMuted: '#6b6560',
@@ -184,12 +184,12 @@ export const themes: Theme[] = [
         id: 'rose',
         colors: {
             bg: '#0d080c',
-            bgSecondary: 'rgba(22,14,20,0.82)',
-            bgTertiary: 'rgba(36,24,32,0.6)',
-            surface: 'rgba(26,16,24,0.72)',
-            surfaceHover: 'rgba(32,22,30,0.78)',
-            border: 'rgba(232,121,160,0.12)',
-            borderHover: 'rgba(232,121,160,0.20)',
+            bgSecondary: '#140910',
+            bgTertiary: '#1c1018',
+            surface: '#180e15',
+            surfaceHover: '#22121c',
+            border: '#2e1a26',
+            borderHover: '#3e2234',
             text: '#f0e8ec',
             textSecondary: '#aa8a98',
             textMuted: '#755668',
@@ -299,12 +299,10 @@ export function applyThemeToDOM(theme: Theme) {
     root.style.setProperty('--color-success-muted', c.successMuted);
     root.style.setProperty('--color-info', c.info);
     root.style.setProperty('--color-info-muted', c.infoMuted);
-    
-    // Set background on body
+
     document.body.style.backgroundColor = c.bg;
     document.body.style.color = c.text;
-    
-    // Set color-scheme for native inputs
+
     const isLight = theme.id === 'light';
     document.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
 }
