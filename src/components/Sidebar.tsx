@@ -159,18 +159,19 @@ export default function Sidebar() {
                         </button>
                     </div>
 
-                    {/* Add Task Button */}
-                    <a
-                        href="/todo"
-                        onClick={() => setMobileMenuOpen(false)}
+                    {/* Quick Add Button */}
+                    <button
+                        onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('quickadd:open')); }}
                         class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 mb-3"
                         style={{
-                            "color": "var(--color-accent)",
+                            "background-color": "var(--color-accent)",
+                            "color": "var(--color-accent-text)",
                         }}
                     >
                         <PlusIcon class="w-4 h-4" />
-                        <span>Add Task</span>
-                    </a>
+                        <span>Quick Add</span>
+                        <kbd class="ml-auto text-[10px] font-mono opacity-60">⌘K</kbd>
+                    </button>
 
                     {/* Search */}
                     <div class="relative mb-4">

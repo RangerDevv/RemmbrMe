@@ -1461,8 +1461,8 @@ function Calendar() {
     });
 
     return (
-        <div class="flex-1 w-full">
-            <div class="mb-4 lg:mb-6">
+        <div class="h-full w-full flex flex-col">
+            <div class="mb-4 lg:mb-6 shrink-0">
                 <div class="flex items-center justify-between mb-3">
                     <h1 class="text-xl lg:text-2xl font-bold flex items-center gap-2" style={{ "color": "var(--color-text)" }}><CalendarIcon class="w-5 h-5 lg:w-6 lg:h-6" /> Calendar</h1>
                     <button
@@ -1481,7 +1481,7 @@ function Calendar() {
             </div>
 
             {/* Calendar Header */}
-            <div class="glass rounded-xl p-4 mb-4">
+            <div class="glass rounded-xl p-4 mb-4 shrink-0">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
                         <button
@@ -1685,7 +1685,7 @@ function Calendar() {
 
             {/* Week View */}
             <Show when={viewMode() === 'week'}>
-                <div class="glass rounded-xl overflow-hidden">
+                <div class="flex-1 min-h-0 glass rounded-xl overflow-hidden flex flex-col">
                     {/* Week header */}
                     <div class="overflow-x-auto">
                         <div class="grid grid-cols-8 min-w-[800px]" style={{ "border-bottom": "1px solid var(--color-border)", "background-color": "var(--color-bg-tertiary)" }}>
@@ -1778,7 +1778,7 @@ function Calendar() {
                     })()}
 
                     {/* Time slots with scaled events */}
-                    <div ref={weekScrollRef} class="max-h-[600px] overflow-y-auto overflow-x-auto relative">
+                    <div ref={weekScrollRef} class="flex-1 min-h-0 overflow-y-auto overflow-x-auto relative">
                         <div class="min-w-[800px] relative">
                             {/* Current time indicator */}
                             {(() => {

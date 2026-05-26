@@ -38,8 +38,8 @@ export default function App() {
       <main class="flex" style={{ "background-color": "var(--color-bg)", "padding-top": "32px", "min-height": "100vh" }}>
         <Sidebar />
       
-      <div class="flex-1 min-w-0 overflow-y-auto" style={{ height: "calc(100vh - 32px)" }}>
-        <div class="max-w-[1400px] mx-auto w-full px-4 pb-4 pt-16 lg:px-8 lg:pt-6 lg:pb-6">
+      <div class="flex-1 min-w-0 overflow-hidden" style={{ height: "calc(100vh - 32px)" }}>
+        <div class="max-w-[1400px] mx-auto w-full h-full overflow-y-auto px-4 pb-4 pt-16 lg:px-8 lg:pt-6 lg:pb-6">
           <Router>
             <Route path="/" component={Dashboard} />
             <Route path="/todo" component={Todo} />

@@ -22,7 +22,7 @@ function QuickAdd() {
     const [overrideType, setOverrideType] = createSignal<'task' | 'event' | null>(null);
     const [errorMessage, setErrorMessage] = createSignal('');
 
-    // Keyboard shortcut: Ctrl/Cmd + K
+    // Keyboard shortcut: Ctrl/Cmd + K, and custom event from sidebar
     onMount(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -33,8 +33,13 @@ function QuickAdd() {
                 setShowModal(false);
             }
         };
+        const handleOpen = () => setShowModal(true);
         document.addEventListener('keydown', handleKeyDown);
-        onCleanup(() => document.removeEventListener('keydown', handleKeyDown));
+        window.addEventListener('quickadd:open', handleOpen);
+        onCleanup(() => {
+            document.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('quickadd:open', handleOpen);
+        });
     });
 
     // Smart parsing with real-time preview
@@ -444,17 +449,6 @@ function QuickAdd() {
 
     return (
         <>
-            {/* Floating Action Button */}
-            <button
-                onClick={() => setShowModal(true)}
-                class="fixed bottom-5 right-5 lg:bottom-8 lg:right-8 w-12 h-12 lg:w-14 lg:h-14 rounded-full active:scale-95 transition-all duration-200 z-50 flex items-center justify-center shadow-lg group" style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
-                title="Quick Add (Ctrl+K)"
-            >
-                <svg class="w-6 h-6 lg:w-7 lg:h-7 transition-transform group-hover:rotate-90 duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-                </svg>
-            </button>
-
             {/* Quick Add Drawer */}
             <Show when={showModal() && !showSuccess()}>
                 <div class="fixed inset-0 z-40" style={{ "background": "rgba(0,0,0,0.4)" }} onClick={() => setShowModal(false)} />
