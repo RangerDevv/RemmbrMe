@@ -9,6 +9,7 @@
     "build": "vite build",
     "serve": "vite preview",
     "tauri": "tauri",
+    "tauri:build": "NO_STRIP=true tauri build",
     "icons": "node scripts/generate-icons.js && npm run tauri icon src-tauri/icons/icon.png",
     "build:arch": "npm run build && cd src-tauri && cargo build --release"
   },
