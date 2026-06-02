@@ -13,7 +13,6 @@ import {
     RepeatIcon, 
     CalendarWeekIcon, 
     CalendarMonthIcon,
-    XIcon,
     BoltIcon,
     EditIcon,
     TrashIcon
@@ -3099,15 +3098,16 @@ function Calendar() {
                     "pointer-events": selectedDate() ? "auto" : "none",
                 }}
             >
-                <div class="sticky top-0 p-4 flex items-center justify-between shrink-0" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)" }}>
+                <div style={{ "overflow-y": "auto", "height": "100%" }}>
+                <div class="sticky top-0 p-4 flex items-center justify-between" style={{ "background": "var(--color-bg-secondary)", "border-bottom": "1px solid var(--color-border)" }}>
                     <h3 class="text-lg font-bold" style={{ "color": "var(--color-text)" }}>
                         {selectedDate()?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) ?? ''}
                     </h3>
-                    <button onClick={() => setSelectedDate(null)} class="transition-colors duration-200" style={{ "color": "var(--color-text-muted)" }}>
-                        <XIcon class="w-5 h-5" />
+                    <button onClick={() => setSelectedDate(null)} class="transition-colors duration-200 text-xl w-8 h-8 flex items-center justify-center rounded-lg" style={{ "color": "var(--color-text-muted)" }}>
+                        ×
                     </button>
                 </div>
-                <div class="p-4 overflow-y-auto flex-1 space-y-2">
+                <div class="p-4 space-y-2">
                     <Show when={selectedDate()}>
                         <For each={getEventsWithBreaks(selectedDate()!)}>
                             {(event) => {
@@ -3198,6 +3198,7 @@ function Calendar() {
                             <p class="text-center py-8" style={{ "color": "var(--color-text-muted)" }}>No events for this day</p>
                         </Show>
                     </Show>
+                </div>
                 </div>
             </div>
 
