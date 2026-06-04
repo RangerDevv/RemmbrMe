@@ -3,7 +3,6 @@ import { Show, onMount, onCleanup } from "solid-js";
 import Dashboard from "./pages/Dashboard";
 import Todo from "./pages/Todo";
 import Calendar from "./pages/Calendar";
-import TimeMachine from "./pages/TimeMachine";
 import AIAssistant from "./pages/AIAssistant";
 import Settings from './pages/Settings';
 import Sync from './pages/Sync';
@@ -45,7 +44,6 @@ export default function App() {
             <Route path="/todo" component={Todo} />
             <Route path="/calendar" component={Calendar} />
             <Route path="/schedule" component={Calendar} />
-            <Route path="/timemachine" component={TimeMachine} />
             <Route path="/ai" component={AIAssistant} />
             <Route path="/settings" component={Settings} />
             <Route path="/sync" component={Sync} />

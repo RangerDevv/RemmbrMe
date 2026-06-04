@@ -6,7 +6,6 @@ import {
     CheckCircleIcon, 
     CalendarIcon, 
     CalendarWeekIcon,
-    ClockIcon, 
     RobotIcon, 
     PlusIcon, 
     SettingsIcon, 
@@ -268,18 +267,6 @@ export default function Sidebar() {
 
                 {/* Bottom section */}
                 <div class="mt-auto px-2 pb-4 space-y-0.5">
-                    <a
-                        href="/timemachine"
-                        onClick={() => setMobileMenuOpen(false)}
-                        class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-                        style={{
-                            "background-color": isActive('/timemachine') ? "var(--color-bg-tertiary)" : "transparent",
-                            "color": isActive('/timemachine') ? "var(--color-text)" : "var(--color-text-secondary)",
-                        }}
-                    >
-                        <ClockIcon class="w-[18px] h-[18px]" />
-                        <span>Time Machine</span>
-                    </a>
                     <a
                         href="/ai"
                         onClick={() => setMobileMenuOpen(false)}
