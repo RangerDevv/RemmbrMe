@@ -2,6 +2,19 @@ import { createSignal, onMount, onCleanup, Show } from 'solid-js';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { exportAllData, importAllData } from '../lib/local_driver';
+import {
+    completeGoogleOAuthFromCallback,
+    connectGoogleCalendar,
+    disconnectGoogleCalendar,
+    getGoogleLastSyncAt,
+    getGoogleSyncSettings,
+    isGoogleConnected,
+    onGoogleSyncStatus,
+    saveGoogleSyncSettings,
+    startGoogleCalendarAutoSync,
+    stopGoogleCalendarAutoSync,
+    syncGoogleCalendarNow,
+} from '../lib/google_calendar_sync';
 
 
 // ─── .rmmb encryption (AES-256-GCM + PBKDF2-SHA256) ─────────────────────────
@@ -70,7 +83,7 @@ interface SyncInfo {
 
 export default function Sync() {
     // LAN sync
-    const [tab, setTab] = createSignal<'lan' | 'backup'>('lan');
+    const [tab, setTab] = createSignal<'lan' | 'backup' | 'google'>('lan');
     const [serverRunning, setServerRunning] = createSignal(false);
     const [serverInfo, setServerInfo] = createSignal<SyncInfo | null>(null);
     const [qrSvg, setQrSvg] = createSignal('');
@@ -89,8 +102,22 @@ export default function Sync() {
     const [backupStatusType, setBackupStatusType] = createSignal<'ok' | 'err' | 'info'>('info');
     const [backupLoading, setBackupLoading] = createSignal(false);
 
+    // Google Calendar sync
+    const [googleClientId, setGoogleClientId] = createSignal('');
+    const [googleClientSecret, setGoogleClientSecret] = createSignal('');
+    const [googleRedirectUri, setGoogleRedirectUri] = createSignal('');
+    const [googleCalendarId, setGoogleCalendarId] = createSignal('primary');
+    const [googleSyncInterval, setGoogleSyncInterval] = createSignal(5);
+    const [googleEnabled, setGoogleEnabled] = createSignal(false);
+    const [googleConnected, setGoogleConnected] = createSignal(false);
+    const [googleStatus, setGoogleStatus] = createSignal('');
+    const [googleStatusType, setGoogleStatusType] = createSignal<'ok' | 'err' | 'info'>('info');
+    const [googleLoading, setGoogleLoading] = createSignal(false);
+    const [googleLastSyncAt, setGoogleLastSyncAt] = createSignal<string | null>(null);
+
     let fileInputRef: HTMLInputElement | undefined;
     let unlisten: (() => void) | null = null;
+    let unlistenGoogleStatus: (() => void) | null = null;
 
     onMount(async () => {
         // Restore running server state if page was navigated away
@@ -124,10 +151,40 @@ export default function Sync() {
                 }
             });
         } catch { /* not in Tauri */ }
+
+        const settings = getGoogleSyncSettings();
+        setGoogleClientId(settings.clientId);
+        setGoogleClientSecret(settings.clientSecret);
+        setGoogleRedirectUri(settings.redirectUri);
+        setGoogleCalendarId(settings.calendarId);
+        setGoogleSyncInterval(settings.syncIntervalMinutes);
+        setGoogleEnabled(settings.enabled);
+        setGoogleConnected(isGoogleConnected());
+        setGoogleLastSyncAt(getGoogleLastSyncAt());
+
+        try {
+            const completed = await completeGoogleOAuthFromCallback();
+            if (completed) {
+                setGoogleConnected(isGoogleConnected());
+                setGoogleStatusType('ok');
+                setGoogleStatus('Connected to Google Calendar.');
+            }
+        } catch (e: any) {
+            setGoogleStatusType('err');
+            setGoogleStatus(e?.message || String(e));
+        }
+
+        unlistenGoogleStatus = onGoogleSyncStatus((message, level) => {
+            setGoogleStatus(message);
+            setGoogleStatusType(level === 'success' ? 'ok' : level === 'error' ? 'err' : 'info');
+            setGoogleLastSyncAt(getGoogleLastSyncAt());
+            setGoogleConnected(isGoogleConnected());
+        });
     });
 
     onCleanup(() => {
         unlisten?.();
+        unlistenGoogleStatus?.();
     });
 
     async function refreshQr(info: SyncInfo) {
@@ -187,6 +244,78 @@ export default function Sync() {
         navigator.clipboard.writeText(`${info.url}?token=${info.token}`);
         setLanStatusType('ok');
         setLanStatus('✓ URL copied to clipboard');
+    }
+
+    function saveGoogleSettings() {
+        saveGoogleSyncSettings({
+            clientId: googleClientId().trim(),
+            clientSecret: googleClientSecret().trim(),
+            redirectUri: googleRedirectUri().trim(),
+            calendarId: googleCalendarId().trim() || 'primary',
+            syncIntervalMinutes: Math.max(1, Number(googleSyncInterval()) || 5),
+            enabled: googleEnabled(),
+        });
+
+        setGoogleStatusType('ok');
+        setGoogleStatus('Google sync settings saved.');
+    }
+
+    async function connectGoogle() {
+        setGoogleLoading(true);
+        try {
+            saveGoogleSettings();
+            await connectGoogleCalendar();
+            setGoogleConnected(true);
+            if (googleEnabled()) {
+                startGoogleCalendarAutoSync();
+            }
+            setGoogleStatusType('ok');
+            setGoogleStatus('Connected to Google Calendar.');
+        } catch (e: any) {
+            setGoogleStatusType('err');
+            setGoogleStatus(e?.message || String(e));
+        } finally {
+            setGoogleLoading(false);
+        }
+    }
+
+    function disconnectGoogle() {
+        disconnectGoogleCalendar();
+        setGoogleConnected(false);
+        setGoogleLastSyncAt(null);
+        setGoogleStatusType('info');
+        setGoogleStatus('Google Calendar disconnected.');
+    }
+
+    async function runGoogleSyncNow() {
+        setGoogleLoading(true);
+        try {
+            saveGoogleSettings();
+            await syncGoogleCalendarNow();
+            setGoogleLastSyncAt(getGoogleLastSyncAt());
+            setGoogleStatusType('ok');
+            setGoogleStatus('Google sync completed.');
+        } catch (e: any) {
+            setGoogleStatusType('err');
+            setGoogleStatus(e?.message || String(e));
+        } finally {
+            setGoogleLoading(false);
+        }
+    }
+
+    function toggleGoogleEnabled(enabled: boolean) {
+        setGoogleEnabled(enabled);
+        saveGoogleSyncSettings({ enabled });
+
+        if (enabled) {
+            startGoogleCalendarAutoSync();
+            setGoogleStatusType('info');
+            setGoogleStatus('Auto-sync enabled.');
+        } else {
+            stopGoogleCalendarAutoSync();
+            setGoogleStatusType('info');
+            setGoogleStatus('Auto-sync paused.');
+        }
     }
 
     // ─── Encrypted backup handlers ───────────────────────────────────────────
@@ -299,6 +428,17 @@ export default function Sync() {
                     onClick={() => setTab('backup')}
                 >
                     🔐 Encrypted Backup
+                </button>
+                <button
+                    class={tab() === 'google' ? tabActive : tabInactive}
+                    style={
+                        tab() === 'google'
+                            ? { background: 'var(--color-bg-tertiary)', color: 'var(--color-text)' }
+                            : { color: 'var(--color-text-secondary)' }
+                    }
+                    onClick={() => setTab('google')}
+                >
+                    📅 Google Calendar
                 </button>
             </div>
 
@@ -632,6 +772,170 @@ export default function Sync() {
                             }}
                         >
                             {backupStatus()}
+                        </div>
+                    </Show>
+                </div>
+            </Show>
+
+            {/* ── Google Calendar tab ─────────────────────────────────────── */}
+            <Show when={tab() === 'google'}>
+                <div class="space-y-4">
+                    <div
+                        class="rounded-2xl p-6 space-y-4"
+                        style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
+                    >
+                        <div>
+                            <h2 class="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
+                                Two-way Google Calendar Sync
+                            </h2>
+                            <p class="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                                Syncs both ways: updates from RemmbrMe go to Google Calendar, and Google changes come back here.
+                                Event title, description, all-day/time ranges, recurrence, and colors are mapped and preserved.
+                            </p>
+                        </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="space-y-2 sm:col-span-2">
+                                <label class="text-xs font-semibold uppercase tracking-wider block" style={{ color: 'var(--color-text-muted)' }}>
+                                    Google OAuth Client ID
+                                </label>
+                                <input
+                                    type="text"
+                                    value={googleClientId()}
+                                    onInput={(e) => setGoogleClientId(e.currentTarget.value)}
+                                    placeholder="Your Google OAuth client ID"
+                                    class="w-full px-3 py-2.5 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all"
+                                    style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text)' }}
+                                />
+                            </div>
+
+                            <div class="space-y-2 sm:col-span-2">
+                                <label class="text-xs font-semibold uppercase tracking-wider block" style={{ color: 'var(--color-text-muted)' }}>
+                                    Google OAuth Client Secret (optional)
+                                </label>
+                                <input
+                                    type="password"
+                                    value={googleClientSecret()}
+                                    onInput={(e) => setGoogleClientSecret(e.currentTarget.value)}
+                                    placeholder="Needed for some OAuth app types"
+                                    class="w-full px-3 py-2.5 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all"
+                                    style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text)' }}
+                                />
+                            </div>
+
+                            <div class="space-y-2 sm:col-span-2">
+                                <label class="text-xs font-semibold uppercase tracking-wider block" style={{ color: 'var(--color-text-muted)' }}>
+                                    Redirect URI
+                                </label>
+                                <input
+                                    type="text"
+                                    value={googleRedirectUri()}
+                                    onInput={(e) => setGoogleRedirectUri(e.currentTarget.value)}
+                                    class="w-full px-3 py-2.5 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all"
+                                    style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text)' }}
+                                />
+                                <p class="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                                    Add this exact URI in your Google OAuth app settings.
+                                </p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-xs font-semibold uppercase tracking-wider block" style={{ color: 'var(--color-text-muted)' }}>
+                                    Calendar ID
+                                </label>
+                                <input
+                                    type="text"
+                                    value={googleCalendarId()}
+                                    onInput={(e) => setGoogleCalendarId(e.currentTarget.value)}
+                                    placeholder="primary"
+                                    class="w-full px-3 py-2.5 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all"
+                                    style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text)' }}
+                                />
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-xs font-semibold uppercase tracking-wider block" style={{ color: 'var(--color-text-muted)' }}>
+                                    Auto-sync interval (minutes)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={googleSyncInterval()}
+                                    onInput={(e) => setGoogleSyncInterval(Math.max(1, Number(e.currentTarget.value) || 5))}
+                                    class="w-full px-3 py-2.5 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all"
+                                    style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text)' }}
+                                />
+                            </div>
+                        </div>
+
+                        <label class="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                            <input
+                                type="checkbox"
+                                checked={googleEnabled()}
+                                onChange={(e) => toggleGoogleEnabled(e.currentTarget.checked)}
+                            />
+                            Enable automatic two-way sync
+                        </label>
+
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 hover:opacity-90 active:scale-[.98]"
+                                style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}
+                                onClick={saveGoogleSettings}
+                            >
+                                Save Settings
+                            </button>
+
+                            <Show
+                                when={!googleConnected()}
+                                fallback={
+                                    <button
+                                        class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 hover:opacity-90 active:scale-[.98]"
+                                        style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}
+                                        onClick={disconnectGoogle}
+                                        disabled={googleLoading()}
+                                    >
+                                        Disconnect Google
+                                    </button>
+                                }
+                            >
+                                <button
+                                    class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 hover:opacity-90 active:scale-[.98] disabled:opacity-50"
+                                    style={{ background: 'var(--color-accent)', color: '#fff' }}
+                                    onClick={connectGoogle}
+                                    disabled={googleLoading()}
+                                >
+                                    Connect Google
+                                </button>
+                            </Show>
+
+                            <button
+                                class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 hover:opacity-90 active:scale-[.98] disabled:opacity-50"
+                                style={{ background: 'var(--color-accent)', color: '#fff' }}
+                                onClick={runGoogleSyncNow}
+                                disabled={googleLoading() || !googleConnected()}
+                            >
+                                Sync Now
+                            </button>
+                        </div>
+
+                        <div class="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                            <div>Connection: {googleConnected() ? 'Connected' : 'Not connected'}</div>
+                            <Show when={googleLastSyncAt()}>
+                                <div>Last sync: {new Date(googleLastSyncAt()!).toLocaleString()}</div>
+                            </Show>
+                        </div>
+                    </div>
+
+                    <Show when={googleStatus()}>
+                        <div
+                            class="rounded-xl px-4 py-2.5 text-sm font-medium"
+                            style={{
+                                background: statusColor(googleStatusType()).bg,
+                                color: statusColor(googleStatusType()).text,
+                            }}
+                        >
+                            {googleStatus()}
                         </div>
                     </Show>
                 </div>

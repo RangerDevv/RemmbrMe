@@ -13,6 +13,7 @@ import TitleBar from "./components/TitleBar";
 import { applyThemeToDOM, currentTheme } from "./lib/theme";
 import { initNotifications, updateNotificationSchedule, stopNotificationChecker } from "./lib/notifications";
 import FocusTimer from "./components/FocusTimer";
+import { startGoogleCalendarAutoSync, stopGoogleCalendarAutoSync } from "./lib/google_calendar_sync";
 
 export default function App() {
   // Apply theme on mount
@@ -25,10 +26,13 @@ export default function App() {
     } catch (e) {
       // Notifications may not be available outside Tauri
     }
+
+    startGoogleCalendarAutoSync();
   });
 
   onCleanup(() => {
     stopNotificationChecker();
+    stopGoogleCalendarAutoSync();
   });
 
   return (

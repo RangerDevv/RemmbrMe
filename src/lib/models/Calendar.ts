@@ -28,6 +28,13 @@ export interface Calendar<K extends objectModes> {
     RecurrencePattern?: { days: number[] };
     RecurrenceEndDate?: string;
     RecurrenceExceptions?: RecurrenceException[];
+    ParentEventId?: string;
+    ExternalSource?: string;
+    ExternalEventId?: string;
+    ExternalCalendarId?: string;
+    ExternalEtag?: string;
+    ExternalUpdatedAt?: string;
+    LastGoogleSyncedAt?: string;
     user: sqlRelation<User<K>, K>;
     created: string;
     updated: string;
