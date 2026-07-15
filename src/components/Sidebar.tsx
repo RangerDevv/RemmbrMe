@@ -11,8 +11,7 @@ import {
     SettingsIcon, 
     MenuIcon,
     XIcon,
-    SearchIcon,
-    SyncIcon
+    SearchIcon
 } from './Icons';
 
 export default function Sidebar() {
@@ -282,18 +281,6 @@ export default function Sidebar() {
 
                     {/* New List button */}
                     <div class="pt-2 border-t mt-2" style={{ "border-color": "var(--color-border)" }}>
-                    <a
-                        href="/sync"
-                        onClick={() => setMobileMenuOpen(false)}
-                        class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-                        style={{
-                            "background-color": isActive('/sync') ? "var(--color-bg-tertiary)" : "transparent",
-                            "color": isActive('/sync') ? "var(--color-text)" : "var(--color-text-secondary)",
-                        }}
-                    >
-                        <SyncIcon class="w-[18px] h-[18px]" />
-                        <span>Sync & Backup</span>
-                    </a>
                     <a
                         href="/settings"
                             onClick={() => setMobileMenuOpen(false)}

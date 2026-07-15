@@ -79,9 +79,13 @@ interface SyncInfo {
     token: string;
 }
 
+interface SyncProps {
+    embedded?: boolean;
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function Sync() {
+export default function Sync(props: SyncProps = {}) {
     // LAN sync
     const [tab, setTab] = createSignal<'lan' | 'backup' | 'google'>('lan');
     const [serverRunning, setServerRunning] = createSignal(false);
@@ -394,13 +398,15 @@ export default function Sync() {
     };
 
     return (
-        <div class="max-w-2xl">
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>Sync & Backup</h1>
-                <p class="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    Transfer your data to other devices or create encrypted backups.
-                </p>
-            </div>
+        <div class={props.embedded ? 'w-full' : 'max-w-2xl'}>
+            <Show when={!props.embedded}>
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>Sync & Backup</h1>
+                    <p class="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                        Transfer your data to other devices or create encrypted backups.
+                    </p>
+                </div>
+            </Show>
 
             {/* Tab bar */}
             <div

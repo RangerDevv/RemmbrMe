@@ -13,10 +13,10 @@ import {
 } from '../components/Icons';
 
 const PX_PER_MIN = 64 / 60; // 64px per hour
-const TIMELINE_START_HOUR = 6;
-const TIMELINE_END_HOUR = 23;
+const TIMELINE_START_HOUR = 0;
+const TIMELINE_END_HOUR = 24;
 const TIMELINE_HOURS = Array.from(
-    { length: TIMELINE_END_HOUR - TIMELINE_START_HOUR + 1 },
+    { length: TIMELINE_END_HOUR - TIMELINE_START_HOUR },
     (_, i) => TIMELINE_START_HOUR + i
 );
 
@@ -278,7 +278,27 @@ function Dashboard() {
     // ── JSX ───────────────────────────────────────────────────────────────────
 
     return (
-        <div class="h-full w-full flex flex-col gap-5 overflow-hidden">
+        <div
+            class="h-full w-full flex flex-col gap-5 overflow-hidden playful-page"
+            style={{
+                "--color-bg": "#fffaf6",
+                "--color-bg-secondary": "#fff8ff",
+                "--color-bg-tertiary": "#f4ecff",
+                "--color-surface": "#fff8ff",
+                "--color-surface-hover": "#f7edff",
+                "--color-border": "#e8d9ff",
+                "--color-border-hover": "#d8bff8",
+                "--color-text": "#2f2152",
+                "--color-text-secondary": "#6d5c95",
+                "--color-text-muted": "#9a88be",
+                "--color-accent": "#7c4dff",
+                "--color-accent-hover": "#6942d8",
+                "--color-accent-muted": "rgba(124,77,255,0.15)",
+                "--color-accent-text": "#ffffff",
+                "--color-warning": "#ff9f1c",
+                "--color-success": "#11b98f",
+            }}
+        >
 
             {/* ── Top bar ── */}
             <div class="flex items-center gap-4 flex-wrap">
@@ -616,7 +636,7 @@ function Dashboard() {
 
                         {/* Scrollable time grid */}
                         <div class="flex-1 overflow-y-auto">
-                            <div class="relative" style={{ "height": `${(TIMELINE_END_HOUR - TIMELINE_START_HOUR) * 64}px` }}>
+                            <div class="relative" style={{ "height": `${(TIMELINE_END_HOUR - TIMELINE_START_HOUR) * 64 + 10}px`, "padding-top": "20px" }}>
 
                                 {/* Hour lines */}
                                 <For each={TIMELINE_HOURS}>
@@ -629,7 +649,7 @@ function Dashboard() {
                                                 class="w-16 text-[10px] tabular-nums text-right pr-3 shrink-0 select-none"
                                                 style={{ "color": "var(--color-text-muted)", "margin-top": "-7px" }}
                                             >
-                                                {hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+                                                {hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
                                             </span>
                                             <div class="flex-1 h-px" style={{ "background": "var(--color-border)" }} />
                                         </div>

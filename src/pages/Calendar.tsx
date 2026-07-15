@@ -3,6 +3,7 @@ import { useLocation } from '@solidjs/router';
 import { bk, currentUser } from '../lib/backend.ts';
 import { refreshNotifications } from '../lib/notifications';
 import { formatTime } from '../lib/theme';
+import { getIslamicPrayerSettings, syncIslamicPrayerTimesForDate } from '../lib/islamic_prayer_times';
 import TagSelector from '../components/TagSelector';
 import ConfirmModal from '../components/ConfirmModal';
 import CustomSelect from '../components/CustomSelect';
@@ -58,6 +59,10 @@ function Calendar() {
     const [selectedDateTasks, setSelectedDateTasks] = createSignal<Date | null>(null);
     const [confirmDelete, setConfirmDelete] = createSignal({ show: false, eventId: '' });
     const [currentTime, setCurrentTime] = createSignal(new Date());
+    const [isPrayerSyncing, setIsPrayerSyncing] = createSignal(false);
+    const [prayerSyncStatus, setPrayerSyncStatus] = createSignal('');
+    const [prayerSyncError, setPrayerSyncError] = createSignal(false);
+    let prayerSyncStatusTimer: number | undefined;
     let isFetchingTodos = false;
     
     // Drag-to-move event state
@@ -306,6 +311,48 @@ function Calendar() {
             setAllTags(tags);
         } catch (error) {
             console.error('Error fetching tags:', error);
+        }
+    }
+
+    function setPrayerStatus(message: string, isError: boolean = false) {
+        setPrayerSyncStatus(message);
+        setPrayerSyncError(isError);
+        if (prayerSyncStatusTimer) {
+            clearTimeout(prayerSyncStatusTimer);
+        }
+        prayerSyncStatusTimer = window.setTimeout(() => {
+            setPrayerSyncStatus('');
+            setPrayerSyncError(false);
+        }, 5000);
+    }
+
+    async function syncPrayerTimesForToday(showStatus: boolean = true) {
+        const userId = currentUser()?.id;
+        if (!userId) return;
+
+        const settings = getIslamicPrayerSettings();
+        if (!settings.enabled) {
+            if (showStatus) {
+                setPrayerStatus('Prayer sync is disabled. Enable it in Settings.', true);
+            }
+            return;
+        }
+
+        setIsPrayerSyncing(true);
+        try {
+            const result = await syncIslamicPrayerTimesForDate(bk, userId, new Date());
+            await fetchEvents();
+
+            if (showStatus) {
+                setPrayerStatus(`Prayer times synced: ${result.created} new, ${result.updated} updated, ${result.deleted} removed.`);
+            }
+        } catch (error: any) {
+            console.error('Error syncing prayer times:', error);
+            if (showStatus) {
+                setPrayerStatus(`Prayer sync failed: ${error?.message || 'Unknown error'}`, true);
+            }
+        } finally {
+            setIsPrayerSyncing(false);
         }
     }
 
@@ -1404,6 +1451,7 @@ function Calendar() {
     onMount(async () => {
         console.log('Calendar mounted, fetching data...');
         setIsLoading(true);
+        await syncPrayerTimesForToday(false);
         await fetchEvents();
         await fetchTodos();
         await fetchTags();
@@ -1423,6 +1471,11 @@ function Calendar() {
             await fetchTodos();
         };
         window.addEventListener('itemCreated', handleItemCreated);
+
+        const handlePrayerSettingsChanged = async () => {
+            await syncPrayerTimesForToday(false);
+        };
+        window.addEventListener('prayerSettingsChanged', handlePrayerSettingsChanged);
 
         // Listen for keyboard shortcut events
         const handleNewEvent = () => {
@@ -1449,6 +1502,7 @@ function Calendar() {
         onCleanup(() => {
             clearInterval(timeInterval);
             window.removeEventListener('itemCreated', handleItemCreated);
+            window.removeEventListener('prayerSettingsChanged', handlePrayerSettingsChanged);
             window.removeEventListener('mouseup', onMouseUp);
             document.removeEventListener('kb:new-event', handleNewEvent);
             document.removeEventListener('kb:calendar-prev', handlePrev);
@@ -1456,6 +1510,9 @@ function Calendar() {
             document.removeEventListener('kb:calendar-today', handleToday);
             document.removeEventListener('kb:calendar-month', handleMonthView);
             document.removeEventListener('kb:calendar-week', handleWeekView);
+            if (prayerSyncStatusTimer) {
+                clearTimeout(prayerSyncStatusTimer);
+            }
         });
     });
 
@@ -1464,19 +1521,38 @@ function Calendar() {
             <div class="mb-4 lg:mb-6 shrink-0">
                 <div class="flex items-center justify-between mb-3">
                     <h1 class="text-xl lg:text-2xl font-bold flex items-center gap-2" style={{ "color": "var(--color-text)" }}><CalendarIcon class="w-5 h-5 lg:w-6 lg:h-6" /> Calendar</h1>
-                    <button
-                        onClick={() => {
-                            setShowEventModal(true);
-                            const today = new Date();
-                            setStartDate(today.toISOString().split('T')[0]);
-                            setEndDate(today.toISOString().split('T')[0]);
-                        }}
-                        class="px-3 lg:px-4 py-1.5 font-semibold rounded-xl active:scale-95 transition-all duration-200 text-sm"
-                        style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
-                    >
-                        + New Event
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button
+                            onClick={() => syncPrayerTimesForToday(true)}
+                            disabled={isPrayerSyncing()}
+                            class="px-3 lg:px-4 py-1.5 font-semibold rounded-xl active:scale-95 transition-all duration-200 text-sm"
+                            style={{
+                                "background-color": isPrayerSyncing() ? "var(--color-bg-tertiary)" : "#166534",
+                                "color": isPrayerSyncing() ? "var(--color-text-muted)" : "#dcfce7",
+                                "border": isPrayerSyncing() ? "1px solid var(--color-border)" : "1px solid #166534"
+                            }}
+                        >
+                            {isPrayerSyncing() ? 'Syncing...' : 'Sync Prayer Times'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowEventModal(true);
+                                const today = new Date();
+                                setStartDate(today.toISOString().split('T')[0]);
+                                setEndDate(today.toISOString().split('T')[0]);
+                            }}
+                            class="px-3 lg:px-4 py-1.5 font-semibold rounded-xl active:scale-95 transition-all duration-200 text-sm"
+                            style={{ "background-color": "var(--color-accent)", "color": "var(--color-accent-text)" }}
+                        >
+                            + New Event
+                        </button>
+                    </div>
                 </div>
+                <Show when={prayerSyncStatus()}>
+                    <p class="text-xs mt-1" style={{ "color": prayerSyncError() ? "#f87171" : "#22c55e" }}>
+                        {prayerSyncStatus()}
+                    </p>
+                </Show>
             </div>
 
             {/* Calendar Header */}

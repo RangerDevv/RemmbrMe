@@ -1,9 +1,16 @@
 import { createSignal, onMount, createEffect, For } from 'solid-js';
 import { A } from '@solidjs/router';
 import ConfirmModal from '../components/ConfirmModal';
+import Sync from './Sync';
 import { themes, currentThemeId, setTheme, getUserName, setUserName, isUse24hTime, setUse24hTime } from '../lib/theme';
 import { timerThemes, currentTimerThemeId, setTimerTheme } from '../lib/timerThemes';
 import { getStorageMode, setStorageMode, getPocketBaseUrl, setPocketBaseUrl, reinitBackend } from '../lib/backend';
+import {
+    DEFAULT_ISLAMIC_PRAYER_SETTINGS,
+    getIslamicPrayerSettings,
+    IslamicPrayerSettings,
+    saveIslamicPrayerSettings,
+} from '../lib/islamic_prayer_times';
 import { 
     DashboardIcon, 
     CheckCircleIcon, 
@@ -64,6 +71,7 @@ function Settings() {
     const [storageMode, setLocalStorageMode] = createSignal(getStorageMode());
     const [pbConnecting, setPbConnecting] = createSignal(false);
     const [pbStatus, setPbStatus] = createSignal('');
+    const [prayerSettings, setPrayerSettings] = createSignal<IslamicPrayerSettings>(getIslamicPrayerSettings());
 
     onMount(() => {
         loadSettings();
@@ -93,6 +101,9 @@ function Settings() {
 
     function confirmResetSettings() {
         setSettings(DEFAULT_SETTINGS);
+        setPrayerSettings(DEFAULT_ISLAMIC_PRAYER_SETTINGS);
+        saveIslamicPrayerSettings(DEFAULT_ISLAMIC_PRAYER_SETTINGS);
+        window.dispatchEvent(new Event('prayerSettingsChanged'));
         setConfirmReset(false);
     }
 
@@ -104,6 +115,28 @@ function Settings() {
         setLocalUserName(name);
         setUserName(name);
     }
+
+    function updatePrayerSettings(partial: Partial<IslamicPrayerSettings>) {
+        const next = { ...prayerSettings(), ...partial };
+        setPrayerSettings(next);
+        saveIslamicPrayerSettings(partial);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 1500);
+        window.dispatchEvent(new Event('prayerSettingsChanged'));
+    }
+
+    const prayerMethodOptions = [
+        { value: 1, label: 'Karachi' },
+        { value: 2, label: 'ISNA' },
+        { value: 3, label: 'Muslim World League' },
+        { value: 4, label: 'Umm Al-Qura' },
+        { value: 5, label: 'Egyptian' },
+        { value: 8, label: 'Gulf Region' },
+        { value: 9, label: 'Kuwait' },
+        { value: 10, label: 'Qatar' },
+        { value: 12, label: 'Diyanet (Turkey)' },
+        { value: 13, label: 'Kemenag (Indonesia)' },
+    ];
 
     async function handleStorageModeChange(mode: string) {
         if (mode === 'pocketbase' && pbUrl()) {
@@ -145,7 +178,27 @@ function Settings() {
     );
 
     return (
-        <div class="flex-1 w-full max-w-3xl">
+        <div
+            class="flex-1 w-full max-w-5xl mx-auto playful-page"
+            style={{
+                "--color-bg": "#fffaf6",
+                "--color-bg-secondary": "#fff8ff",
+                "--color-bg-tertiary": "#f4ecff",
+                "--color-surface": "#fff8ff",
+                "--color-surface-hover": "#f7edff",
+                "--color-border": "#e8d9ff",
+                "--color-border-hover": "#d8bff8",
+                "--color-text": "#2f2152",
+                "--color-text-secondary": "#6d5c95",
+                "--color-text-muted": "#9a88be",
+                "--color-accent": "#7c4dff",
+                "--color-accent-hover": "#6942d8",
+                "--color-accent-muted": "rgba(124,77,255,0.15)",
+                "--color-accent-text": "#ffffff",
+                "--color-warning": "#ff9f1c",
+                "--color-success": "#11b98f",
+            }}
+        >
             <div class="mb-5">
                 <div class="flex items-center justify-between">
                     <div>
@@ -312,6 +365,104 @@ function Settings() {
                         <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
                             Local mode saves data in your browser. PocketBase mode syncs with a remote server for backup.
                         </p>
+                    </div>
+                </div>
+
+                {/* Sync & Backup Section */}
+                <div id="sync-backup" class="glass rounded-xl p-5">
+                    <h2 class="text-base font-bold mb-1" style={{ "color": "var(--color-text)" }}>Sync & Backup</h2>
+                    <p class="text-xs mb-3" style={{ "color": "var(--color-text-muted)" }}>
+                        LAN sync, encrypted backup/restore, and Google Calendar sync settings.
+                    </p>
+                    <Sync embedded />
+                </div>
+
+                {/* Islamic Prayer Times Section */}
+                <div class="glass rounded-xl p-5">
+                    <h2 class="text-base font-bold mb-1" style={{ "color": "var(--color-text)" }}>Islamic Prayer Times</h2>
+                    <p class="text-xs mb-3" style={{ "color": "var(--color-text-muted)" }}>
+                        Fetches daily prayer times and adds Fajr, Dhuhr, Asr, Maghrib, and Isha to your calendar.
+                    </p>
+
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between p-2.5 rounded-lg cursor-pointer" style={{ "background-color": "var(--color-bg-tertiary)", "border": "1px solid var(--color-border)" }}>
+                            <span class="text-sm" style={{ "color": "var(--color-text)" }}>Enable Prayer Sync</span>
+                            <input
+                                type="checkbox"
+                                checked={prayerSettings().enabled}
+                                onChange={(e) => updatePrayerSettings({ enabled: e.currentTarget.checked })}
+                                class="w-4 h-4 cursor-pointer"
+                            />
+                        </label>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium mb-1" style={{ "color": "var(--color-text-secondary)" }}>City</label>
+                                <input
+                                    type="text"
+                                    value={prayerSettings().city}
+                                    onInput={(e) => updatePrayerSettings({ city: e.currentTarget.value })}
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-all duration-200"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    placeholder="Mecca"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium mb-1" style={{ "color": "var(--color-text-secondary)" }}>Country</label>
+                                <input
+                                    type="text"
+                                    value={prayerSettings().country}
+                                    onInput={(e) => updatePrayerSettings({ country: e.currentTarget.value })}
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-all duration-200"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                    placeholder="Saudi Arabia"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium mb-1" style={{ "color": "var(--color-text-secondary)" }}>Calculation Method</label>
+                                <select
+                                    value={String(prayerSettings().method)}
+                                    onChange={(e) => updatePrayerSettings({ method: Number(e.currentTarget.value) })}
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-all duration-200"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                >
+                                    <For each={prayerMethodOptions}>
+                                        {(option) => (
+                                            <option value={option.value}>{option.label}</option>
+                                        )}
+                                    </For>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium mb-1" style={{ "color": "var(--color-text-secondary)" }}>Asr School</label>
+                                <select
+                                    value={String(prayerSettings().school)}
+                                    onChange={(e) => updatePrayerSettings({ school: Number(e.currentTarget.value) === 1 ? 1 : 0 })}
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-all duration-200"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                >
+                                    <option value="0">Standard (Shafi/Maliki/Hanbali)</option>
+                                    <option value="1">Hanafi</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium mb-1" style={{ "color": "var(--color-text-secondary)" }}>Event Length (minutes)</label>
+                                <input
+                                    type="number"
+                                    min="5"
+                                    max="180"
+                                    value={prayerSettings().reminderMinutes}
+                                    onInput={(e) => updatePrayerSettings({ reminderMinutes: Math.max(5, Number(e.currentTarget.value || 30)) })}
+                                    class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-all duration-200"
+                                    style={{ "background-color": "var(--color-bg-tertiary)", "color": "var(--color-text)", "border": "1px solid var(--color-border)" }}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
