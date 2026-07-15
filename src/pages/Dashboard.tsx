@@ -214,6 +214,67 @@ function Dashboard() {
         viewDateTasks().reduce((acc: number, t: any) => acc + (t.Duration || 0), 0)
     );
 
+    const weekData = createMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return Array.from({ length: 8 }, (_, i) => i - 1).map(offset => {
+            const d = new Date(today);
+            d.setDate(today.getDate() + offset);
+            const next = new Date(d);
+            next.setDate(d.getDate() + 1);
+            const dayEvents = events().filter(e => {
+                if (e.AllDay) return false;
+                const s = new Date(e.Start);
+                return s >= d && s < next;
+            });
+            const dayTasks = todos().filter(t => {
+                if (t.Completed || !t.Deadline) return false;
+                const dl = new Date(t.Deadline);
+                return dl >= d && dl < next;
+            });
+            return { offset, date: new Date(d), events: dayEvents, tasks: dayTasks };
+        });
+    });
+
+    const upcomingItems = createMemo(() => {
+        const base = viewDate();
+        const sel = selectedDay();
+        const tomorrow = new Date(base);
+        tomorrow.setDate(base.getDate() + 1);
+        const cutoff = new Date(base);
+        cutoff.setDate(base.getDate() + 8);
+
+        const getDayInfo = (date: Date): { label: string; offset: number } => {
+            const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const baseStart = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+            const delta = Math.round((dayStart.getTime() - baseStart.getTime()) / 86400000);
+            const label = delta === 1 ? 'Tomorrow'
+                : delta === 2 ? date.toLocaleDateString('en-US', { weekday: 'long' })
+                : date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            return { label, offset: sel + delta };
+        };
+
+        const items: Array<{ type: 'event' | 'task'; data: any; date: Date; dayLabel: string; offset: number }> = [];
+
+        events().forEach(e => {
+            const s = new Date(e.Start);
+            if (s >= tomorrow && s < cutoff) {
+                const { label, offset } = getDayInfo(s);
+                items.push({ type: 'event', data: e, date: s, dayLabel: label, offset });
+            }
+        });
+        todos().forEach(t => {
+            if (t.Completed || !t.Deadline) return;
+            const d = new Date(t.Deadline);
+            if (d >= tomorrow && d < cutoff) {
+                const { label, offset } = getDayInfo(d);
+                items.push({ type: 'task', data: t, date: d, dayLabel: label, offset });
+            }
+        });
+
+        return items.sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 14);
+    });
+
     // ── JSX ───────────────────────────────────────────────────────────────────
 
     return (
@@ -228,21 +289,7 @@ function Dashboard() {
                     </p>
                 </div>
 
-                {/* Day switcher */}
-                <div class="flex rounded-lg p-0.5" style={{ "background": "var(--color-bg-secondary)", "border": "1px solid var(--color-border)" }}>
-                    <For each={[{ label: 'Yesterday', val: -1 }, { label: 'Today', val: 0 }, { label: 'Tomorrow', val: 1 }]}>
-                        {(item) => (
-                            <button
-                                onClick={() => setSelectedDay(item.val)}
-                                class="px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150"
-                                style={{
-                                    "background-color": selectedDay() === item.val ? "var(--color-accent)" : "transparent",
-                                    "color": selectedDay() === item.val ? "var(--color-accent-text)" : "var(--color-text-muted)",
-                                }}
-                            >{item.label}</button>
-                        )}
-                    </For>
-                </div>
+
 
                 {/* Stats */}
                 <div class="flex items-center gap-3 text-xs shrink-0" style={{ "color": "var(--color-text-muted)" }}>
@@ -259,6 +306,55 @@ function Dashboard() {
                         </span>
                     </Show>
                 </div>
+            </div>
+
+            {/* ── Week strip ── */}
+            <div class="flex gap-1.5 overflow-x-auto shrink-0" style={{ "scrollbar-width": "none" }}>
+                <For each={weekData()}>
+                    {(day) => {
+                        const isSelected = () => selectedDay() === day.offset;
+                        return (
+                            <button
+                                onClick={() => setSelectedDay(day.offset)}
+                                class="shrink-0 flex flex-col items-center gap-0.5 rounded-xl px-3.5 py-2.5 transition-all duration-150"
+                                style={{
+                                    "min-width": "64px",
+                                    "background": isSelected() ? "var(--color-accent)" : "var(--color-bg-secondary)",
+                                    "border": `1px solid ${isSelected() ? "var(--color-accent)" : "var(--color-border)"}`,
+                                }}
+                            >
+                                <span
+                                    class="text-[10px] font-semibold uppercase tracking-wide"
+                                    style={{ "color": isSelected() ? "var(--color-accent-text)" : "var(--color-text-muted)" }}
+                                >
+                                    {day.offset === -1 ? 'Yest' : day.offset === 0 ? 'Today' : day.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                </span>
+                                <span
+                                    class="text-lg font-bold leading-none"
+                                    style={{ "color": isSelected() ? "var(--color-accent-text)" : "var(--color-text)" }}
+                                >
+                                    {day.date.getDate()}
+                                </span>
+                                <div class="flex gap-0.5 items-center mt-0.5" style={{ "min-height": "8px" }}>
+                                    <For each={day.events.slice(0, 3)}>
+                                        {(e) => (
+                                            <div
+                                                class="w-1.5 h-1.5 rounded-full"
+                                                style={{ "background": isSelected() ? "rgba(255,255,255,0.75)" : (e.Color || "var(--color-accent)") }}
+                                            />
+                                        )}
+                                    </For>
+                                    <Show when={day.tasks.length > 0 && day.events.length === 0}>
+                                        <div
+                                            class="w-1.5 h-1.5 rounded-full"
+                                            style={{ "background": isSelected() ? "rgba(255,255,255,0.5)" : "var(--color-text-muted)", "opacity": "0.6" }}
+                                        />
+                                    </Show>
+                                </div>
+                            </button>
+                        );
+                    }}
+                </For>
             </div>
 
             <Show when={isLoading()}>
@@ -421,6 +517,61 @@ function Dashboard() {
                                     >
                                         + Schedule tasks
                                     </A>
+                                </div>
+                            </Show>
+
+                            {/* ── Coming Up ── */}
+                            <Show when={upcomingItems().length > 0}>
+                                <div class="mx-3 my-2 h-px" style={{ "background": "var(--color-border)" }} />
+                                <div class="px-3 pb-4">
+                                    <div class="text-[10px] font-bold uppercase tracking-widest px-1 mb-2" style={{ "color": "var(--color-text-muted)" }}>
+                                        Coming Up
+                                    </div>
+                                    <For each={upcomingItems()}>
+                                        {(item) => (
+                                            item.type === 'event' ? (
+                                                <button
+                                                    onClick={() => setSelectedDay(item.offset)}
+                                                    class="w-full text-left px-2 py-2.5 rounded-lg mb-1.5 hover:opacity-80 transition-opacity overflow-hidden"
+                                                    style={{
+                                                        "background": (item.data.Color || 'var(--color-accent)') + '12',
+                                                        "border-left": `3px solid ${item.data.Color || 'var(--color-accent)'}`,
+                                                    }}
+                                                >
+                                                    <div class="pl-1.5">
+                                                        <div class="text-xs font-semibold truncate" style={{ "color": item.data.Color || 'var(--color-accent)' }}>
+                                                            {item.data.EventName}
+                                                        </div>
+                                                        <div class="text-[10px] mt-0.5 flex items-center gap-1" style={{ "color": "var(--color-text-muted)" }}>
+                                                            <span>{item.dayLabel}</span>
+                                                            <span style={{ "opacity": "0.4" }}>·</span>
+                                                            <span>{item.data.AllDay ? 'All day' : formatTime(item.date)}</span>
+                                                            {item.data.End && !item.data.AllDay ? (
+                                                                <><span style={{ "opacity": "0.4" }}>·</span><span>{formatDuration(Math.max(1, Math.round((new Date(item.data.End).getTime() - item.date.getTime()) / 60000)))}</span></>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setSelectedDay(item.offset)}
+                                                    class="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg mb-1 text-left hover:opacity-80 transition-opacity"
+                                                    style={{ "background": "var(--color-bg-secondary)" }}
+                                                >
+                                                    <div class="w-2 h-2 rounded-full shrink-0" style={{ "background": priorityColor(item.data.Priority) }} />
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="text-xs truncate" style={{ "color": "var(--color-text)" }}>{item.data.Title}</div>
+                                                        <div class="text-[10px] mt-0.5 flex items-center gap-1" style={{ "color": "var(--color-text-muted)" }}>
+                                                            <span>{item.dayLabel}</span>
+                                                            {taskHasTime(item.data) ? (<><span style={{ "opacity": "0.4" }}>·</span><span>{formatTime(item.date)}</span></>) : null}
+                                                            <span style={{ "opacity": "0.4" }}>·</span>
+                                                            <span style={{ "color": priorityColor(item.data.Priority), "opacity": "0.8" }}>{item.data.Priority}</span>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            )
+                                        )}
+                                    </For>
                                 </div>
                             </Show>
                         </div>
