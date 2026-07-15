@@ -10,6 +10,8 @@
     "serve": "vite preview",
     "tauri": "tauri",
     "tauri:build": "NO_STRIP=true tauri build",
+    "tauri:build:appimage": "NO_STRIP=true tauri build --bundles appimage",
+    "tauri:build:appimage:clean": "rm -f \"$HOME/.cache/tauri/linuxdeploy-x86_64.AppImage\" \"$HOME/.cache/tauri/linuxdeploy-plugin-appimage.AppImage\" \"$HOME/.cache/tauri/AppRun-x86_64\" && NO_STRIP=true tauri build --bundles appimage",
     "icons": "node scripts/generate-icons.js && npm run tauri icon src-tauri/icons/icon.png",
     "build:arch": "npm run build && cd src-tauri && cargo build --release"
   },
