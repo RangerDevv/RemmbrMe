@@ -1724,9 +1724,11 @@ function Calendar() {
                                                                         handleEventDragStart(e, event);
                                                                     }}
                                                                     onMouseEnter={(e) => {
-                                                                        const rect = e.currentTarget.getBoundingClientRect();
-                                                                        setHoverPos({ left: rect.left, right: rect.right, y: rect.top });
+                                                                        setHoverPos({ left: e.clientX, right: e.clientX, y: e.clientY });
                                                                         setHoveredEvent(event);
+                                                                    }}
+                                                                    onMouseMove={(e) => {
+                                                                        setHoverPos({ left: e.clientX, right: e.clientX, y: e.clientY });
                                                                     }}
                                                                     onMouseLeave={() => setHoveredEvent(null)}
                                                                 >
@@ -2144,37 +2146,54 @@ function Calendar() {
             {/* Hover Tooltip */}
             <Show when={hoveredEvent() && !quickViewEvent()}>
                 {(() => {
+                    const event = hoveredEvent()!;
                     const pos = hoverPos();
                     const windowW = window.innerWidth;
+                    const windowH = window.innerHeight;
                     const tooltipW = 280;
+                    const tasksCount = event.expand?.Tasks?.length || 0;
+                    const estimatedHeight = Math.min(320, 132 + tasksCount * 18);
                     // Show to the right if there's room, otherwise to the left
-                    const showRight = pos.right + tooltipW + 8 < windowW;
-                    let left = showRight ? pos.right + 8 : pos.left - tooltipW - 8;
+                    const showRight = pos.right + tooltipW + 16 < windowW;
+                    let left = showRight ? pos.right + 16 : pos.left - tooltipW - 16;
                     // Clamp horizontally so it stays on screen
                     left = Math.max(8, Math.min(left, windowW - tooltipW - 8));
                     // Clamp vertical position so it doesn't overflow
-                    const top = Math.max(8, Math.min(pos.y, window.innerHeight - 200));
+                    const top = Math.max(8, Math.min(pos.y + 12, windowH - estimatedHeight - 8));
+
+                    const formatTooltipDate = (iso: string) => {
+                        const dt = new Date(iso);
+                        return `${dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}, ${formatTime(dt)}`;
+                    };
+
+                    const timeRange = event.AllDay
+                        ? `${new Date(event.Start).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} (All day)`
+                        : `${formatTooltipDate(event.Start)} - ${formatTooltipDate(event.End)}`;
+
                     return (
                         <div 
-                            class="fixed z-50 rounded-lg p-3 shadow-xl pointer-events-none glass"
+                            class="fixed z-50 rounded-xl p-3 shadow-xl pointer-events-none"
                             style={{
                                 top: `${top}px`,
                                 left: `${left}px`,
                                 width: `${tooltipW}px`,
                                 "max-width": `${tooltipW}px`,
+                                "background": "var(--color-bg-secondary)",
+                                "border": "1px solid var(--color-border)",
+                                "backdrop-filter": "blur(6px)",
                             }}
                         >
-                            <h4 class="font-semibold mb-1" style={{ "color": "var(--color-text)" }}>{hoveredEvent()!.EventName}</h4>
-                            <Show when={hoveredEvent()!.Description}>
-                                <p class="text-sm mb-2 line-clamp-3" style={{ "color": "var(--color-text-secondary)", "white-space": "pre-wrap" }}>{hoveredEvent()!.Description}</p>
+                            <h4 class="font-semibold mb-1" style={{ "color": "var(--color-text)" }}>{event.EventName}</h4>
+                            <Show when={event.Description}>
+                                <p class="text-sm mb-2 line-clamp-3" style={{ "color": "var(--color-text-secondary)", "white-space": "pre-wrap" }}>{event.Description}</p>
                             </Show>
                             <p class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
-                                {new Date(hoveredEvent()!.Start).toLocaleString()} - {new Date(hoveredEvent()!.End).toLocaleString()}
+                                {timeRange}
                             </p>
-                            <Show when={hoveredEvent()!.expand?.Tasks?.length > 0}>
+                            <Show when={event.expand?.Tasks?.length > 0}>
                                 <div class="mt-2 pt-2" style={{ "border-top": "1px solid var(--color-border)" }}>
                                     <p class="text-xs mb-1" style={{ "color": "var(--color-text-secondary)" }}>Tasks:</p>
-                                    <For each={hoveredEvent()!.expand.Tasks}>
+                                    <For each={event.expand.Tasks}>
                                         {(task: any) => (
                                             <div class="text-xs" style={{ "color": "var(--color-text-muted)" }}>
                                                 {task.Completed ? '✓' : '○'} {task.Title}

@@ -278,27 +278,7 @@ function Dashboard() {
     // ── JSX ───────────────────────────────────────────────────────────────────
 
     return (
-        <div
-            class="h-full w-full flex flex-col gap-5 overflow-hidden playful-page"
-            style={{
-                "--color-bg": "#fffaf6",
-                "--color-bg-secondary": "#fff8ff",
-                "--color-bg-tertiary": "#f4ecff",
-                "--color-surface": "#fff8ff",
-                "--color-surface-hover": "#f7edff",
-                "--color-border": "#e8d9ff",
-                "--color-border-hover": "#d8bff8",
-                "--color-text": "#2f2152",
-                "--color-text-secondary": "#6d5c95",
-                "--color-text-muted": "#9a88be",
-                "--color-accent": "#7c4dff",
-                "--color-accent-hover": "#6942d8",
-                "--color-accent-muted": "rgba(124,77,255,0.15)",
-                "--color-accent-text": "#ffffff",
-                "--color-warning": "#ff9f1c",
-                "--color-success": "#11b98f",
-            }}
-        >
+        <div class="h-full w-full flex flex-col gap-5 overflow-hidden">
 
             {/* ── Top bar ── */}
             <div class="flex items-center gap-4 flex-wrap">

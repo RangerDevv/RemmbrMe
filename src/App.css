@@ -96,7 +96,7 @@ input[type="checkbox"]:hover { border-color: var(--color-accent); }
 /* Date/time/select inputs */
 input[type="date"],
 input[type="time"],
-select { color-scheme: dark; }
+select { color-scheme: light; }
 
 /* Focus ring */
 *:focus-visible {
@@ -221,9 +221,10 @@ select { color-scheme: dark; }
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(1000px 520px at -10% -10%, rgba(255, 181, 213, 0.26), transparent 62%),
-    radial-gradient(1000px 520px at 100% -10%, rgba(167, 139, 250, 0.24), transparent 62%),
-    radial-gradient(1100px 540px at 50% 110%, rgba(45, 212, 191, 0.18), transparent 64%);
+    radial-gradient(1000px 520px at -10% -10%, var(--app-shell-blob-1, rgba(255, 183, 146, 0.2)), transparent 62%),
+    radial-gradient(1000px 520px at 100% -10%, var(--app-shell-blob-2, rgba(96, 165, 250, 0.18)), transparent 62%),
+    radial-gradient(1100px 540px at 50% 110%, var(--app-shell-blob-3, rgba(52, 211, 153, 0.14)), transparent 64%),
+    linear-gradient(180deg, var(--app-shell-grad-start, #f6fcfa) 0%, var(--app-shell-grad-end, #ecf8f4) 100%);
 }
 
 .playful-ui::before,
@@ -240,7 +241,7 @@ select { color-scheme: dark; }
   height: 210px;
   top: 68px;
   right: -40px;
-  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
+  background: radial-gradient(circle at 35% 35%, var(--app-shell-highlight-1, rgba(236, 252, 245, 0.65)), rgba(236, 252, 245, 0));
 }
 
 .playful-ui::after {
@@ -248,7 +249,7 @@ select { color-scheme: dark; }
   height: 180px;
   bottom: -50px;
   left: -30px;
-  background: radial-gradient(circle at 45% 45%, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0));
+  background: radial-gradient(circle at 45% 45%, var(--app-shell-highlight-2, rgba(224, 248, 241, 0.5)), rgba(224, 248, 241, 0));
 }
 
 .playful-ui > * {
@@ -260,14 +261,14 @@ select { color-scheme: dark; }
 .playful-ui .glass-strong,
 .playful-ui .glass-modal {
   border-radius: 22px;
-  border: 1px solid color-mix(in srgb, var(--color-border) 76%, white);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(250, 244, 255, 0.92));
-  box-shadow: 0 10px 28px rgba(88, 62, 155, 0.12);
+  border: 1px solid var(--app-glass-border, #cce7de);
+  background: var(--app-glass-bg, linear-gradient(160deg, rgba(245, 253, 249, 0.96), rgba(233, 247, 241, 0.92)));
+  box-shadow: var(--app-glass-shadow, 0 10px 24px rgba(20, 85, 76, 0.1));
 }
 
 .playful-ui aside {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 243, 255, 0.92)) !important;
-  border-right-color: color-mix(in srgb, var(--color-border) 78%, white) !important;
+  background: var(--app-sidebar-bg, linear-gradient(180deg, rgba(246, 253, 250, 0.98), rgba(231, 246, 240, 0.94))) !important;
+  border-right-color: var(--app-glass-border, #cce7de) !important;
 }
 
 .playful-ui button,
