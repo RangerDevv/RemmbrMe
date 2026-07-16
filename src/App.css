@@ -36,7 +36,7 @@
   color: var(--color-text);
   background-color: var(--color-bg);
   font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  text-rendering: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
@@ -104,9 +104,20 @@ select { color-scheme: light; }
   outline-offset: 2px;
 }
 
-/* Theme transition — only on bg/border/color, not layout */
-* { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+/* Box-sizing reset */
 *, *::before, *::after { box-sizing: border-box; }
+
+/* Transitions on interactive elements only — NOT on * (scroll killer) */
+button, a, input, select, textarea {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+/* transition-all is used in ~60 places and transitions layout properties (width,
+   height, top, left…) which triggers full layout recalculation on every hover.
+   Override it to only animate GPU-compositing-safe properties. */
+.transition-all {
+  transition-property: color, background-color, border-color, opacity, box-shadow !important;
+}
 
 /* ── Surface classes ──────────────────────────────────────────────── */
 
@@ -212,44 +223,33 @@ select { color-scheme: light; }
   from { opacity: 0; transform: scale(0.97); }
   to   { opacity: 1; transform: scale(1); }
 }
-.animate-fadeIn  { animation: fadeIn  0.15s ease-out; }
-.animate-slideUp { animation: slideUp 0.15s ease-out; }
-.animate-scaleIn { animation: scaleIn 0.15s ease-out; }
+.animate-fadeIn  { animation: fadeIn  0.15s ease-out; will-change: opacity; }
+.animate-slideUp { animation: slideUp 0.15s ease-out; will-change: opacity, transform; }
+.animate-scaleIn { animation: scaleIn 0.15s ease-out; will-change: opacity, transform; }
 
-/* Global playful Material You shell */
+/* Promote animated/transitioning surfaces to their own compositor layer */
+aside { will-change: transform; }
+.glass-modal { will-change: transform; }
+
+/* Global playful Material You shell — gradient moved to .playful-ui-bg (fixed
+   layer) so it is painted once and never repaints during scroll. */
 .playful-ui {
   position: relative;
-  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Fixed-position background layer — painted once, never invalidated by scroll */
+.playful-ui-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(1000px 520px at -10% -10%, var(--app-shell-blob-1, rgba(255, 183, 146, 0.2)), transparent 62%),
     radial-gradient(1000px 520px at 100% -10%, var(--app-shell-blob-2, rgba(96, 165, 250, 0.18)), transparent 62%),
     radial-gradient(1100px 540px at 50% 110%, var(--app-shell-blob-3, rgba(52, 211, 153, 0.14)), transparent 64%),
     linear-gradient(180deg, var(--app-shell-grad-start, #f6fcfa) 0%, var(--app-shell-grad-end, #ecf8f4) 100%);
-}
-
-.playful-ui::before,
-.playful-ui::after {
-  content: '';
-  position: absolute;
-  border-radius: 999px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.playful-ui::before {
-  width: 210px;
-  height: 210px;
-  top: 68px;
-  right: -40px;
-  background: radial-gradient(circle at 35% 35%, var(--app-shell-highlight-1, rgba(236, 252, 245, 0.65)), rgba(236, 252, 245, 0));
-}
-
-.playful-ui::after {
-  width: 180px;
-  height: 180px;
-  bottom: -50px;
-  left: -30px;
-  background: radial-gradient(circle at 45% 45%, var(--app-shell-highlight-2, rgba(224, 248, 241, 0.5)), rgba(224, 248, 241, 0));
+  will-change: transform; /* promote to GPU layer so it composites, not paints */
 }
 
 .playful-ui > * {
@@ -283,13 +283,9 @@ select { color-scheme: light; }
   font-weight: 700;
 }
 
-.playful-ui button:hover {
-  transform: translateY(-1px);
-}
+/* transform hover removed — causes compositor layer churn */
 
-.playful-ui .max-w-\[1400px\] {
-  backdrop-filter: blur(2px);
-}
+/* backdrop-filter removed — GPU compositing on large surface causes scroll jank */
 
 @media (max-width: 1023px) {
   .playful-ui::before,

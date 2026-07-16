@@ -66,9 +66,12 @@ export default function App() {
     <>
       <TitleBar />
       <main class="flex playful-ui" style={{ "background-color": "var(--color-bg)", "padding-top": "32px", "min-height": "100vh" }}>
+        {/* Fixed background layer — painted once by GPU, never invalidated by scroll */}
+        <div class="playful-ui-bg" aria-hidden="true" />
         <Sidebar />
       
-      <div class="flex-1 min-w-0 overflow-hidden" style={{ height: "calc(100vh - 32px)" }}>
+      {/* contain:layout paint isolates this subtree from parent repaint */}
+      <div class="flex-1 min-w-0 overflow-hidden" style={{ height: "calc(100vh - 32px)", contain: "layout paint" }}>
         <div
           ref={mainScrollContainer}
           class="max-w-[1400px] mx-auto w-full h-full overflow-y-auto px-4 pb-4 pt-16 lg:px-8 lg:pt-6 lg:pb-6"
