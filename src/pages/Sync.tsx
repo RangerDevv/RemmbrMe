@@ -815,19 +815,7 @@ export default function Sync(props: SyncProps = {}) {
                                 />
                             </div>
 
-                            <div class="space-y-2 sm:col-span-2">
-                                <label class="text-xs font-semibold uppercase tracking-wider block" style={{ color: 'var(--color-text-muted)' }}>
-                                    Google OAuth Client Secret (optional)
-                                </label>
-                                <input
-                                    type="password"
-                                    value={googleClientSecret()}
-                                    onInput={(e) => setGoogleClientSecret(e.currentTarget.value)}
-                                    placeholder="Needed for some OAuth app types"
-                                    class="w-full px-3 py-2.5 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 transition-all"
-                                    style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text)' }}
-                                />
-                            </div>
+                            {/* Client Secret intentionally removed — PKCE desktop flow doesn't need it */}
 
                             <div class="space-y-2 sm:col-span-2">
                                 <label class="text-xs font-semibold uppercase tracking-wider block" style={{ color: 'var(--color-text-muted)' }}>

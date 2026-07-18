@@ -125,6 +125,10 @@ function safeJsonParse<T>(raw: string | null, fallback: T): T {
     }
 }
 
+// Built-in Client ID from .env — safe to ship (public identifier).
+// No client secret: this is a PKCE-only desktop flow which does not require one.
+const BUILTIN_CLIENT_ID: string = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
+
 function buildDefaultSettings(): GoogleSyncSettings {
     const defaultRedirect = typeof window !== 'undefined'
         ? `${window.location.origin}/google-oauth-callback.html`
@@ -132,7 +136,7 @@ function buildDefaultSettings(): GoogleSyncSettings {
 
     return {
         enabled: false,
-        clientId: '',
+        clientId: BUILTIN_CLIENT_ID,
         clientSecret: '',
         redirectUri: defaultRedirect,
         calendarId: 'primary',
@@ -147,6 +151,10 @@ export function getGoogleSyncSettings(): GoogleSyncSettings {
     return {
         ...base,
         ...stored,
+        // Always fall back to the built-in Client ID if the user hasn't overridden it
+        clientId: stored.clientId?.trim() || BUILTIN_CLIENT_ID,
+        // Never persist a secret — PKCE flow doesn't need one
+        clientSecret: '',
         syncIntervalMinutes: Math.max(1, Number(stored.syncIntervalMinutes ?? base.syncIntervalMinutes)),
     };
 }
